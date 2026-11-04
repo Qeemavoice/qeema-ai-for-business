@@ -27,8 +27,9 @@ import { MessageCircle,
 } from 'lucide-react';
 import { ActiveView, Voice } from '../types';
 import type { OrbMode, OrbState } from './VoiceOrb';
-import { VoiceStyleCarousel, VOICE_STYLE_ITEMS } from './VoiceStyleCarousel';
-import { ProductSwitcher } from './ProductSwitcher';
+import { VoiceStyleCarousel, buildVoiceStyleItems } from './VoiceStyleCarousel';
+import { PRODUCT_TABS } from './ProductSwitcher';
+import { useSiteLists } from '../lib/siteLists';
 import { TextToSpeechPlayground } from './TextToSpeechPlayground';
 import { HumanVoicesSection } from './HumanVoicesSection';
 import { AIVoicesSection } from './AIVoicesSection';
@@ -145,8 +146,10 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
   // Hidden audio element for real audio and Web Audio API node binding
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const activePreset = HERO_PRESETS[activeTab] || HERO_PRESETS.ai;
-  const [styleIndex, setStyleIndex] = useState(1);
-  const sampleUrl = activeTab === 'tts' ? activePreset.audioUrl : VOICE_STYLE_ITEMS[styleIndex].audioUrl;
+  const siteCategories = useSiteLists().categories;
+  const styleItems = React.useMemo(() => buildVoiceStyleItems(siteCategories), [siteCategories]);
+  const [styleIndex, setStyleIndex] = useState(0);
+  const sampleUrl = activeTab === 'tts' || !styleItems.length ? activePreset.audioUrl : styleItems[styleIndex % styleItems.length].audioUrl;
 
   // Initialize and handle audio playback
   useEffect(() => {
@@ -302,104 +305,70 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
           {/* ========================================================================= */}
           {/* THE INTEGRATED LIVE VOICE SHOWCASE CONSOLE (قسم المشغل التفاعلي المتكامل)  */}
           {/* ========================================================================= */}
-          <div className="relative max-w-5xl mx-auto rounded-3xl bg-white/80 border border-slate-200/90 shadow-xl shadow-slate-900/[0.04] backdrop-blur-md p-5 sm:p-7 md:p-9">
-            
-            {/* Top Bar of the Showcase */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-100">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
-                </span>
-                <span>المشغل الصوتي التفاعلي الحي</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-slate-500 font-normal">استمع لنماذج الصوت المباشرة لكل تقنية</span>
-              </div>
-              
-              <div className="hidden sm:flex items-center gap-2 text-[11px] font-medium text-slate-500 bg-slate-100/70 px-3 py-1 rounded-full border border-slate-200/60">
-                <span>تفاعل صوتي نقي</span>
-                <span className="text-slate-300">•</span>
-                <span className="text-slate-700 font-semibold">جودة استوديو فائقة</span>
-              </div>
+          <div className="relative max-w-5xl mx-auto rounded-3xl bg-[#f5f3f1] border border-slate-200/80 overflow-hidden" aria-labelledby="home-player-title">
+            <div className="px-5 sm:px-8 pt-6 text-center">
+              <h2 id="home-player-title" className="text-lg sm:text-xl font-bold text-slate-950">
+                {activeTab === 'tts' ? 'تحويل النص إلى صوت عربي' : 'استمع لعينات تعليق صوتي عربي احترافي'}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1.5">
+                {activeTab === 'human' && 'فويس اوفر بشري بأكثر من 20 لهجة عربية من معلقين صوتيين محترفين، اختر نوع المحتوى واستمع.'}
+                {activeTab === 'ai' && 'أصوات ذكاء اصطناعي عربية واقعية بنطق وتشكيل مضبوط.'}
+                {activeTab === 'tts' && 'حوّل النص إلى صوت عربي طبيعي بالتشكيل الصحيح للمقالات والكتب الصوتية والفيديو.'}
+              </p>
             </div>
 
-            {/* If activeTab === 'tts' (نص إلى صوت), render the ElevenLabs-style Text-to-Speech Playground */}
             {activeTab === 'tts' ? (
-              <div className="mb-6 animate-in fade-in duration-300">
+              <div className="p-4 sm:p-6 animate-in fade-in duration-300">
                 <TextToSpeechPlayground
                   onRequireAuth={isLoggedIn ? undefined : (onOpenSignup || onOpenLogin)}
                   onExploreVoices={() => onNavigate('voice-library', { tab: 'ai' })}
                 />
               </div>
-            ) : (
-              <>
-                <div className="mb-6">
-                  <VoiceStyleCarousel
-                    items={VOICE_STYLE_ITEMS}
-                    index={styleIndex}
-                    onSelect={setStyleIndex}
-                    isPlaying={isPlaying}
-                    onTogglePlay={togglePlay}
-                    audio={audioElementRef.current}
-                    currentTime={currentTime}
-                    duration={duration}
-                    onSeek={(pct) => {
-                      if (audioElementRef.current && duration > 0) {
-                        audioElementRef.current.currentTime = pct * duration;
-                        setCurrentTime(pct * duration);
-                      }
-                    }}
-                    onOpen={() => onNavigate('voice-library', { tab: 'human' })}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* ========================================================================= */}
-            {/* INTEGRATED SUITE TABS (العناوين التابعة للقسم المتكامل)                    */}
-            {/* ========================================================================= */}
-            <div className="pt-4 border-t border-slate-100/90">
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <span className="text-xs font-bold text-slate-500">
-                  اختر التقنية الصوتية للاستماع المباشر وتجربة النبرات:
-                </span>
-              </div>
-
-              {/* Product Switcher Tabs (5 Tabs without dubbing) */}
-              <ProductSwitcher
-                activeTab={activeTab}
-                onSelectTab={(tab) => {
-                  setActiveTab(tab);
+            ) : styleItems.length > 0 && (
+              <VoiceStyleCarousel
+                items={styleItems}
+                index={styleIndex % styleItems.length}
+                onSelect={setStyleIndex}
+                isPlaying={isPlaying}
+                onTogglePlay={togglePlay}
+                audio={audioElementRef.current}
+                currentTime={currentTime}
+                duration={duration}
+                onSeek={(pct) => {
+                  if (audioElementRef.current && duration > 0) {
+                    audioElementRef.current.currentTime = pct * duration;
+                    setCurrentTime(pct * duration);
+                  }
                 }}
               />
+            )}
 
-              {/* Contextual Descriptor Row directly tied to the active tab */}
-              <div className="mt-4 pt-3 border-t border-slate-100/70 flex flex-col sm:flex-row items-center justify-between gap-2.5 px-2 text-xs">
-                <div className="flex items-center gap-2 text-slate-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand shrink-0" />
-                  <span className="font-medium text-slate-700">
-                    {activeTab === 'human' && 'معلقون وممثلون صوتيون محترفون بأكثر من 20 لهجة عربية للمشاريع الإعلانية والرسمية.'}
-                    {activeTab === 'ai' && 'نماذج ذكاء اصطناعي صوتية فائقة الواقعية بنبرات ومخارج حروف عربية مضبوطة التشكيل بالكامل.'}
-                    {activeTab === 'tts' && 'أستوديو تحويل النص إلى صوت (TTS) عالي الأداء للمقالات، الكتب الصوتية، والأنظمة التفاعلية.'}
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (onOpenSignup) {
-                      onOpenSignup();
-                    } else if (onOpenDemo) {
-                      onOpenDemo();
-                    }
-                  }}
-                  className="px-6 py-2 rounded-full bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer shrink-0"
-                >
-                  إنشاء حساب
-                </button>
+            {/* Product pills + sign-up, inside the same panel */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 pb-5">
+              <div className="flex items-center gap-1 overflow-x-auto max-w-full" role="tablist">
+                {PRODUCT_TABS.filter(t => t.id !== 'ai' || AI_VOICES_ENABLED).map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      activeTab === t.id ? 'bg-white text-slate-950 border border-slate-200 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
-
+              <button
+                type="button"
+                onClick={onOpenSignup || onOpenDemo}
+                className="px-6 py-2.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-sm font-bold transition-colors cursor-pointer shrink-0"
+              >
+                إنشاء حساب مجاناً
+              </button>
             </div>
-
           </div>
 
         </div>

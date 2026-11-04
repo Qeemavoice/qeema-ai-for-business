@@ -96,7 +96,8 @@ void main(){
   sh+=.6*exp(-pow((d+W*1.25)/.03,2.))*smoothstep(.1,.6,q.y);
   col=mix(col,vec3(1.),clamp(sh,0.,1.)*.32*core);
   // soft outer glow
-  float glow=exp(-max(d,0.)/.07)*(1.-shape)*(.22+.35*uE);
+  float edgeFade=1.-smoothstep(.82,.98,max(abs(p.x),abs(p.y)));   // glow never reaches the canvas border
+  float glow=exp(-max(d,0.)/.06)*(1.-shape)*(.22+.35*uE)*edgeFade;
   float alpha=shape+glow;
   vec3 outc=col*shape+irid*glow;
   o=vec4(outc,clamp(alpha,0.,1.));

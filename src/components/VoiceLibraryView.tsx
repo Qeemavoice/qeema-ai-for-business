@@ -241,7 +241,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
   // Sub-navigation and filters
   const [subTab, setSubTab] = useState<'explore' | 'my-voices'>('explore');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('category')) || 'all');
   const [selectedDialect, setSelectedDialect] = useState<string>('all');
   const [selectedGender, setSelectedGender] = useState<string>('all');
   const [selectedSpeed, setSelectedSpeed] = useState<string>('all');

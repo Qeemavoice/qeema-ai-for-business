@@ -7,19 +7,42 @@ export interface VoiceStyleItem {
   title: string;
   desc: string;
   audioUrl: string;
-  quote: string;
   variant: number;
 }
 
-/** Production styles shown in the home player; samples are real client works from public/stories. */
-export const VOICE_STYLE_ITEMS: VoiceStyleItem[] = [
-  { key: 'ads', title: 'إعلانات تجارية', desc: 'أصوات مقنعة تحرّك الجمهور وترسّخ العلامة في الذاكرة.', audioUrl: '/stories/food-mcdonalds-saudi.mp3', quote: 'إعلان تجاري سعودي', variant: 1 },
-  { key: 'documentary', title: 'وثائقي', desc: 'سرد رصين يمنح القصة عمقها وهيبتها.', audioUrl: '/stories/documentary-king-khalid-airport.m4a', quote: 'فيلم وثائقي', variant: 2 },
-  { key: 'education', title: 'تعليمي وشرح', desc: 'نبرة واضحة تبسّط المعلومة للطلاب والمتدربين.', audioUrl: '/stories/education-alfajr-albasim.mp3', quote: 'محتوى تعليمي', variant: 3 },
-  { key: 'ivr', title: 'رد آلي IVR', desc: 'ترحيب احترافي يرافق عملاءك في كل اتصال.', audioUrl: '/stories/aviation-salamair-ivr.m4a', quote: 'رد آلي لشركة طيران', variant: 0 },
-  { key: 'corporate', title: 'مؤسسي وتعريفي', desc: 'صوت موثوق يعكس هوية الجهة ورسالتها.', audioUrl: '/stories/banking-palestine-islamic-bank.m4a', quote: 'فيديو تعريفي لبنك', variant: 2 },
-  { key: 'media', title: 'إعلامي وإذاعي', desc: 'حضور إذاعي دافئ للبرامج والبودكاست.', audioUrl: '/stories/media-makkah-sajaya.mp3', quote: 'برنامج إعلامي', variant: 3 },
-];
+/** Copy and sample per voice-library category (names come from the dashboard, see useSiteLists). Samples are real client works from public/stories. */
+const STYLE_INFO: Record<string, { desc: string; audioUrl: string }> = {
+  'إعلانات': { desc: 'فويس اوفر إعلاني مقنع لإعلانات السوشيال ميديا والتلفزيون والراديو.', audioUrl: '/stories/food-mcdonalds-saudi.mp3' },
+  'وثائقيات': { desc: 'تعليق صوتي وثائقي رصين يمنح الفيلم عمقه وهيبته.', audioUrl: '/stories/documentary-king-khalid-airport.m4a' },
+  'دراما': { desc: 'أداء تمثيلي صوتي يعيش الشخصية ويحرّك المشاعر.', audioUrl: '/stories/documentary-gaza-film.mp3' },
+  'رد آلي': { desc: 'تسجيل رد آلي IVR احترافي للترحيب وقوائم الاتصال.', audioUrl: '/stories/aviation-salamair-ivr.m4a' },
+  'دوبلاج كرتوني': { desc: 'دبلجة كرتون وأصوات شخصيات مرحة للأطفال والألعاب.', audioUrl: '/stories/education-alfajr-albasim.mp3' },
+  'دوبلاج وثائقي': { desc: 'دبلجة أفلام وثائقية بالعربية بنبرة سردية متقنة.', audioUrl: '/stories/industry-arab-industry.mp3' },
+  'تقارير وأخبار': { desc: 'صوت إخباري واضح للتقارير والنشرات والمحتوى الصحفي.', audioUrl: '/stories/events-global-health.mp3' },
+  'شعر وخواطر': { desc: 'إلقاء شعري وخواطر بصوت دافئ ومؤثر.', audioUrl: '/stories/national-day-saudi.m4a' },
+  'قصص': { desc: 'سرد قصص صوتية جذاب للكبار والصغار.', audioUrl: '/stories/publishing-takween.mp3' },
+  'تعليمي': { desc: 'تعليق صوتي تعليمي واضح لشرح الدروس والدورات التدريبية.', audioUrl: '/stories/education-iau.mp3' },
+  'برومو': { desc: 'برومو حماسي لإطلاق البرامج والمنتجات والفعاليات.', audioUrl: '/stories/sports-power-gym.mp3' },
+  'بودكاست': { desc: 'صوت بودكاست طبيعي ومريح للحلقات والمقدمات.', audioUrl: '/stories/media-makkah-sajaya.mp3' },
+  'كتب وروايات': { desc: 'قراءة كتب صوتية وروايات بإيقاع مريح وأداء متقن.', audioUrl: '/stories/media-makkah-ahl-makkah.mp3' },
+  'ديني': { desc: 'إلقاء ديني بخشوع ونطق فصيح سليم.', audioUrl: '/stories/media-makkah-moazamoon.m4a' },
+};
+
+export const buildVoiceStyleItems = (categories: string[]): VoiceStyleItem[] => {
+  const items = categories.map((title, i) => ({
+    key: title,
+    title,
+    desc: STYLE_INFO[title]?.desc || `تعليق صوتي ${title} احترافي بأصوات بشرية معتمدة.`,
+    audioUrl: STYLE_INFO[title]?.audioUrl || '/stories/food-mcdonalds-saudi.mp3',
+    variant: i % 4,                    // neighbours never share a look
+  }));
+  const n = items.length;
+  if (n > 2 && n % 4) {                 // the ring wraps: the last item also touches the first
+    const taken = [items[n - 2].variant, items[0].variant, items[1].variant];
+    items[n - 1].variant = [0, 1, 2, 3].find(v => !taken.includes(v))!;
+  }
+  return items;
+};
 
 interface Props {
   items: VoiceStyleItem[];
@@ -31,7 +54,6 @@ interface Props {
   currentTime: number;
   duration: number;
   onSeek: (pct: number) => void;
-  onOpen: (item: VoiceStyleItem) => void;
 }
 
 const useNarrow = () => {
@@ -46,7 +68,7 @@ const useNarrow = () => {
   return narrow;
 };
 
-export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, isPlaying, onTogglePlay, audio, currentTime, duration, onSeek, onOpen }) => {
+export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, isPlaying, onTogglePlay, audio, currentTime, duration, onSeek }) => {
   const narrow = useNarrow();
   const n = items.length;
   const go = (step: number) => onSelect((index + step + n) % n);
@@ -55,9 +77,9 @@ export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, is
   const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
 
   return (
-    <div className="relative rounded-3xl bg-[#f5f3f1] border border-slate-200/70 overflow-hidden select-none" dir="rtl">
+    <div className="relative overflow-hidden select-none" dir="rtl">
       {/* Stage */}
-      <div className="relative h-[300px] sm:h-[330px]">
+      <div className="relative h-[230px] sm:h-[290px]">
         {items.map((item, i) => {
           let off = i - index;
           if (off > n / 2) off -= n;
@@ -69,7 +91,7 @@ export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, is
           return (
             <div
               key={item.key}
-              className="absolute top-[42%] transition-all duration-500 ease-out"
+              className="absolute top-1/2 transition-all duration-500 ease-out"
               style={{
                 right: `calc(50% + ${off * gap}%)`,
                 transform: `translate(50%, -50%)`,
@@ -99,16 +121,16 @@ export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, is
       </div>
 
       {/* Labels row: previous / centre / next, like the reference */}
-      <div className="relative grid grid-cols-[1fr_auto_minmax(0,1.3fr)_auto_1fr] items-start gap-2 px-4 sm:px-8 -mt-10 pb-6 text-center">
+      <div className="relative grid grid-cols-[1fr_auto_minmax(0,1.3fr)_auto_1fr] items-start gap-2 px-4 sm:px-8 pb-4 text-center">
         <Label item={items[(index - 1 + n) % n]} muted hidden={narrow} onClick={() => go(-1)} />
         <button type="button" onClick={() => go(-1)} className="mt-1 p-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-white/70 cursor-pointer" aria-label="السابق">
           <ChevronRight className="w-4 h-4" />
         </button>
         <div className="min-w-0">
-          <button type="button" onClick={() => onOpen(items[index])} className="inline-flex items-center gap-1 text-sm sm:text-base font-bold text-slate-950 hover:text-brand-text cursor-pointer">
+          <a href={`/ar/voices?category=${encodeURIComponent(items[index].title)}`} className="inline-flex items-center gap-1 text-sm sm:text-base font-bold text-slate-950 hover:text-brand-text" title={`عينات تعليق صوتي ${items[index].title}`}>
             {items[index].title}
             <ArrowUpLeft className="w-3.5 h-3.5" />
-          </button>
+          </a>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">{items[index].desc}</p>
           <div
             className={`mt-3 mx-auto max-w-[220px] h-1 rounded-full bg-slate-200 overflow-hidden cursor-pointer transition-opacity ${isPlaying || currentTime > 0 ? 'opacity-100' : 'opacity-0'}`}
