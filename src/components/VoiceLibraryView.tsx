@@ -43,6 +43,7 @@ import {
   ArrowLeft,
   Square
 } from 'lucide-react';
+import { LiquidLogo, variantFor } from './LiquidLogo';
 import { Voice, DialectKey } from '../types';
 import { B2BProjectRequestModal } from './B2BProjectRequestModal';
 import { openTalentSignup } from '../lib/talentJoin';
@@ -160,48 +161,41 @@ const AudioWaveIcon: React.FC<{ isPlaying: boolean }> = ({ isPlaying }) => (
  * Glassmorphic Color Gradient Orb component
  */
 const GlassyVoiceOrb: React.FC<{
-  gradient: string;
+  voiceId: string;
   isPlaying: boolean;
   isVerified?: boolean;
   onTogglePlay: (e: React.MouseEvent) => void;
   size?: 'sm' | 'md' | 'lg';
-}> = ({ gradient, isPlaying, isVerified = true, onTogglePlay, size = 'sm' }) => {
-  const sizeClass = size === 'sm' ? 'w-8 h-8 rounded-xl' : size === 'lg' ? 'w-12 h-12 rounded-2xl' : 'w-10 h-10 rounded-2xl';
-  const radiusClass = size === 'sm' ? 'rounded-xl' : 'rounded-2xl';
-  const buttonSize = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
+}> = ({ voiceId, isPlaying, isVerified = true, onTogglePlay, size = 'sm' }) => {
+  const px = size === 'sm' ? 36 : size === 'lg' ? 52 : 44;
   const iconSize = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3';
 
   return (
     <div className="relative shrink-0 select-none">
-      <div
+      <button
+        type="button"
         onClick={onTogglePlay}
-        className={`relative ${sizeClass} cursor-pointer group transition-all duration-200 active:scale-95 flex items-center justify-center overflow-hidden border border-white/50 shadow-xs`}
-        style={{
-          background: gradient,
-          boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.45), 0 3px 8px rgba(0, 0, 0, 0.16)'
-        }}
+        className="relative block cursor-pointer group transition-transform duration-200 active:scale-95"
+        style={{ width: px, height: px }}
+        aria-label={isPlaying ? 'إيقاف العينة' : 'تشغيل العينة'}
       >
-        <div className={`absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-white/50 pointer-events-none ${radiusClass}`} />
-        <div className={`absolute inset-[1.5px] ${radiusClass} border border-white/25 pointer-events-none`} />
-
-        <div
-          className={`${buttonSize} rounded-full flex items-center justify-center transition-all ${
-            isPlaying
-              ? 'bg-black text-white shadow-md scale-100 opacity-100'
-              : 'bg-black/65 sm:bg-black/35 text-white opacity-90 sm:opacity-0 group-hover:opacity-100 sm:hover:bg-black/80'
-          }`}
-        >
-          {isPlaying ? (
-            <Pause className={`${iconSize} fill-white text-white`} />
-          ) : (
-            <Play className={`${iconSize} fill-white text-white mr-0.5`} />
-          )}
-        </div>
-      </div>
+        <LiquidLogo variant={variantFor(voiceId)} size={px} live={isPlaying} playing={isPlaying} />
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span
+            className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+              isPlaying
+                ? 'bg-white text-slate-950 shadow-md opacity-100'
+                : 'bg-white/90 text-slate-950 shadow-sm opacity-90 sm:opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            {isPlaying ? <Pause className={`${iconSize} fill-current`} /> : <Play className={`${iconSize} fill-current mr-0.5`} />}
+          </span>
+        </span>
+      </button>
 
       {isVerified && (
         <div
-          className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center shadow-xs z-10"
+          className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center shadow-xs z-10"
           title="معلق صوتي موثق ومعتمد تجارياً"
         >
           <Check className="w-2 h-2 text-white stroke-[3.5]" />
@@ -1349,7 +1343,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                   
                   {/* Glassy Color Orb with Play/Pause Button */}
                   <GlassyVoiceOrb
-                    gradient={voice.glassGradient}
+                    voiceId={voice.id}
                     isPlaying={isPlaying}
                     isVerified={voice.isVerified}
                     size="sm"

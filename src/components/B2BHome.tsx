@@ -26,8 +26,8 @@ import { MessageCircle,
   Lock
 } from 'lucide-react';
 import { ActiveView, Voice } from '../types';
-import { VoiceOrb, OrbMode, OrbState } from './VoiceOrb';
-import { HeroAudioPlayer } from './HeroAudioPlayer';
+import type { OrbMode, OrbState } from './VoiceOrb';
+import { VoiceStyleCarousel, VOICE_STYLE_ITEMS } from './VoiceStyleCarousel';
 import { ProductSwitcher } from './ProductSwitcher';
 import { TextToSpeechPlayground } from './TextToSpeechPlayground';
 import { HumanVoicesSection } from './HumanVoicesSection';
@@ -145,6 +145,8 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
   // Hidden audio element for real audio and Web Audio API node binding
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const activePreset = HERO_PRESETS[activeTab] || HERO_PRESETS.ai;
+  const [styleIndex, setStyleIndex] = useState(1);
+  const sampleUrl = activeTab === 'tts' ? activePreset.audioUrl : VOICE_STYLE_ITEMS[styleIndex].audioUrl;
 
   // Initialize and handle audio playback
   useEffect(() => {
@@ -181,7 +183,7 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
     if (audioElementRef.current) {
       const wasPlaying = isPlaying;
       audioElementRef.current.pause();
-      audioElementRef.current.src = activePreset.audioUrl;
+      audioElementRef.current.src = sampleUrl;
       setCurrentTime(0);
       setDuration(12);
 
@@ -194,7 +196,7 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
         setOrbState('idle');
       }
     }
-  }, [activeTab]);
+  }, [activeTab, styleIndex]);
 
   // Play / Pause toggle
   const togglePlay = () => {
@@ -208,7 +210,7 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
       setIsPlaying(false);
       setOrbState('idle');
     } else {
-      audioElementRef.current.src = activePreset.audioUrl;
+      audioElementRef.current.src = sampleUrl;
       audioElementRef.current.play()
         .then(() => {
           setIsPlaying(true);
@@ -232,13 +234,6 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
           }
         });
     }
-  };
-
-  // Switch sample
-  const handleSwitchSample = () => {
-    const keys: OrbMode[] = ['ai', 'human', 'twins', 'tts', 'cloning'];
-    const nextIdx = (keys.indexOf(activeTab) + 1) % keys.length;
-    setActiveTab(keys[nextIdx]);
   };
 
   // Primary CTA handler based on current active tab
@@ -338,34 +333,14 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
               </div>
             ) : (
               <>
-                {/* Organic 3D Voice Orb */}
-                <div className="relative flex flex-col items-center justify-center py-2 mb-3">
-                  <VoiceOrb
-                    mode={activeTab}
-                    state={orbState}
-                    isPlaying={isPlaying}
-                    audioElement={audioElementRef.current}
-                    size={340}
-                    onClick={togglePlay}
-                    className="mx-auto"
-                  />
-
-                  {/* Quote Pill */}
-                  <div className="max-w-lg mx-auto mt-3 px-4 py-2 rounded-2xl bg-slate-50/90 border border-slate-200/70 text-xs text-slate-600 italic">
-                    "{activePreset.sampleQuote}"
-                  </div>
-                </div>
-
-                {/* Minimalist Hero Audio Player */}
                 <div className="mb-6">
-                  <HeroAudioPlayer
+                  <VoiceStyleCarousel
+                    items={VOICE_STYLE_ITEMS}
+                    index={styleIndex}
+                    onSelect={setStyleIndex}
                     isPlaying={isPlaying}
                     onTogglePlay={togglePlay}
-                    voiceName={activePreset.voiceName}
-                    dialect={activePreset.dialect}
-                    gender={activePreset.gender}
-                    category={activePreset.category}
-                    mode={activeTab}
+                    audio={audioElementRef.current}
                     currentTime={currentTime}
                     duration={duration}
                     onSeek={(pct) => {
@@ -374,7 +349,7 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
                         setCurrentTime(pct * duration);
                       }
                     }}
-                    onSwitchSample={handleSwitchSample}
+                    onOpen={() => onNavigate('voice-library', { tab: 'human' })}
                   />
                 </div>
               </>
