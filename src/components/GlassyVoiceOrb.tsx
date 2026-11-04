@@ -16,9 +16,8 @@ export interface GlassyVoiceOrbProps {
 }
 
 /**
- * GlassyVoiceOrb:
- * The signature 3D luminous glass sphere avatar used across Qeema Voice.
- * Replaces generic icons with an artistic, specular-lit colored orb and verified badge.
+ * GlassyVoiceOrb: the voice mark used across Qeema Voice, the 3D glass logo (see LiquidLogo)
+ * with play button and verified badge. `gradient` is kept only to pick a stable look for old callers.
  */
 export const GlassyVoiceOrb: React.FC<GlassyVoiceOrbProps> = ({
   gradient,
@@ -31,13 +30,6 @@ export const GlassyVoiceOrb: React.FC<GlassyVoiceOrbProps> = ({
   title,
   voiceId
 }) => {
-  const sizeMap = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-12 h-12',
-    xl: 'w-14 h-14'
-  };
-
   const playSizeMap = {
     sm: 'w-5 h-5',
     md: 'w-6 h-6',
@@ -52,69 +44,32 @@ export const GlassyVoiceOrb: React.FC<GlassyVoiceOrbProps> = ({
     xl: 'w-4 h-4'
   };
 
-  if (voiceId) {
-    const px = { sm: 36, md: 44, lg: 52, xl: 60 }[size];
-    return (
-      <div className={`relative shrink-0 select-none ${className}`} title={title}>
-        <button type="button" onClick={onTogglePlay} className="relative block cursor-pointer group active:scale-95 transition-transform" style={{ width: px, height: px }} aria-label={isPlaying ? 'إيقاف العينة' : 'تشغيل العينة'}>
-          <LiquidLogo variant={variantFor(voiceId)} size={px} live={isPlaying} playing={isPlaying} />
-          {showPlayButton && (
-            <span className="absolute inset-0 flex items-center justify-center">
-              <span className={`rounded-full flex items-center justify-center bg-white text-slate-950 shadow-md transition-opacity ${playSizeMap[size]} ${isPlaying ? 'opacity-100' : 'opacity-90 sm:opacity-0 group-hover:opacity-100'}`}>
-                {isPlaying ? <Pause className={`${iconSizeMap[size]} fill-current`} /> : <Play className={`${iconSizeMap[size]} fill-current mr-0.5`} />}
-              </span>
-            </span>
-          )}
-        </button>
-        {isVerified && (
-          <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center shadow-xs z-10 pointer-events-none" title="صوت موثق ومرخص رسمياً">
-            <Check className="w-2 h-2 text-white stroke-[3.5]" />
-          </div>
-        )}
-      </div>
-    );
-  }
-
+  // The glass logo is the voice mark across the site; the look is picked from the voice id (or its old gradient).
+  const key = voiceId || gradient || title || '';
+  const px = { sm: 36, md: 44, lg: 52, xl: 60 }[size];
   return (
     <div className={`relative shrink-0 select-none ${className}`} title={title}>
+      {/* a div, not a button: the orb is sometimes placed inside clickable cards/buttons */}
       <div
+        role={onTogglePlay ? 'button' : undefined}
+        tabIndex={onTogglePlay ? 0 : undefined}
         onClick={onTogglePlay}
-        className={`relative ${sizeMap[size]} rounded-full cursor-pointer group transition-all duration-200 active:scale-95 flex items-center justify-center overflow-hidden border border-white/50 shadow-xs`}
-        style={{
-          background: gradient,
-          boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.45), 0 3px 8px rgba(0, 0, 0, 0.16)'
-        }}
+        onKeyDown={onTogglePlay ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTogglePlay(e as unknown as React.MouseEvent); } } : undefined}
+        className="relative block cursor-pointer group active:scale-95 transition-transform"
+        style={{ width: px, height: px }}
+        aria-label={isPlaying ? 'إيقاف العينة' : 'تشغيل العينة'}
       >
-        {/* Specular gloss highlight */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-white/50 pointer-events-none rounded-full" />
-        
-        {/* Inner glow depth ring */}
-        <div className="absolute inset-[1.5px] rounded-full border border-white/25 pointer-events-none" />
-
-        {/* Play/Pause Button overlay */}
+        <LiquidLogo variant={variantFor(key)} size={px} live={isPlaying} playing={isPlaying} />
         {showPlayButton && (
-          <div
-            className={`rounded-full flex items-center justify-center transition-all ${playSizeMap[size]} ${
-              isPlaying
-                ? 'bg-black text-white shadow-md scale-100 opacity-100'
-                : 'bg-black/65 sm:bg-black/35 text-white opacity-90 sm:opacity-0 group-hover:opacity-100 sm:hover:bg-black/80'
-            }`}
-          >
-            {isPlaying ? (
-              <Pause className={`${iconSizeMap[size]} fill-white text-white`} />
-            ) : (
-              <Play className={`${iconSizeMap[size]} fill-white text-white mr-0.5`} />
-            )}
-          </div>
+          <span className="absolute inset-0 flex items-center justify-center">
+            <span className={`rounded-full flex items-center justify-center bg-white text-slate-950 shadow-md transition-opacity ${playSizeMap[size]} ${isPlaying ? 'opacity-100' : 'opacity-90 sm:opacity-0 group-hover:opacity-100'}`}>
+              {isPlaying ? <Pause className={`${iconSizeMap[size]} fill-current`} /> : <Play className={`${iconSizeMap[size]} fill-current mr-0.5`} />}
+            </span>
+          </span>
         )}
       </div>
-
-      {/* Verified Black Badge with White Checkmark `✓` */}
       {isVerified && (
-        <div
-          className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center shadow-xs z-10 pointer-events-none"
-          title="صوت موثق ومرخص رسمياً"
-        >
+        <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center shadow-xs z-10 pointer-events-none" title="صوت موثق ومرخص رسمياً">
           <Check className="w-2 h-2 text-white stroke-[3.5]" />
         </div>
       )}

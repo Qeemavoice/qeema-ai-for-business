@@ -20,6 +20,7 @@ import {
   Users,
   Briefcase
 } from 'lucide-react';
+import { LiquidLogo, variantFor } from './LiquidLogo';
 import { UnifiedVoiceItem, RetentionNoticeIcon } from './VoiceLibraryView';
 
 interface VoiceProfileDrawerProps {
@@ -57,16 +58,7 @@ export const VoiceProfileDrawer: React.FC<VoiceProfileDrawerProps> = ({
         <div>
           <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
             <div className="flex items-center gap-3">
-              <div 
-                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-md border border-white/20"
-                style={{ background: voice.glassGradient }}
-              >
-                {voice.isHuman ? (
-                  <Mic2 className="w-6 h-6 text-white" />
-                ) : (
-                  <Sparkles className="w-6 h-6 text-white" />
-                )}
-              </div>
+              <LiquidLogo variant={variantFor(voice.id)} size={52} />
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-base text-white">{voice.name}</h3>

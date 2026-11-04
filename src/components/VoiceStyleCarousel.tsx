@@ -72,14 +72,14 @@ export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, is
   const narrow = useNarrow();
   const n = items.length;
   const go = (step: number) => onSelect((index + step + n) % n);
-  const sizes = narrow ? [190, 104, 70] : [250, 170, 120];
+  const sizes = narrow ? [220, 118, 78] : [300, 190, 130];   // full frames include the spray, so the glass is ~2/3 of the box
   const gap = narrow ? 36 : 27;        // % of width between neighbours
   const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
 
   return (
     <div className="relative overflow-hidden select-none" dir="rtl">
       {/* Stage */}
-      <div className="relative h-[230px] sm:h-[290px]">
+      <div className="relative h-[240px] sm:h-[310px]">
         {items.map((item, i) => {
           let off = i - index;
           if (off > n / 2) off -= n;
@@ -106,7 +106,7 @@ export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, is
                 className="relative block cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-slate-900"
                 aria-label={center ? (isPlaying ? 'إيقاف العينة' : `تشغيل عينة ${item.title}`) : `اختيار ${item.title}`}
               >
-                <LiquidLogo variant={item.variant} size={size} live={center} playing={center && isPlaying} audio={center ? audio : null} spray={center} />
+                <LiquidLogo variant={item.variant} size={size} live={center} playing={center && isPlaying} audio={center ? audio : null} spray />
                 {center && (
                   <span className="absolute inset-0 flex items-center justify-center">
                     <span className="w-14 h-14 rounded-full bg-white shadow-lg shadow-slate-900/15 flex items-center justify-center transition-transform hover:scale-105 active:scale-95">
