@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useVoiceTemplates } from '../lib/voiceTemplates';
 import { 
@@ -75,7 +75,14 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
   ];
 
   // Voices list for console
-  const previewVoices = AI_VOICES_CATALOG;
+  // Studio voices from the dashboard; the built-in catalog shows only until the server answers.
+  const [serverVoices, setServerVoices] = useState<{ id: string; name: string; flag: string; dialectLabel: string; previewUrl: string }[] | null>(null);
+  useEffect(() => {
+    fetch('/api/v1/voices?type=ai').then(r => (r.ok ? r.json() : null)).then(d => {
+      if (d?.voices?.length) setServerVoices(d.voices.map((v: any) => ({ id: v.id, name: v.name, flag: v.flag || '', dialectLabel: v.dialectLabel || '', previewUrl: `/api/v1/voices/${v.id}/preview` })));
+    }).catch(() => {});
+  }, []);
+  const previewVoices = serverVoices || AI_VOICES_CATALOG;
 
   const handleTogglePlayVoice = (voiceId: string, previewUrl: string) => {
     if (playingVoiceId === voiceId) {

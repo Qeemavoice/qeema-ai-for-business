@@ -213,3 +213,39 @@ generationsRouter.delete('/:id', (req: Request, res: Response) => {
 
   res.json({ success: true, message: 'تم حذف التسجيل بنجاح' });
 });
+
+/**
+ * One free short generation for visitors (home + TTS page trial), on the real engine.
+ * ponytail: in-memory per-IP limit, resets on restart; move to the DB if abuse shows up.
+ */
+export const ttsTrialRouter = Router();
+const TRIAL_MAX_CHARS = 120;
+const TRIAL_WINDOW_MS = 24 * 60 * 60 * 1000;
+const trialByIp = new Map<string, number>();
+
+ttsTrialRouter.post('/', async (req: Request, res: Response) => {
+  try {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown'; // not X-Forwarded-For: a visitor could fake it (set app 'trust proxy' behind a real proxy)
+    const last = trialByIp.get(ip);
+    if (last && Date.now() - last < TRIAL_WINDOW_MS) {
+      return res.status(429).json({ error: 'استخدمت التجربة المجانية. أنشئ حساباً مجانياً للمتابعة.', action: 'signup' });
+    }
+    const text = String(req.body?.text || '').trim();
+    if (text.length < 2) return res.status(400).json({ error: 'يرجى إدخال النص المطلوب تحويله إلى صوت' });
+    if (text.length > TRIAL_MAX_CHARS) return res.status(400).json({ error: `التجربة المجانية حتى ${TRIAL_MAX_CHARS} حرفاً.` });
+    const aiVoices = Array.from(db.voices.values()).filter(v => v.type === 'ai' && v.isActive);
+    const voice = aiVoices.find(v => v.id === req.body?.voiceId) || aiVoices[0];
+    if (!voice) return res.status(503).json({ error: 'لا توجد أصوات متاحة حالياً' });
+
+    const synth = await providerManager.synthesize({
+      text, voice, settings: { speed: 1, stability: 0.7, style: 0.5, pitch: 0, format: 'mp3' }, companyId: 'trial', userId: 'visitor'
+    });
+    const id = `trial-${crypto.randomUUID()}`;
+    db.audioFiles.set(id, { buffer: synth.audioBuffer, mimeType: synth.mimeType, filename: `${id}.mp3` });
+    trialByIp.set(ip, Date.now());
+    res.json({ audioUrl: `/api/v1/storage/audio/${id}`, voiceName: voice.name });
+  } catch (err: any) {
+    console.error('TTS trial failed:', err);
+    res.status(500).json({ error: 'تعذر توليد الصوت الآن، حاول بعد قليل.' });
+  }
+});

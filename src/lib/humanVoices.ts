@@ -39,3 +39,6 @@ export const useHumanVoices = (): UnifiedVoiceItem[] => {
   useEffect(load, []);
   return useSyncExternalStore(cb => { listeners.add(cb); return () => listeners.delete(cb); }, () => samples);
 };
+
+/** The sample file uploaded in the dashboard, or '' when the voice still has the seed placeholder track. */
+export const realSampleUrl = (url?: string) => (!url || url.includes('pixabay.com/download/audio/2022/03/15/audio_c8c8a73467') ? '' : url);

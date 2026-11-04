@@ -57,7 +57,7 @@ import { VOICE_CATEGORY_FILTERS } from '../data/humanVoices';
 import { dialectOf } from '../data/dialects';
 import { useSiteLists } from '../lib/siteLists';
 import { AI_VOICES_ENABLED } from '../../shared/features';
-import { useHumanVoices } from '../lib/humanVoices';
+import { useHumanVoices, realSampleUrl } from '../lib/humanVoices';
 
 interface VoiceLibraryViewProps {
   voices: Voice[];
@@ -278,26 +278,20 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Favorites saved state
-  const [savedVoiceIds, setSavedVoiceIds] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem('qeema_saved_voices');
-      if (saved) {
-        return new Set(JSON.parse(saved));
-      }
-    } catch {
-      // fallback
-    }
-    return new Set(['human-sample-1', 'human-sample-2', 'ai-sara-khaleeji']);
-  });
-
+  // Favorites (المفضلة): stored on the signed-in account
+  const [savedVoiceIds, setSavedVoiceIds] = useState<Set<string>>(new Set());
+  const favoritesLoaded = useRef(false);
   useEffect(() => {
-    try {
-      localStorage.setItem('qeema_saved_voices', JSON.stringify(Array.from(savedVoiceIds)));
-    } catch {
-      // ignore
-    }
-  }, [savedVoiceIds]);
+    if (!isLoggedIn) { setSavedVoiceIds(new Set()); favoritesLoaded.current = false; return; }
+    fetch('/api/v1/auth/favorites').then(r => (r.ok ? r.json() : null)).then(d => {
+      if (d?.ids) setSavedVoiceIds(new Set(d.ids));
+      favoritesLoaded.current = true;
+    }).catch(() => {});
+  }, [isLoggedIn]);
+  useEffect(() => {
+    if (!isLoggedIn || !favoritesLoaded.current) return;
+    fetch('/api/v1/auth/favorites', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: Array.from(savedVoiceIds) }) }).catch(() => {});
+  }, [savedVoiceIds, isLoggedIn]);
 
   // Clean up audio on unmount
   useEffect(() => {
@@ -691,8 +685,8 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
 
     setPlayingVoiceId(voice.id);
 
-    // Speech synthesis fallback for instant Arabic voice playback
-    if ('speechSynthesis' in window) {
+    // Speech synthesis only while the voice has no sample uploaded in the dashboard
+    if (!realSampleUrl(voice.previewUrl) && 'speechSynthesis' in window) {
       const textToSpeak = voice.quote || `هذا نموذج تجريبي لصوت ${voice.name} على منصة قيمة فويس بجودة استوديو ثمانية وأربعين كيلو هرتز.`;
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utterance.lang = 'ar-SA';

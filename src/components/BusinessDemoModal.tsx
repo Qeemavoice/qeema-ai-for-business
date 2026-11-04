@@ -20,12 +20,27 @@ export const BusinessDemoModal: React.FC<BusinessDemoModalProps> = ({ isOpen, on
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [sendError, setSendError] = useState('');
+  // Saved as a message in the admin dashboard (الرسائل)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      // auto close after success
-    }, 2500);
+    setSendError('');
+    try {
+      const r = await fetch('/api/v1/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.contactName, email: formData.email, phone: formData.phone, company: formData.companyName,
+          serviceType: 'demo',
+          message: `طلب عرض توضيحي للشركات\nالقطاع: ${formData.industry}\nالحجم الشهري: ${formData.monthlyVolume}\n${formData.requirements}`
+        })
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setSendError(d.error || 'تعذر الإرسال، حاول مرة أخرى.'); return; }
+      setSubmitted(true);
+    } catch {
+      setSendError('تعذر الإرسال، تحقق من الاتصال وحاول مرة أخرى.');
+    }
   };
 
   return (
@@ -179,7 +194,8 @@ export const BusinessDemoModal: React.FC<BusinessDemoModalProps> = ({ isOpen, on
               </div>
 
               <div className="pt-2">
-                <button
+                {sendError && <p className="text-xs text-red-600">{sendError}</p>}
+              <button
                   type="submit"
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-yellow to-brand-orange text-white font-bold text-sm shadow-lg shadow-brand/25 hover:shadow-xl hover:shadow-brand/35 transition-all flex items-center justify-center gap-2"
                 >

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { dialectOf } from '../data/dialects';
 import { useSiteLists } from '../lib/siteLists';
 import type { UnifiedVoiceItem } from '../data/humanVoices';
-import { useHumanVoices } from '../lib/humanVoices';
+import { useHumanVoices, realSampleUrl } from '../lib/humanVoices';
 import { buildSampleSlug } from './VoiceLibraryView';
 
 interface HumanVoiceDemoItem {
@@ -101,7 +101,13 @@ export const HumanVoicesSection: React.FC<HumanVoicesSectionProps> = ({
 
     setPlayingId(voice.id);
 
-    if ('speechSynthesis' in window) {
+    const file = realSampleUrl(voice.previewUrl);
+    if (file) {
+      const audio = new Audio(file);
+      audioRef.current = audio;
+      audio.play().catch(() => setPlayingId(null));
+      audio.onended = () => setPlayingId(null);
+    } else if ('speechSynthesis' in window) {   // no sample uploaded yet in the dashboard
       const utterance = new SpeechSynthesisUtterance(voice.sampleQuote);
       utterance.lang = 'ar-SA';
       utterance.rate = 0.95;

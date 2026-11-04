@@ -64,6 +64,18 @@ export function getAuthenticatedContext(req: Request) {
 }
 
 // Current authenticated user & company
+/** Voice library favourites (المفضلة), kept on the account. */
+authRouter.get('/favorites', requireUser, (req: Request, res: Response) => {
+  res.json({ ids: currentUser(req)!.savedVoiceIds || [] });
+});
+authRouter.put('/favorites', requireUser, (req: Request, res: Response) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
+  if (!ids) return res.status(400).json({ error: 'قائمة غير صالحة' });
+  const user = currentUser(req)!;
+  user.savedVoiceIds = Array.from(new Set(ids.filter((x: unknown) => typeof x === 'string' && x.length <= 120))).slice(0, 500) as string[];
+  res.json({ ids: user.savedVoiceIds });
+});
+
 authRouter.get('/me', (req: Request, res: Response) => {
   const user = currentUser(req);
   if (!user) return res.status(401).json({ error: 'يلزم تسجيل الدخول' });

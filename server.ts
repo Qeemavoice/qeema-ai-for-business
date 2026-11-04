@@ -9,7 +9,7 @@ import { COMMERCIAL_SERVICES } from './src/data/commercialServicesData';
 import { sitemapHandler, robotsHandler } from './server/routes/sitemap';
 import { authRouter, requireUser, requireAdmin, ensureAdminAccount } from './server/routes/auth';
 import { voicesRouter } from './server/routes/voices';
-import { generationsRouter } from './server/routes/generations';
+import { generationsRouter, ttsTrialRouter } from './server/routes/generations';
 import { creditsRouter } from './server/routes/credits';
 import { usageRouter } from './server/routes/usage';
 import { billingRouter } from './server/routes/billing';
@@ -118,6 +118,7 @@ async function startServer() {
 
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/voices', voicesRouter);
+  app.use('/api/v1/tts/trial', ttsTrialRouter);
   app.use('/api/v1/generations', requireUser, generationsRouter);
   app.use('/api/v1/credits', requireUser, creditsRouter);
   app.use('/api/v1/usage', requireUser, usageRouter);

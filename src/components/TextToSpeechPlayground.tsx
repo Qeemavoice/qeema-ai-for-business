@@ -169,7 +169,7 @@ const toItem = (v: Voice, i: number): TTSVoiceItem => ({
   flag: v.flag || '',
   avatarGradient: GRADIENTS[i % GRADIENTS.length],
   sampleQuote: '',
-  previewUrl: v.previewUrl || ''
+  previewUrl: `/api/v1/voices/${v.id}/preview`
 });
 
 interface TextToSpeechPlaygroundProps {
@@ -191,9 +191,14 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
 }) => {
   const [trialDone, setTrialDone] = useState<boolean>(() => Boolean(onRequireAuth) && trialUsed());
   const live = Boolean(voices);
-  const voiceList: TTSVoiceItem[] = live
-    ? voices!.filter(v => v.type === 'ai' && v.isActive !== false).map(toItem)
-    : ALL_TTS_VOICES;
+  // Visitors see the same dashboard voices (public list); the built-in list is only a fallback.
+  const [publicVoices, setPublicVoices] = useState<Voice[] | null>(null);
+  useEffect(() => {
+    if (voices) return;
+    fetch('/api/v1/voices?type=ai').then(r => (r.ok ? r.json() : null)).then(d => d?.voices && setPublicVoices(d.voices)).catch(() => {});
+  }, [voices]);
+  const serverVoices = (voices || publicVoices || []).filter(v => v.type === 'ai' && v.isActive !== false);
+  const voiceList: TTSVoiceItem[] = serverVoices.length ? serverVoices.map(toItem) : ALL_TTS_VOICES;
   const [pickedVoice, setSelectedVoice] = useState<TTSVoiceItem | null>(null);
   const selectedVoice = (pickedVoice && voiceList.find(v => v.id === pickedVoice.id)) || voiceList[0] || ALL_TTS_VOICES[0];
   const [isGenerating, setIsGenerating] = useState(false);
@@ -245,7 +250,7 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
     setIsPlaying(false);
   };
 
-  const handleTogglePlay = () => {
+  const handleTogglePlay = async () => {
     if (isPlaying) {
       handleStop();
       return;
@@ -257,9 +262,32 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
 
     if (onRequireAuth) {
       if (trialUsed()) { setTrialDone(true); onRequireAuth(); return; }
-      textToSpeak = textToSpeak.slice(0, TRIAL_MAX_CHARS);
-      try { localStorage.setItem(TRIAL_KEY, '1'); } catch {}
-      setTrialDone(true);
+      // Free trial on the real engine (server limits it to one short text per visitor)
+      setGenError(null);
+      setIsGenerating(true);
+      try {
+        const r = await fetch('/api/v1/tts/trial', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: textToSpeak.slice(0, TRIAL_MAX_CHARS), voiceId: selectedVoice.id })
+        });
+        const d = await r.json().catch(() => ({}));
+        try { localStorage.setItem(TRIAL_KEY, '1'); } catch {}
+        setTrialDone(true);
+        if (!r.ok) { setGenError(d.error || 'تعذر توليد الصوت الآن.'); if (r.status === 429) onRequireAuth(); return; }
+        if (!audioRef.current) audioRef.current = new Audio();
+        audioRef.current.src = d.audioUrl;
+        audioRef.current.onended = () => setIsPlaying(false);
+        audioRef.current.onerror = () => setIsPlaying(false);
+        await audioRef.current.play();
+        setIsPlaying(true);
+      } catch {
+        setGenError('تعذر توليد الصوت الآن، حاول بعد قليل.');
+        setIsPlaying(false);
+      } finally {
+        setIsGenerating(false);
+      }
+      return;
     }
 
     setIsPlaying(true);

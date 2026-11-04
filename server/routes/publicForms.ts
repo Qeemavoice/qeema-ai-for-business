@@ -9,7 +9,7 @@ const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const today = () => new Date().toISOString().slice(0, 10);
 
 const SERVICE_LABELS: Record<string, string> = {
-  'voice-over': 'تعليق صوتي', ivr: 'رد آلي IVR', dubbing: 'دوبلاج', podcast: 'بودكاست', audiobook: 'كتب صوتية', other: 'أخرى'
+  'voice-over': 'تعليق صوتي', ivr: 'رد آلي IVR', dubbing: 'دوبلاج', podcast: 'بودكاست', audiobook: 'كتب صوتية', demo: 'طلب عرض توضيحي للشركات', other: 'أخرى'
 };
 
 // «تواصل معنا» -> admin «الرسائل البريدية»

@@ -40,6 +40,8 @@ export interface User {
   isPlatformAdmin?: boolean;
   /** Narrator record owned by this account (talent accounts) */
   narratorId?: string;
+  /** Voices the client saved to المفضلة in the voice library */
+  savedVoiceIds?: string[];
 }
 
 export interface Session {
