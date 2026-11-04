@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { openTalentSignup } from '../lib/talentJoin';
 import { Link, useParams } from 'react-router-dom';
 import { CheckCircle2, ArrowLeft, XCircle } from 'lucide-react';
@@ -36,9 +36,11 @@ const SAMPLE_RULES_NO = [
 export const GuideDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const guide = GUIDES.find(g => g.slug === slug);
-  useSeo(STATIC_SEO_ROUTES['/ar/guides/join-qeema-voice']);
+  const isStatic = Boolean(guide && guide.slug === 'join-qeema-voice');
+  useSeo(isStatic ? STATIC_SEO_ROUTES['/ar/guides/join-qeema-voice'] : { ...STATIC_SEO_ROUTES['/ar/guides'], path: `/ar/guides/${slug || ''}` });
 
-  if (!guide || guide.slug !== 'join-qeema-voice') return <NotFoundPage />;
+  // Guides written in the dashboard keep their own pages (/ar/guides/{id}-{title}, the old site's URL form)
+  if (!isStatic) return <DbGuidePage slug={slug || ''} />;
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20" dir="rtl">
@@ -110,6 +112,45 @@ export const GuideDetailPage: React.FC = () => {
               <ArrowLeft className="w-4 h-4" />
             </button>
           </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+/** A guide of the dashboard (/api/v1/guides): cover, description and the file (free) or a request link (paid). */
+const DbGuidePage: React.FC<{ slug: string }> = ({ slug }) => {
+  const [state, setState] = useState<{ loaded: boolean; guide: any | null }>({ loaded: false, guide: null });
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/v1/guides').then(r => (r.ok ? r.json() : { items: [] })).then(({ items }) => {
+      const decoded = (() => { try { return decodeURIComponent(slug); } catch { return slug; } })();
+      const g = (items || []).find((x: any) => x.slug === decoded || decoded === x.id || decoded.startsWith(`${x.id}-`)) || null;
+      if (alive) setState({ loaded: true, guide: g });
+    }).catch(() => alive && setState({ loaded: true, guide: null }));
+    return () => { alive = false; };
+  }, [slug]);
+  const g = state.guide;
+  useSeo({ ...STATIC_SEO_ROUTES['/ar/guides'], path: `/ar/guides/${slug}`, title: g ? `${g.title} | قيمة فويس` : STATIC_SEO_ROUTES['/ar/guides'].title, description: g?.description || STATIC_SEO_ROUTES['/ar/guides'].description });
+  if (!state.loaded) return <div className="min-h-[50vh]" />;
+  if (!g) return <NotFoundPage />;
+  const card = { slug: g.slug, title: g.title, desc: g.description || '', link: g.file || '', cover: g.cover || '', priceUsd: g.type === 'free' ? null : Number(g.price) || 0, gradient: '' };
+  return (
+    <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20" dir="rtl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <Breadcrumbs items={[{ name: 'الرئيسية', item: '/ar' }, { name: 'الأدلة', item: '/ar/guides' }, { name: g.title, item: `/ar/guides/${slug}` }]} />
+      </div>
+      <section className="py-10 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
+          <GuideCover guide={card as any} className="h-56 sm:h-72 rounded-3xl" />
+          <GuidePriceBadge priceUsd={card.priceUsd} />
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight leading-snug">{g.title}</h1>
+          {g.description && <p className="text-base text-slate-600 leading-relaxed whitespace-pre-line">{g.description}</p>}
+          {card.priceUsd === null && g.file ? (
+            <a href={g.file} target="_blank" rel="noopener" className="inline-flex items-center px-6 py-3 rounded-full bg-brand-ink text-white text-sm font-bold">تحميل الدليل</a>
+          ) : (
+            <a href="/ar/contact-us" className="inline-flex items-center px-6 py-3 rounded-full bg-brand-ink text-white text-sm font-bold">اطلب هذا الدليل</a>
+          )}
         </div>
       </section>
     </div>

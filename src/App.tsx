@@ -313,7 +313,7 @@ export default function App() {
 
           {/* Private / Operational Routes (with noindex) */}
           <Route 
-            path="/ar/dashboard" 
+            path="/ar/account" 
             element={
               <SignInGate user={currentUser} allow={() => true} isLoggedIn={isLoggedIn} title="لوحة العميل" hint="سجّل الدخول لفتح لوحتك ومتابعة رصيدك وتوليداتك وحجوزاتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}>
               <ClientDashboardView
@@ -380,6 +380,8 @@ export default function App() {
               />
             } 
           />
+          {/* the old back office lives at /ar/dashboard on the Laravel host; the client dashboard moved to /ar/account */}
+          <Route path="/ar/dashboard" element={<Navigate to="/ar/account" replace />} />
           <Route path="/ar/chatbot" element={<Navigate to="/ar/voices" replace />} />
           <Route 
             path="/ar/admin" 

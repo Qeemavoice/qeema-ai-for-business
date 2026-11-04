@@ -5,6 +5,8 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    base: process.env.QV_BASE || '/',
+    build: { outDir: process.env.QV_OUT || 'dist', emptyOutDir: true },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

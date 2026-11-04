@@ -1,5 +1,5 @@
 /** Google sign-in through Google Identity Services (popup). Needs VITE_GOOGLE_CLIENT_ID in .env. */
-const CLIENT_ID = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string | undefined;
+const CLIENT_ID = ((import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string | undefined) || ((window as any).__QV_CONFIG?.googleClientId as string | undefined) || undefined;
 const SRC = 'https://accounts.google.com/gsi/client';
 
 export const googleConfigured = Boolean(CLIENT_ID);

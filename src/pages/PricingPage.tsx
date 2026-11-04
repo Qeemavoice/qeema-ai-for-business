@@ -76,7 +76,7 @@ export const PricingPage: React.FC = () => {
     featured: p.featured,
     inheritsFrom: p.inheritsFrom,
     cta: p.isCustom ? 'تواصل مع المبيعات' : p.priceUsd === 0 ? 'ابدأ مجاناً' : `اختر ${p.nameAr}`,
-    ctaTo: p.isCustom ? '/ar/contact-us' : p.priceUsd === 0 ? '/ar/generate' : '/ar/dashboard',
+    ctaTo: p.isCustom ? '/ar/contact-us' : p.priceUsd === 0 ? '/ar/generate' : '/ar/account',
     features: p.features.map(f => ({ icon: PLAN_ICONS[f.icon], text: f.text }))
   }));
 

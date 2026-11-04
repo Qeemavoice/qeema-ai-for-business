@@ -63,7 +63,7 @@ export const sitemapHandler = (_req: Request, res: Response) => {
 
 export const robotsHandler = (_req: Request, res: Response) => {
   res.type('text/plain').send(
-    'User-agent: *\nAllow: /\nDisallow: /ar/admin\nDisallow: /ar/dashboard\nDisallow: /ar/talent-\nDisallow: /ar/claim\nDisallow: /claim/\nDisallow: /ar/generate\nDisallow: /api/\n\n' +
+    'User-agent: *\nAllow: /\nDisallow: /ar/admin\nDisallow: /ar/dashboard\nDisallow: /ar/account\nDisallow: /ar/talent-\nDisallow: /ar/claim\nDisallow: /claim/\nDisallow: /ar/generate\nDisallow: /api/\n\n' +
     `Sitemap: ${SITE}/sitemap.xml\n`
   );
 };
