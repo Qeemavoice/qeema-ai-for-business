@@ -163,41 +163,19 @@ class NarratorService {
     return { narrator: { ...narrator }, isExpired };
   }
 
+  /** Expired link: the server issues a new link and emails it (no SMS provider yet). */
   public async requestNewClaimLink(phoneOrEmail: string): Promise<{ success: boolean; message: string }> {
-    await this.ready;
-    await new Promise(r => setTimeout(r, 600));
-    const narrator = this.narrators.find(n => n.phone.includes(phoneOrEmail) || n.email?.includes(phoneOrEmail));
-    if (narrator) {
-      narrator.claimToken = `token_${narrator.id}_${Date.now()}`;
-      narrator.claimTokenExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
-      narrator.status = 'invited';
-      this.saveState();
-      await this.writeAuditLog(narrator.id, 'claim_link_reissued', { target: phoneOrEmail });
-      return { 
-        success: true, 
-        message: 'تم توليد وإرسال رابط تفعيل جديد بنجاح عبر رسالة نصية SMS.' 
-      };
-    }
-    return {
-      success: true,
-      message: 'إذا كان رقم الجوال مسجلاً، تم إرسال رابط التفعيل الجديد.'
-    };
+    const r = await fetch('/api/v1/narrators/claim-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact: phoneOrEmail }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'تعذر إرسال الطلب');
+    return { success: true, message: d.message };
   }
 
-  public async submitManualReviewRequest(payload: {
-    fullName: string;
-    newPhone: string;
-    notes?: string;
-    token?: string;
-  }): Promise<{ success: boolean; referenceNumber: string }> {
-    await this.ready;
-    await new Promise(r => setTimeout(r, 700));
-    const ref = `MAN-${Math.floor(100000 + Math.random() * 900000)}`;
-    await this.writeAuditLog('manual_review', 'manual_activation_requested', { ...payload, ref });
-    return {
-      success: true,
-      referenceNumber: ref
-    };
+  public async submitManualReviewRequest(payload: { fullName: string; newPhone: string; notes?: string; token?: string }): Promise<{ success: boolean; referenceNumber: string }> {
+    const r = await fetch('/api/v1/narrators/manual-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'تعذر إرسال الطلب');
+    return { success: true, referenceNumber: d.referenceNumber };
   }
 
   /** Claim link: the server emails a code to the narrator's address on file; returns the masked address */
@@ -247,40 +225,25 @@ class NarratorService {
     await this.reload();
   }
 
+  /** Invite links are made on the server (random token) and emailed when SMTP is set. */
   public async sendInvite(narratorId: string): Promise<Narrator> {
     await this.ready;
-    await new Promise(r => setTimeout(r, 400));
-    const narrator = this.narrators.find(n => n.id === narratorId);
-    if (!narrator) throw new Error('المعلق غير موجود');
-
-    narrator.status = 'invited';
-    narrator.claimToken = `token_${narrator.id.replace('narrator_', '')}_${Math.floor(1000 + Math.random() * 9000)}`;
-    narrator.claimTokenExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
-    
-    await this.writeAuditLog(narratorId, 'invite_dispatched', {
-      token: narrator.claimToken,
-      expiresAt: narrator.claimTokenExpiresAt
-    });
-
-    this.saveState();
-    return { ...narrator };
+    await this.saveNow();                      // flush pending edits first: an admin save replaces the whole state
+    const r = await fetch(`/api/v1/narrators/${encodeURIComponent(narratorId)}/invite`, { method: 'POST', headers: this.authHeaders() });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'تعذر إرسال الدعوة');
+    await this.reload();                       // keep the local copy equal to the server (token included)
+    return { ...(this.narrators.find(n => n.id === narratorId) || d.narrator), inviteEmailed: d.emailed } as Narrator;
   }
 
-  public async bulkSendInvites(): Promise<{ count: number }> {
+  public async bulkSendInvites(): Promise<{ count: number; emailed: number }> {
     await this.ready;
-    await new Promise(r => setTimeout(r, 800));
-    let count = 0;
-    this.narrators.forEach(n => {
-      if (n.status === 'unclaimed') {
-        n.status = 'invited';
-        n.claimToken = `token_${n.id.replace('narrator_', '')}_${Math.floor(1000 + Math.random() * 9000)}`;
-        n.claimTokenExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
-        count++;
-        this.writeAuditLog(n.id, 'bulk_invite_sent', { token: n.claimToken });
-      }
-    });
-    this.saveState();
-    return { count };
+    await this.saveNow();                      // flush pending edits first: an admin save replaces the whole state
+    const r = await fetch('/api/v1/narrators/invite-all', { method: 'POST', headers: this.authHeaders() });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'تعذر إرسال الدعوات');
+    await this.reload();
+    return { count: d.count || 0, emailed: d.emailed || 0 };
   }
 
   // -----------------------------------------------------------------
@@ -602,9 +565,17 @@ class NarratorService {
     return { ...contract };
   }
 
+  /** Sends a payout / emergency request to the admin team (admin «الرسائل البريدية»). */
+  private async sendRequest(narratorId: string, body: Record<string, unknown>) {
+    const r = await fetch(`/api/v1/narrators/${encodeURIComponent(narratorId)}/requests`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...this.authHeaders() }, body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'تعذر إرسال الطلب، حاول مرة أخرى.');
+  }
+
   public async requestPayout(narratorId: string, amount: number, payoutMethod: string): Promise<{ success: boolean; newBalance: number }> {
     await this.ready;
-    await new Promise(r => setTimeout(r, 600));
+    await this.sendRequest(narratorId, { type: 'payout', amountUsd: amount, method: payoutMethod });
     await this.writeAuditLog(narratorId, 'payout_requested', {
       amountUsd: amount,
       payoutMethod,
@@ -615,7 +586,7 @@ class NarratorService {
 
   public async submitEmergencyStopRequest(narratorId: string, reason: string, details?: string): Promise<{ success: boolean }> {
     await this.ready;
-    await new Promise(r => setTimeout(r, 500));
+    await this.sendRequest(narratorId, { type: 'emergency', reason, details });
     await this.writeAuditLog(narratorId, 'emergency_stop_requested', {
       reason,
       details,

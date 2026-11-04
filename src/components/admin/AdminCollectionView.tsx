@@ -54,14 +54,16 @@ export const AdminCollectionView: React.FC<Props> = ({ name }) => {
     setEditing(item || {});
   };
 
+  const [saveError, setSaveError] = useState('');
   const persist = async (data: Record<string, any>) => {
     setSaving(true);
     try {
+      setSaveError('');
       if (editing?.id) await api.updateCollectionItem(name, editing.id, data);
       else await api.createCollectionItem(name, { views: 0, ...data, date: data.date || new Date().toISOString().slice(0, 10) });
       setEditing(null);
       await load();
-    } finally { setSaving(false); }
+    } catch (e: any) { setSaveError(e?.message || 'تعذر الحفظ'); } finally { setSaving(false); }
   };
   const save = (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,6 +251,7 @@ export const AdminCollectionView: React.FC<Props> = ({ name }) => {
             ))}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer">إلغاء</button>
+              {saveError && <p className="text-xs text-red-600 w-full">{saveError}</p>}
               <button type="submit" disabled={saving} className="px-5 py-2 rounded-xl bg-brand hover:bg-brand-orange text-white text-xs font-bold cursor-pointer disabled:opacity-50">حفظ</button>
             </div>
           </form>

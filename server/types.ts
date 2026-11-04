@@ -16,6 +16,10 @@ export interface Company {
   contactEmail?: string;
   phone?: string;
   notes?: CustomerNote[];
+  /** Client dashboard «المشاريع» */
+  projects?: { id: string; title: string; description: string; dialect: string; status: 'active' | 'done'; createdAt: string }[];
+  /** Client dashboard «فريق العمل» invitations */
+  teamInvites?: { id: string; name: string; email: string; invitedAt: string; emailed: boolean }[];
 }
 
 export interface CustomerNote {

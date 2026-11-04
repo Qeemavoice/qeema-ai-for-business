@@ -232,12 +232,12 @@ export const api = {
   },
   async createCollectionItem(name: string, data: any): Promise<any> {
     const res = await fetch(`/api/v1/admin/collections/${name}`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
-    if (!res.ok) throw new Error('فشل الإضافة');
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'فشل الإضافة');
     return (await res.json()).item;
   },
   async updateCollectionItem(name: string, id: string, data: any): Promise<any> {
     const res = await fetch(`/api/v1/admin/collections/${name}/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) });
-    if (!res.ok) throw new Error('فشل الحفظ');
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'فشل الحفظ');
     return (await res.json()).item;
   },
   async deleteCollectionItem(name: string, id: string): Promise<void> {

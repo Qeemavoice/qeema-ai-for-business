@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { db } from '../db/store';
 import { collections } from '../db/collections';
 
 /** Public (no login) endpoints: the site's forms land in the admin dashboard, and FAQs are read from it. */
@@ -9,7 +10,7 @@ const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const today = () => new Date().toISOString().slice(0, 10);
 
 const SERVICE_LABELS: Record<string, string> = {
-  'voice-over': 'تعليق صوتي', ivr: 'رد آلي IVR', dubbing: 'دوبلاج', podcast: 'بودكاست', audiobook: 'كتب صوتية', demo: 'طلب عرض توضيحي للشركات', other: 'أخرى'
+  'voice-over': 'تعليق صوتي', ivr: 'رد آلي IVR', dubbing: 'دوبلاج', podcast: 'بودكاست', audiobook: 'كتب صوتية', demo: 'طلب عرض توضيحي للشركات', project: 'طلب مشروع صوتي', other: 'أخرى'
 };
 
 // «تواصل معنا» -> admin «الرسائل البريدية»
@@ -25,6 +26,19 @@ publicFormsRouter.post('/contact', (req: Request, res: Response) => {
     message: extra ? `${message}\n\n${extra}` : message, status: 'unread', date: today()
   });
   res.json({ success: true, id: item.id });
+});
+
+// Footer newsletter form -> admin «القائمة البريدية»
+publicFormsRouter.post('/newsletter', (req: Request, res: Response) => {
+  const email = text(req.body.email, 120).toLowerCase();
+  if (!emailOk(email)) return res.status(400).json({ error: 'أدخل بريداً إلكترونياً صحيحاً' });
+  if (!collections.list('newsletter').some(n => String(n.email).toLowerCase() === email)) collections.create('newsletter', { email, date: today() });
+  res.json({ success: true });
+});
+
+// Maintenance mode (admin «إعدادات الصيانة»), read by the site on load
+publicFormsRouter.get('/site-status', (_req: Request, res: Response) => {
+  res.json({ maintenance: Boolean(db.systemSettings.maintenanceMode) });
 });
 
 // «انضم كمعلق صوتي» (/ar/jobs) -> admin «الوظائف» (طلبات التقديم)

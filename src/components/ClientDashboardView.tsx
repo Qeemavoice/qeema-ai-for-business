@@ -78,48 +78,14 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Interactive Projects
-  const [projects, setProjects] = useState([
-    {
-      id: 'proj-1',
-      title: 'حملة إعلانات اليوم الوطني 94',
-      description: 'نصوص إعلانية موجهة لمنصات السوشيال ميديا والتلفزيون بلهجة نجدية وحجازية',
-      dialect: 'سعودي (نجدي وحجازي)',
-      progress: 92,
-      clipsCount: 14,
-      totalChars: 18400,
-      status: 'active'
-    },
-    {
-      id: 'proj-2',
-      title: 'نظام الرد الصوتي التفاعلي للمصرف (IVR Banking)',
-      description: 'رسائل الترحيب وتوجيه عملاء الخدمات المصرفية الخاصة وعمليات البطاقات',
-      dialect: 'عربي فصيح معاصر',
-      progress: 78,
-      clipsCount: 22,
-      totalChars: 31200,
-      status: 'active'
-    },
-    {
-      id: 'proj-3',
-      title: 'بودكاست "أفق الابتكار" - الموسم الثاني',
-      description: 'افتتاحيات الحلقات والتعليق الصوتي الفاصل بين فقرات التقنية والذكاء الاصطناعي',
-      dialect: 'فصحى إذاعية وقورة',
-      progress: 100,
-      clipsCount: 8,
-      totalChars: 12500,
-      status: 'completed'
-    },
-    {
-      id: 'proj-4',
-      title: 'حقيبة التدريب المهني لمنسوبي الشركة',
-      description: 'سرد تدريبي تعليمي مريح للمقررات الإلكترونية وأنظمة الامتثال والحوكمة',
-      dialect: 'فصحى تعليمية هادئة',
-      progress: 45,
-      clipsCount: 19,
-      totalChars: 46000,
-      status: 'in_progress'
-    }
-  ]);
+  // «المشاريع» and «فريق العمل» are kept on the company account (/api/v1/client/projects, /team)
+  const [projects, setProjects] = useState<any[]>([]);
+  const [team, setTeam] = useState<{ members: { id: string; name: string; email: string; role: string }[]; invites: { id: string; name: string; email: string; invitedAt: string; emailed: boolean }[] }>({ members: [], invites: [] });
+  const [inviteError, setInviteError] = useState('');
+  useEffect(() => {
+    fetch('/api/v1/client/projects').then(r => (r.ok ? r.json() : null)).then(d => d && setProjects(d.projects)).catch(() => {});
+    fetch('/api/v1/client/team').then(r => (r.ok ? r.json() : null)).then(d => d && setTeam(d)).catch(() => {});
+  }, []);
 
 
 
@@ -209,22 +175,31 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
     setGenerations([newGen, ...generations]);
   };
 
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     if (!newProjectTitle.trim()) return;
-    const newProj = {
-      id: `proj-${Date.now()}`,
-      title: newProjectTitle.trim(),
-      description: newProjectDesc.trim() || 'مشروع صوتي جديد للمنشأة',
-      dialect: newProjectDialect,
-      progress: 5,
-      clipsCount: 1,
-      totalChars: 850,
-      status: 'active'
-    };
-    setProjects([newProj, ...projects]);
+    const r = await fetch('/api/v1/client/projects', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newProjectTitle.trim(), description: newProjectDesc.trim(), dialect: newProjectDialect })
+    }).catch(() => null);
+    if (!r?.ok) return;
+    const { project } = await r.json();
+    setProjects([project, ...projects]);
     setNewProjectTitle('');
     setNewProjectDesc('');
     setIsNewProjectModalOpen(false);
+  };
+
+  const handleSendInvite = async () => {
+    setInviteError('');
+    const r = await fetch('/api/v1/client/team/invite', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: inviteName.trim(), email: inviteEmail.trim() })
+    }).catch(() => null);
+    const d = await r?.json().catch(() => ({}));
+    if (!r?.ok) { setInviteError(d?.error || 'تعذر إرسال الدعوة'); return; }
+    setTeam(t => ({ ...t, invites: [d.invite, ...t.invites] }));
+    setIsInviteModalOpen(false);
+    setInviteName('');
+    setInviteEmail('');
   };
 
   const handleCreateVoice = () => {
@@ -393,20 +368,29 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
               </div>
 
               <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs divide-y divide-slate-100 overflow-hidden">
-                <div className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-brand/20 text-brand-text font-bold flex items-center justify-center text-xs">
-                      {currentUser?.name?.charAt(0) || 'أ'}
+                {(team.members.length ? team.members : currentUser ? [{ id: currentUser.id, name: currentUser.name, email: currentUser.email, role: 'admin' }] : []).map(m => (
+                  <div key={m.id} className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-brand/20 text-brand-text font-bold flex items-center justify-center text-xs">{m.name?.charAt(0) || '؟'}</div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">{m.name}{m.id === currentUser?.id ? ' (أنت)' : ''}</div>
+                        <div className="text-[11px] text-slate-400" dir="ltr">{m.email}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900">{currentUser?.name || 'أحمد العتيبي'} (أنت)</div>
-                      <div className="text-[11px] text-slate-400">{currentUser?.email || 'a.otaibi@horizon-agency.sa'}</div>
-                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">{m.role === 'admin' ? 'مدير الحساب' : 'عضو'}</span>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                    مدير الحساب (Admin)
-                  </span>
-                </div>
+                ))}
+                {team.invites.map(inv => (
+                  <div key={inv.id} className="p-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{inv.name}</div>
+                      <div className="text-[11px] text-slate-400" dir="ltr">{inv.email}</div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                      {inv.emailed ? 'دعوة مرسلة' : 'دعوة محفوظة (البريد غير مفعّل)'}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -629,6 +613,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
               </div>
             </div>
 
+            {inviteError && <p className="text-xs text-red-600">{inviteError}</p>}
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 onClick={() => setIsInviteModalOpen(false)}
@@ -637,11 +622,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
                 إلغاء
               </button>
               <button
-                onClick={() => {
-                  setIsInviteModalOpen(false);
-                  setInviteName('');
-                  setInviteEmail('');
-                }}
+                onClick={handleSendInvite}
                 disabled={!inviteName.trim() || !inviteEmail.trim()}
                 className="px-5 py-2 rounded-xl bg-brand-ink hover:bg-brand-ink/90 disabled:bg-slate-300 text-white text-xs font-bold shadow-md transition-all"
               >

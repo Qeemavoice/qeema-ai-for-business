@@ -215,6 +215,13 @@ export default function App() {
     catch (err: any) { alert(err.message || 'تعذر تسجيل الدخول عبر Google'); }
   };
 
+  // «إعدادات الصيانة» in the admin dashboard: visitors see a maintenance page, admins keep working
+  const [maintenance, setMaintenance] = useState(false);
+  useEffect(() => {
+    fetch('/api/v1/site-status').then(r => (r.ok ? r.json() : null)).then(d => setMaintenance(Boolean(d?.maintenance))).catch(() => {});
+  }, []);
+  const siteClosed = maintenance && !currentUser?.isPlatformAdmin && !window.location.pathname.startsWith('/ar/admin');
+
   return (
     <BrowserRouter>
       <AppLayout
@@ -227,7 +234,7 @@ export default function App() {
         onLogout={logout}
         onOpenChangelog={() => setIsChangelogOpen(true)}
       >
-        <Routes>
+        {siteClosed ? <MaintenancePage onLogin={() => setAuthModalMode('login')} /> : <Routes>
           {/* Section 1: / redirects to /ar via <Navigate replace /> */}
           <Route path="/" element={<Navigate to="/ar" replace />} />
 
@@ -390,7 +397,7 @@ export default function App() {
 
           {/* 404 Catch-All */}
           <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        </Routes>}
       </AppLayout>
 
       {/* Global Interactive Modals */}
@@ -444,3 +451,12 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
+/** Shown to visitors while the admin turns on maintenance mode. */
+const MaintenancePage: React.FC<{ onLogin: () => void }> = ({ onLogin }) => (
+  <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6 py-24 gap-4" dir="rtl">
+    <h1 className="text-2xl sm:text-3xl font-black text-slate-950">الموقع تحت الصيانة</h1>
+    <p className="text-sm text-slate-500 max-w-md">نعمل على تحسين منصة قيمة فويس، وسنعود خلال وقت قصير. شكراً لصبركم.</p>
+    <button type="button" onClick={onLogin} className="text-xs text-slate-400 hover:text-slate-700 underline cursor-pointer">دخول فريق الإدارة</button>
+  </div>
+);

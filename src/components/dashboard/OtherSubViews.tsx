@@ -65,6 +65,11 @@ export const ProjectsSubView: React.FC<ProjectsSubViewProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {projects.length === 0 && (
+          <div className="md:col-span-2 p-8 text-center bg-white rounded-3xl border border-dashed border-slate-300 text-xs text-slate-500">
+            لا توجد مشاريع بعد. أنشئ مشروعك الأول لتنظيم نصوصك وتسجيلاتك.
+          </div>
+        )}
         {projects.map((proj) => (
           <div
             key={proj.id}
@@ -80,21 +85,8 @@ export const ProjectsSubView: React.FC<ProjectsSubViewProps> = ({
               </div>
             </div>
 
-            <div className="space-y-1.5 pt-2 border-t border-slate-100">
-              <div className="flex justify-between text-xs text-slate-600 font-bold">
-                <span>نسبة الإنجاز</span>
-                <span>{proj.progress}%</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-brand h-full rounded-full transition-all"
-                  style={{ width: `${proj.progress}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-2 text-xs text-slate-400">
-              <span>{proj.clipsCount} مقاطع صوتية • {proj.totalChars?.toLocaleString()} حرف</span>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-400">
+              <span>أُنشئ {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('ar-SA') : ''}</span>
               <button
                 onClick={() => onNavigateToStudio(proj.title)}
                 className="text-brand-text font-bold hover:underline"

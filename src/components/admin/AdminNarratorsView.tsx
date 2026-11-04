@@ -82,15 +82,17 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
   const pendingSamples = samples.filter(s => s.status === 'pending_review').length;
 
   const sendInvite = async (id: string) => {
-    const u = await narratorService.sendInvite(id);
-    setNarrators(p => p.map(n => n.id === id ? u : n));
-    flash('تم إرسال رابط التفعيل إلى المعلق');
+    try {
+      const u = await narratorService.sendInvite(id) as Narrator & { inviteEmailed?: boolean };
+      setNarrators(p => p.map(n => n.id === id ? u : n));
+      flash(u.inviteEmailed ? 'تم إرسال رابط التفعيل إلى بريد المعلق' : 'تم إنشاء رابط التفعيل. البريد غير مفعّل (SMTP)، انسخ الرابط وأرسله للمعلق');
+    } catch (e: any) { flash(e?.message || 'تعذر إرسال الدعوة'); }
   };
   const bulkInvite = async () => {
     setBulkSending(true);
-    try { const r = await narratorService.bulkSendInvites(); await load(); flash(`تم إرسال الدعوات لـ (${r.count}) معلقين`); } finally { setBulkSending(false); }
+    try { const r = await narratorService.bulkSendInvites(); await load(); flash(`تم إنشاء ${r.count} رابط تفعيل، وأُرسل منها بالبريد ${r.emailed}`); } finally { setBulkSending(false); }
   };
-  const copyLink = (token: string) => { navigator.clipboard?.writeText(`${window.location.origin}/?view=claim&token=${token}`); flash('تم نسخ رابط التفعيل'); };
+  const copyLink = (token: string) => { navigator.clipboard?.writeText(`${window.location.origin}/claim/${token}`); flash('تم نسخ رابط التفعيل'); };
 
   const exportExcel = () => exportToExcel<Narrator>('narrators', 'المعلقون', [
     { header: 'المعرّف', value: 'id', width: 22 },

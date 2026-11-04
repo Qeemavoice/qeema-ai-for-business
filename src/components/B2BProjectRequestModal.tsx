@@ -67,9 +67,35 @@ export const B2BProjectRequestModal: React.FC<B2BProjectRequestModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [sendError, setSendError] = useState('');
+  const [sending, setSending] = useState(false);
+  // Saved in the admin dashboard «الرسائل البريدية» as «طلب مشروع صوتي»
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSendError('');
+    setSending(true);
+    try {
+      const r = await fetch('/api/v1/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.contactName, email: formData.email, phone: formData.phone, company: formData.companyName, serviceType: 'project',
+          message: [
+            `نوع المشروع: ${formData.projectType}`, `اللهجة: ${formData.dialect}`, `الجنس: ${formData.gender}`, `الأسلوب: ${formData.performanceStyle}`,
+            `عدد الأصوات: ${formData.voiceCount}`, `الموعد: ${formData.deadline}`, `الاستخدام: ${formData.usageType}`,
+            formData.selectedVoiceName && `الصوت المختار: ${formData.selectedVoiceName}`,
+            `المدة التقديرية: ${durationMinutes} دقيقة • التكلفة التقديرية: $${finalCostUsd}`, '', formData.projectBrief
+          ].filter(Boolean).join('\n')
+        })
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setSendError(d.error || 'تعذر إرسال الطلب، حاول مرة أخرى.'); return; }
+      setSubmitted(true);
+    } catch {
+      setSendError('تعذر الإرسال، تحقق من الاتصال وحاول مرة أخرى.');
+    } finally {
+      setSending(false);
+    }
   };
 
   const resetAndClose = () => {
@@ -368,9 +394,11 @@ export const B2BProjectRequestModal: React.FC<B2BProjectRequestModalProps> = ({
                   >
                     إلغاء
                   </button>
+                  {sendError && <span className="text-xs text-red-600">{sendError}</span>}
                   <button
                     type="submit"
-                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-ink text-white font-bold hover:bg-brand-ink/90 transition-all shadow-md cursor-pointer"
+                    disabled={sending}
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-ink disabled:opacity-60 text-white font-bold hover:bg-brand-ink/90 transition-all shadow-md cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5 text-brand-text" />
                     <span>إرسال طلب المشروع</span>

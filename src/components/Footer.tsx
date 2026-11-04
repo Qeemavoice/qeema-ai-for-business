@@ -29,6 +29,15 @@ export const Footer: React.FC<FooterProps> = ({ onOpenChangelog }) => {
   React.useEffect(() => {
     fetch('/api/v1/jobs').then(r => (r.ok ? r.json() : Promise.reject())).then(({ items }) => setHasJobs(items.length > 0)).catch(() => {});
   }, []);
+  const [nlEmail, setNlEmail] = React.useState('');
+  const [nlState, setNlState] = React.useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+  const subscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNlState('sending');
+    const r = await fetch('/api/v1/newsletter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: nlEmail }) }).catch(() => null);
+    setNlState(r?.ok ? 'done' : 'error');
+    if (r?.ok) setNlEmail('');
+  };
   return (
     <footer className="bg-slate-950 text-white border-t border-slate-800 pt-16 pb-12" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
@@ -54,6 +63,22 @@ export const Footer: React.FC<FooterProps> = ({ onOpenChangelog }) => {
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
               منصة قيمة فويس، أكبر منصة عربية لخدمات التعليق الصوتي، فويس اوفر، دوبلاج صوتي. احجز الآن من بين آلاف المعلقين الصوتيين المحترفين على مستوى الوطن العربي.
             </p>
+
+            {/* Newsletter -> admin «القائمة البريدية» */}
+            <form onSubmit={subscribe} className="flex items-center gap-2 max-w-sm pt-1">
+              <input
+                type="email"
+                required
+                value={nlEmail}
+                onChange={e => { setNlEmail(e.target.value); setNlState('idle'); }}
+                placeholder="بريدك لتصلك أحدث عينات وعروض التعليق الصوتي"
+                aria-label="البريد الإلكتروني للنشرة البريدية"
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-brand"
+              />
+              <button type="submit" disabled={nlState === 'sending'} className="px-4 py-2 rounded-xl bg-white text-slate-950 text-xs font-bold hover:bg-slate-200 disabled:opacity-60 cursor-pointer shrink-0">اشترك</button>
+            </form>
+            {nlState === 'done' && <p className="text-[11px] text-emerald-400">تم الاشتراك في النشرة البريدية.</p>}
+            {nlState === 'error' && <p className="text-[11px] text-red-400">تعذر الاشتراك، تحقق من البريد وحاول مرة أخرى.</p>}
 
             <div className="pt-2">
               <button

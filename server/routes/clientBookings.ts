@@ -1,9 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db/store';
 import { collections } from '../db/collections';
+import { libraryVoices } from './collections';
 import { getAuthenticatedContext, currentUser, requireUser } from './auth';
 import { finalPrice, narratorShareOf } from '../../shared/pricing';
 import type { HumanBooking } from '../types';
+import { sendMail } from '../mailer';
+import crypto from 'crypto';
 
 /** Client-side endpoints: own bookings (review + invoice data) and feedback to the admins. */
 export const clientRouter = Router();
@@ -18,7 +21,7 @@ const LICENSES = ['commercial_ads', 'internal_corporate', 'broadcast_tv', 'elear
 
 /** What the client may see of a booking: no payout, no contact details, no reviewer name. */
 const clientView = (b: HumanBooking) => {
-  const voice = collections.list('humanVoices').find(v => v.id === b.sampleId);
+  const voice = libraryVoices().find(v => v.id === b.sampleId);
   const chars = b.charCount ?? Array.from(b.scriptText || '').length;
   return {
     id: b.id, status: b.status, scriptText: b.scriptText, notes: b.notes, usageLicense: b.usageLicense,
@@ -46,7 +49,7 @@ clientRouter.post('/bookings', (req: Request, res: Response) => {
   const scriptText = String(req.body.scriptText || '').trim();
   if (!scriptText) return res.status(400).json({ error: 'اكتب نص المشروع' });
   const sampleId = String(req.body.sampleId || '');
-  const voice = collections.list('humanVoices').find(v => v.id === sampleId);
+  const voice = libraryVoices().find(v => v.id === sampleId);
   const usageLicense = LICENSES.includes(req.body.usageLicense) ? req.body.usageLicense : 'commercial_ads';
   const contact = { name: String(req.body.customerName || '').slice(0, 120), email: String(req.body.customerEmail || '').slice(0, 160), whatsapp: String(req.body.customerWhatsapp || '').slice(0, 40) };
   if (!contact.name || !contact.email || contact.whatsapp.replace(/\D/g, '').length < 8) return res.status(400).json({ error: 'أدخل الاسم والبريد ورقم واتساب صحيح' });
@@ -103,4 +106,47 @@ clientRouter.post('/feedback', requireUser, (req: Request, res: Response) => {
     message, status: 'unread', date: new Date().toISOString().slice(0, 10)
   });
   res.json({ success: true, id: item.id });
+});
+
+// ---------- Client dashboard «المشاريع» (kept on the company account) ----------
+const clip = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
+
+clientRouter.get('/projects', requireUser, (req: Request, res: Response) => {
+  res.json({ projects: getAuthenticatedContext(req).company.projects || [] });
+});
+clientRouter.post('/projects', requireUser, (req: Request, res: Response) => {
+  const { company } = getAuthenticatedContext(req);
+  const title = clip(req.body.title, 120);
+  if (!title) return res.status(400).json({ error: 'اكتب اسم المشروع' });
+  const p = { id: `proj-${crypto.randomUUID()}`, title, description: clip(req.body.description, 500), dialect: clip(req.body.dialect, 60), status: 'active' as const, createdAt: new Date().toISOString() };
+  company.projects = [p, ...(company.projects || [])].slice(0, 200);
+  res.json({ project: p });
+});
+clientRouter.delete('/projects/:id', requireUser, (req: Request, res: Response) => {
+  const { company } = getAuthenticatedContext(req);
+  company.projects = (company.projects || []).filter(p => p.id !== req.params.id);
+  res.json({ ok: true });
+});
+
+// ---------- Client dashboard «فريق العمل»: invitations by email ----------
+clientRouter.get('/team', requireUser, (req: Request, res: Response) => {
+  const { company } = getAuthenticatedContext(req);
+  const members = Array.from(db.users.values()).filter(u => u.companyId === company.id).map(u => ({ id: u.id, name: u.name, email: u.email, role: u.role }));
+  res.json({ members, invites: company.teamInvites || [] });
+});
+clientRouter.post('/team/invite', requireUser, async (req: Request, res: Response) => {
+  const { company, user } = getAuthenticatedContext(req);
+  const name = clip(req.body.name, 100), email = clip(req.body.email, 160).toLowerCase();
+  if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'أدخل الاسم وبريداً إلكترونياً صحيحاً' });
+  if ((company.teamInvites || []).some(i => i.email === email)) return res.status(400).json({ error: 'تمت دعوة هذا البريد من قبل' });
+  const origin = process.env.SITE_URL || `${req.protocol}://${req.get('host')}`;
+  let emailed = false;
+  try {
+    await sendMail(email, `دعوة للانضمام إلى ${company.name} في قيمة فويس`,
+      `مرحباً ${name}،\nدعاك ${user.name} للانضمام إلى مساحة عمل «${company.name}» في قيمة فويس.\nأنشئ حسابك من هنا: ${origin}/ar`);
+    emailed = true;
+  } catch { /* SMTP not set: the invite is kept and can be resent later */ }
+  const invite = { id: `inv-${crypto.randomUUID()}`, name, email, invitedAt: new Date().toISOString(), emailed };
+  company.teamInvites = [invite, ...(company.teamInvites || [])].slice(0, 100);
+  res.json({ invite });
 });

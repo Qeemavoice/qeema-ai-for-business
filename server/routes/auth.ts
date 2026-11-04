@@ -9,6 +9,7 @@ import type { NextFunction } from 'express';
 import type { User } from '../types';
 import { saveDb } from '../db/persist';
 import { verifiedClaims } from './narrators';
+import { collections } from '../db/collections';
 
 // ---------- passwords & sessions ----------
 export const hashPassword = (password: string) => {
@@ -30,9 +31,16 @@ const newSession = (userId: string) => {
   return token;
 };
 /** What the browser may see of a user */
+/**
+ * Platform admin: the .env.local admin, or an account the admins added in «إدارة المشرفين»
+ * (active row bound to that account's id when it was saved, so a later sign-up with the email gets nothing).
+ */
+export const isAdmin = (u?: User | null) => !!u && (u.isPlatformAdmin === true ||
+  collections.list('admins').some(a => a.status === 'active' && a.userId === u.id));
+
 export const publicUser = (u: User) => {
   const { passwordHash, ...rest } = u;
-  return rest;
+  return { ...rest, isPlatformAdmin: isAdmin(u) };
 };
 const tokenOf = (req: Request) => {
   const h = String(req.headers.authorization || '');
@@ -50,7 +58,7 @@ export const requireUser = (req: Request, res: Response, next: NextFunction) =>
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   const u = currentUser(req);
   if (!u) return res.status(401).json({ error: 'يلزم تسجيل دخول الإدارة' });
-  if (!u.isPlatformAdmin) return res.status(403).json({ error: 'هذه الصفحة لفريق إدارة قيمة فويس فقط' });
+  if (!isAdmin(u)) return res.status(403).json({ error: 'هذه الصفحة لفريق إدارة قيمة فويس فقط' });
   next();
 };
 
@@ -58,7 +66,7 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
 export function getAuthenticatedContext(req: Request) {
   const user = currentUser(req)!;
   const asked = req.headers['x-company-id'] as string;
-  const company = (user?.isPlatformAdmin && asked && db.companies.get(asked)) || db.companies.get(user?.companyId) || Array.from(db.companies.values())[0];
+  const company = (isAdmin(user) && asked && db.companies.get(asked)) || db.companies.get(user?.companyId) || Array.from(db.companies.values())[0];
   const balance = db.getCompanyBalance(company.id);
   return { company, user, balance };
 }
@@ -84,7 +92,7 @@ authRouter.get('/me', (req: Request, res: Response) => {
     user: publicUser(user),
     company,
     balanceCredits: balance,
-    availableCompanies: user.isPlatformAdmin ? Array.from(db.companies.values()) : [company],
+    availableCompanies: isAdmin(user) ? Array.from(db.companies.values()) : [company],
   });
 });
 
