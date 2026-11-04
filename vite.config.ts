@@ -6,7 +6,8 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     base: process.env.QV_BASE || '/',
-    build: { outDir: process.env.QV_OUT || 'dist', emptyOutDir: true },
+    // QV_OUT = Laravel build: media of public/ are synced by scripts/export-seo.ts into the host's public/, not copied under new-ui/
+    build: { outDir: process.env.QV_OUT || 'dist', emptyOutDir: true, copyPublicDir: !process.env.QV_OUT },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
