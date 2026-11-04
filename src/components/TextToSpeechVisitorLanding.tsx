@@ -32,6 +32,7 @@ import {
   Star,
   Quote
 } from 'lucide-react';
+import { GlassyVoiceOrb } from './GlassyVoiceOrb';
 import { AI_VOICES_CATALOG } from '../data/aiVoicesCatalog';
 import { PLANS, SIGNUP_BONUS_CREDITS } from '../../shared/plans';
 
@@ -360,17 +361,14 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
                         >
                           {/* Play button + Info */}
                           <div className="flex items-center gap-3 min-w-0">
-                            <button
-                              onClick={() => handleTogglePlayVoice(voice.id, voice.previewUrl)}
-                              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                                isPlayingThis
-                                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
-                                  : 'bg-brand-ink text-white hover:bg-brand-ink/90'
-                              }`}
-                              aria-label={isPlayingThis ? 'إيقاف مؤقت' : 'تشغيل العينة'}
-                            >
-                              {isPlayingThis ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current translate-x-[-0.5px]" />}
-                            </button>
+                            <GlassyVoiceOrb
+                              gradient=""
+                              voiceId={voice.id}
+                              size="md"
+                              isVerified={false}
+                              isPlaying={isPlayingThis}
+                              onTogglePlay={() => handleTogglePlayVoice(voice.id, voice.previewUrl)}
+                            />
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">

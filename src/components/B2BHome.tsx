@@ -364,7 +364,7 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
               <button
                 type="button"
                 onClick={onOpenSignup || onOpenDemo}
-                className="px-6 py-2.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-sm font-bold transition-colors cursor-pointer shrink-0"
+                className="px-6 py-2.5 rounded-full bg-brand-ink hover:bg-brand-ink/90 text-white text-sm font-bold shadow-md transition-colors cursor-pointer shrink-0"
               >
                 إنشاء حساب مجاناً
               </button>

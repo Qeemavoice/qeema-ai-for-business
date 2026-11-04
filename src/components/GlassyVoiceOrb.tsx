@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, Pause, Check } from 'lucide-react';
+import { LiquidLogo, variantFor } from './LiquidLogo';
 
 export interface GlassyVoiceOrbProps {
   gradient: string;
@@ -10,6 +11,8 @@ export interface GlassyVoiceOrbProps {
   className?: string;
   showPlayButton?: boolean;
   title?: string;
+  /** When given, shows the liquid glass logo (look picked from the id) instead of the gradient circle. */
+  voiceId?: string;
 }
 
 /**
@@ -25,7 +28,8 @@ export const GlassyVoiceOrb: React.FC<GlassyVoiceOrbProps> = ({
   size = 'md',
   className = '',
   showPlayButton = true,
-  title
+  title,
+  voiceId
 }) => {
   const sizeMap = {
     sm: 'w-8 h-8',
@@ -47,6 +51,29 @@ export const GlassyVoiceOrb: React.FC<GlassyVoiceOrbProps> = ({
     lg: 'w-3.5 h-3.5',
     xl: 'w-4 h-4'
   };
+
+  if (voiceId) {
+    const px = { sm: 36, md: 44, lg: 52, xl: 60 }[size];
+    return (
+      <div className={`relative shrink-0 select-none ${className}`} title={title}>
+        <button type="button" onClick={onTogglePlay} className="relative block cursor-pointer group active:scale-95 transition-transform" style={{ width: px, height: px }} aria-label={isPlaying ? 'إيقاف العينة' : 'تشغيل العينة'}>
+          <LiquidLogo variant={variantFor(voiceId)} size={px} live={isPlaying} playing={isPlaying} />
+          {showPlayButton && (
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className={`rounded-full flex items-center justify-center bg-white text-slate-950 shadow-md transition-opacity ${playSizeMap[size]} ${isPlaying ? 'opacity-100' : 'opacity-90 sm:opacity-0 group-hover:opacity-100'}`}>
+                {isPlaying ? <Pause className={`${iconSizeMap[size]} fill-current`} /> : <Play className={`${iconSizeMap[size]} fill-current mr-0.5`} />}
+              </span>
+            </span>
+          )}
+        </button>
+        {isVerified && (
+          <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center shadow-xs z-10 pointer-events-none" title="صوت موثق ومرخص رسمياً">
+            <Check className="w-2 h-2 text-white stroke-[3.5]" />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`relative shrink-0 select-none ${className}`} title={title}>

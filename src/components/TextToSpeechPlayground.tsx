@@ -9,6 +9,7 @@ import {
   Sparkles,
   Volume2
 } from 'lucide-react';
+import { LiquidLogo, variantFor } from './LiquidLogo';
 import { api } from '../lib/api';
 import type { Voice } from '../types';
 
@@ -354,10 +355,7 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Avatar with black checkmark badge */}
                         <div className="relative shrink-0">
-                          <div 
-                            className="w-10 h-10 rounded-full shadow-inner border border-white"
-                            style={{ background: voice.avatarGradient }}
-                          />
+                          <LiquidLogo variant={variantFor(voice.id)} size={40} live={isPlaying} playing={isPlaying} />
                           <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-slate-950 text-white flex items-center justify-center text-[9px] border border-white font-bold">
                             ✓
                           </span>
@@ -402,10 +400,7 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {/* Avatar */}
-                      <div 
-                        className="w-9 h-9 rounded-full shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
-                        style={{ background: voice.avatarGradient }}
-                      />
+                      <LiquidLogo variant={variantFor(voice.id)} size={36} className="shrink-0 group-hover:scale-105 transition-transform" />
 
                       {/* Name */}
                       <span className="font-semibold text-sm text-slate-800 group-hover:text-slate-950 transition-colors truncate">

@@ -189,6 +189,7 @@ export const HumanVoicesSection: React.FC<HumanVoicesSectionProps> = ({
                     {/* Voice Glassy Orb Avatar (Matching Voices Page) */}
                     <GlassyVoiceOrb
                       gradient={voice.glassGradient}
+                      voiceId={voice.id}
                       isPlaying={isPlaying}
                       isVerified={true}
                       onTogglePlay={(e) => {
