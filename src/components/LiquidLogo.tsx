@@ -1,11 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 /**
  * The 3D glass play-triangle (Qeema logo) with liquid colour inside, from the designer's
- * transparent renders (public/logo-motion). Still image when idle, looping video when live;
- * while a voice plays the loop speeds up with the loudness (same smoothing as render_liquid.py).
- * Assets were made from transparent.zip: 608px centre crop, 320px, 24fps
- * (WebM VP9 alpha for Chrome/Firefox, HEVC alpha MP4 for Safari).
+ * transparent renders (public/logo-motion). Still WebP when idle, animated WebP when live;
+ * while a voice plays the glass breathes with the loudness (same smoothing as render_liquid.py).
+ * Animated WebP, not video: transparent video (VP9/HEVC alpha) rendered invisible in some Chromium
+ * builds. Assets from transparent.zip: 608px centre crop, 240px, 12fps, 3.5s ping-pong loop.
  */
 export const LIQUID_VARIANTS = ['lilac', 'ember', 'garnet', 'grove'] as const;
 
@@ -16,7 +16,6 @@ export const variantFor = (id: string) => {
   return Math.abs(h) % LIQUID_VARIANTS.length;
 };
 
-const isSafari = () => typeof navigator !== 'undefined' && /Apple/.test(navigator.vendor) && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 // ---- Audio energy: one analyser per media element (an element can only be wired once) ----
@@ -55,16 +54,17 @@ interface LiquidLogoProps {
 
 export const LiquidLogo: React.FC<LiquidLogoProps> = ({ variant, size, live = false, playing = false, audio, spray = false, className = '' }) => {
   const look = LIQUID_VARIANTS[variant % LIQUID_VARIANTS.length];
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const playingRef = useRef(playing);
   playingRef.current = playing;
   const animate = live && !reducedMotion();
+  const [loadedLook, setLoadedLook] = useState<string | null>(null);   // which animation has finished loading
+  const animReady = animate && loadedLook === look;
   const zoom = spray ? 1 : 1.45;   // the glass fills about 2/3 of the frame
 
   useEffect(() => {
-    const v = videoRef.current;
-    if (!animate || !v) return;
-    v.play().catch(() => {});
+    const v = imgRef.current;
+    if (!animate || !v || !playing) return;
     const an = playing && audio ? analyserFor(audio) : null;
     if (an && actx?.state === 'suspended') actx.resume();
     const buf = new Float32Array(an ? an.fftSize : 0);
@@ -84,32 +84,23 @@ export const LiquidLogo: React.FC<LiquidLogoProps> = ({ variant, size, live = fa
         }
       }
       e += (target - e) * Math.min(1, (target > e ? .14 : .045) * dt * 60);   // attack faster than release
-      v.playbackRate = .55 + 1.1 * e;                                          // calm when silent, lively with the voice
+      v.style.transform = `scale(${zoom * (1 + .07 * e)})`;                     // breathes with the voice
+      v.style.filter = `brightness(${1 + .25 * e}) saturate(${1 + .3 * e})`;
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [animate, audio, playing, look]);
+    return () => { cancelAnimationFrame(raf); v.style.filter = ''; v.style.transform = zoom !== 1 ? `scale(${zoom})` : ''; };
+  }, [animate, audio, playing, look, zoom]);
 
   const still = `/logo-motion/${look}.webp`;
   const inner: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'contain', transform: zoom !== 1 ? `scale(${zoom})` : undefined, pointerEvents: 'none' };
   return (
     <span className={`relative inline-block shrink-0 ${className}`} style={{ width: size, height: size }} aria-hidden="true">
-      {animate ? (
-        <video
-          key={look}
-          ref={videoRef}
-          src={isSafari() ? `/logo-motion/${look}.mp4` : `/logo-motion/${look}.webm`}
-          poster={still}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          style={inner}
-        />
-      ) : (
-        <img src={still} alt="" draggable={false} loading="lazy" decoding="async" style={inner} />
+      {/* the still stays until the animation (~1.7MB) has loaded, so the mark never disappears */}
+      {(!animate || !animReady) && <img src={still} alt="" draggable={false} decoding="async" loading="lazy" style={{ ...inner, position: 'absolute', inset: 0 }} />}
+      {animate && (
+        <img ref={imgRef} key={look} src={`/logo-motion/${look}-anim.webp`} alt="" draggable={false} decoding="async" onLoad={() => setLoadedLook(look)}
+          style={{ ...inner, position: 'absolute', inset: 0, opacity: animReady ? 1 : 0, transition: 'transform .08s linear' }} />
       )}
     </span>
   );

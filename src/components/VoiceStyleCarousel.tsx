@@ -121,7 +121,7 @@ export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, is
       </div>
 
       {/* Labels row: previous / centre / next, like the reference */}
-      <div className="relative grid grid-cols-[1fr_auto_minmax(0,1.3fr)_auto_1fr] items-start gap-2 px-4 sm:px-8 pb-4 text-center">
+      <div className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[1fr_auto_minmax(0,1.3fr)_auto_1fr] items-start gap-2 px-4 sm:px-8 pb-4 text-center">
         <Label item={items[(index - 1 + n) % n]} muted hidden={narrow} onClick={() => go(-1)} />
         <button type="button" onClick={() => go(-1)} className="mt-1 p-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-white/70 cursor-pointer" aria-label="السابق">
           <ChevronRight className="w-4 h-4" />
@@ -152,7 +152,7 @@ export const VoiceStyleCarousel: React.FC<Props> = ({ items, index, onSelect, is
 };
 
 const Label: React.FC<{ item: VoiceStyleItem; muted?: boolean; hidden?: boolean; onClick: () => void }> = ({ item, hidden, onClick }) =>
-  hidden ? <span /> : (
+  hidden ? null : (
     <button type="button" onClick={onClick} className="min-w-0 text-center cursor-pointer group">
       <span className="block text-sm font-semibold text-slate-500 group-hover:text-slate-800 transition-colors">{item.title}</span>
       <span className="block text-[11px] text-slate-400 mt-1 leading-relaxed line-clamp-2">{item.desc}</span>
