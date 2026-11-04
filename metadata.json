@@ -1,0 +1,6 @@
+{
+  "name": "قيمة للذكاء الصوتي | Qeema AI for Business",
+  "description": "المنصة العربية المتكاملة للأصوات البشرية والذكاء الاصطناعي الصوتي للشركات والإنتاج المؤسسي - Arabic Human & AI Voice Platform for Business",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

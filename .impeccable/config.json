@@ -1,0 +1,53 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/AdminGuidesView.tsx"
+        ],
+        "createdAt": "2026-10-27T13:07:08.512Z",
+        "reason": "Claude: L112 is slate-600 icon on slate-100 neutral button, not a colored background"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/AdminVoicesView.tsx"
+        ],
+        "createdAt": "2026-10-27T13:09:46.721Z",
+        "reason": "Claude: L126 is slate icon button on slate-100 neutral bg (rose only on hover), not colored bg"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/RichTextEditor.tsx"
+        ],
+        "createdAt": "2026-10-27T15:13:14.525Z",
+        "reason": "Claude: slate text sits on white/slate hover states; dark bg only when active, then text is white"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/AdminJobsView.tsx"
+        ],
+        "createdAt": "2026-10-28T14:11:55.552Z",
+        "reason": "Claude: slate icon on slate-100 neutral delete button, rose only on hover"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/AdminApplicantsView.tsx"
+        ],
+        "createdAt": "2026-10-28T14:15:31.628Z",
+        "reason": "Claude: slate icon on slate-100 neutral delete button, rose only on hover"
+      }
+    ]
+  }
+}
