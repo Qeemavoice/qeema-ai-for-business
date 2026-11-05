@@ -29,7 +29,7 @@ return [
         'ends_at'      => env('WHITE_FRIDAY_ENDS_AT', '2026-11-30 23:59:59'),
     ],
 
-    'redeem_rate_limit'      => 10,     // attempts per hour per IP on /ar/early
+    'redeem_rate_limit'      => (int) env('ROWAD_REDEEM_RATE_LIMIT', 10), // attempts per hour per IP on /ar/early
     'site_url'               => env('ROWAD_SITE_URL', 'https://qeemavoice.com'),
     'whatsapp_support'       => env('ROWAD_WHATSAPP', 'https://wa.me/966500000000'), // ⚠️ the support WhatsApp number
 ];
