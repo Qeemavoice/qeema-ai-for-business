@@ -1,0 +1,14 @@
+{
+    "art_you_delete": "Are you sure to delete the {name} ?",
+    "you_wont_be_able_to_revert_this": "You wont be able to revert this!",
+    "are_you_sure_about_this_procedure": "Are you sure about this procedure?",
+    "yes_definitely": "Yes definitely!",
+    "yes_delete_it": "Yes, delete it!",
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "maintenance_mode": "Maintenance Mode",
+    "you_will_lose_the_data_on_the_form_not_save": "You will lose the data on the form if you do not save it.",
+    "you_can_edit_the_status_at_any_time": "You can edit the status at any time.",
+    "upload": "Upload"
+}

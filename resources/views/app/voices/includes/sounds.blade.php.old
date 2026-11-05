@@ -1,0 +1,81 @@
+<div class="container">
+    <div class="soundss " id="sound">
+        <h1 class="title">الأصوات</h1>
+        <h2>استمع إلى نخبة من أفضل معلقينا الصوتيين</h2>
+        <div class="sonds cnt"  id="load-more" >
+            <div class="row" id="post-data">
+                <div v-if="data.length>0" v-for="voice in data" class="col-sm-12 col-md-6 col-lg-4">
+                    <div class="sound-details">
+                        <div class="recorder">
+                            @if(user()&&user()->user_type_id === \App\Models\UserType::CLIENT)
+                            <a href="javaScript:;" :id="'audio_favorite_icon_'+voice.id" @click="addOrRemoveToFavorite(voice.id)" :style="voice.favorite ? 'color:red' : ''" class="addToFavorite">
+                                <span> اضافة للمفضلة</span>
+                                <i class="fa fa-heart"></i>
+                            </a>
+                            @endif
+                            <a href="javaScript:;"
+                               @click="updateListen(voice.id)"
+                               class="showSingle">
+                                <i class="fas fa-play" :id="'audio_controller_icon_'+voice.id"></i>
+                            </a>
+                            <div class="targetDiv">
+                                <audio :src="voice.audio_file_url" :id="'voice_audio_'+voice.id" class="ppbutton fa fa-play"></audio>
+                            </div>
+                        </div>
+                        <div class="soundName">
+                            <div class="row">
+                                <div class="col-8"><span class="name">@{{ voice.title }}</span></div>
+                                <div class="col-4" style="text-align: left;"><span class="price">@{{ voice.show_total_price }}/ دقيقة</span></div>
+                            </div>
+                        </div>
+
+                        <div class="soundStatics">
+                            <div class="row">
+                                <div class="col-8">
+                                    {{--<span class="code">#3648971430</span>--}}
+                                    <span class="orders">@{{voice.number_of_orders}}  طلب</span>
+                                </div>
+                                <div class="col-4 ta-l">
+                                    <span class="likes" :id="'audio_counter_like_'+voice.id" :counter="voice.number_of_likes">@{{voice.number_of_likes}}</span>
+                                    @if(user()&&user()->user_type_id === \App\Models\UserType::CLIENT)
+                                    <a href="javascript:;" @click="updateLike(voice.id)">
+                                        <span class="like-icon"><i class="fas fa-heart black-color" :id="'audio_like_icon_'+voice.id"></i></span>
+                                    </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="soundType">
+                            <div class="row">
+                                <div class="col-8 ta-r">
+                                    <span class="sType">
+                                        @{{voice.language}},
+                                        @{{voice.dialect}},
+                                        @{{ voice.category }}
+                                    </span>
+                                </div>
+                                <div class="col-4 ta-l">
+                                    <span class="likes" :id="'counter_listens_'+voice.id" :counter="voice.number_of_listened">@{{voice.number_of_listened}}</span>
+                                    <span class="listen-icon"><i class="fas fa-headphones-alt"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="reserve">
+                            <div class="row">
+                                <div class="col-12">
+                                    <a :href="`{{route_app('client.booking.index')}}/${voice.slug}`">احجز الآن</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="col-md-12 mt-4">
+                    <div class="alert alert-warning">لا توجد نتائج</div>
+                </div>
+            </div>
+            <div class="load-more" v-if="data.length<page.totalItems" style="margin-left: 50%;margin-right: 47%;">
+                <button type="button" @click="getMore" :disabled="form.disabledButton" class="save-clients-working">تحميل المزيد</button>
+            </div>
+        </div>
+    </div>
+</div>

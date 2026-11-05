@@ -1,0 +1,4 @@
+talent_code,legacy_user_id,name,dialects,gender,age_range,tones,use_cases,price_per_minute_usd,turnaround_days,available,sample_url,photo_url,profile_url,has_clone,elevenlabs_voice_id,clone_consent_date,ai_price_per_minute_usd,verified_human
+QV-0101,,معلق تجريبي 1,سعودي نجدي;فصحى,ذكر,متوسط,واثق;دافئ;فخم,إعلان;تعريفي,76,2,1,https://www.qeemavoice.com/samples/qv-0101.mp3,,,0,,,,1
+QV-0102,,معلقة تجريبية 2,إماراتي,أنثى,شابة,ودود;حماسي,إعلان;رد آلي,57,1,1,https://www.qeemavoice.com/samples/qv-0102.mp3,,,1,REPLACE_WITH_VOICE_ID,2026-10-20,15,1
+QV-0103,,معلق تجريبي 3,مصري,ذكر,شاب,حماسي;ودود,إعلان;بودكاست,40,2,1,https://www.qeemavoice.com/samples/qv-0103.mp3,,,0,,,,1

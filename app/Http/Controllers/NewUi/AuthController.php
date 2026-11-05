@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Http\Controllers\NewUi;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\UserType;
+use App\Services\NewUi\Accounts;
+use App\Services\NewUi\Store;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+
+/** /api/v1/auth/* of the new UI (port of new-ui/server/routes/auth.ts) on the existing users table. */
+class AuthController extends Controller
+{
+    private const EMAIL_RE = '/^[^\s@]+@[^\s@]+\.[^\s@]+$/';
+
+    public function me(Request $r)
+    {
+        $user = Accounts::currentUser($r);
+        if (!$user) return response()->json(['error' => 'يلزم تسجيل الدخول'], 401);
+        $ctx = Accounts::context($r);
+        $available = Accounts::isAdmin($user)
+            ? Accounts::clientUsers()->map(fn ($u) => Accounts::company($u))->values()->all()
+            : [$ctx['company']];
+        return response()->json([
+            'user' => Accounts::publicUser($user), 'company' => $ctx['company'],
+            'balanceCredits' => $ctx['balance'], 'availableCompanies' => $available,
+        ]);
+    }
+
+    public function signup(Request $r)
+    {
+        $name = mb_substr(trim((string) $r->input('name', '')), 0, 120);
+        $email = mb_substr(trim((string) $r->input('email', '')), 0, 160);
+        $password = (string) $r->input('password', '');
+        $type = $r->input('accountType') === 'talent' ? 'talent' : 'client';
+        if (!$name) return response()->json(['error' => 'اكتب الاسم الكامل'], 400);
+        if (!preg_match(self::EMAIL_RE, $email)) return response()->json(['error' => 'البريد الإلكتروني غير صحيح'], 400);
+        if (mb_strlen($password) < 8) return response()->json(['error' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'], 400);
+        if (Accounts::findByEmail($email)) return response()->json(['error' => 'هذا البريد مسجّل مسبقاً، سجّل الدخول بدلاً من ذلك'], 409);
+        $user = Accounts::createAccount($name, $email, $password, $type);
+        $company = trim((string) $r->input('company', ''));
+        if ($company) Accounts::saveAccount($user, ['industry' => 'Corporate Business']);
+        return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user)]);
+    }
+
+    public function login(Request $r)
+    {
+        $user = Accounts::findByEmail((string) $r->input('email', ''));
+        if (!$user || !Hash::check((string) $r->input('password', ''), $user->password)) {
+            return response()->json(['error' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة'], 401);
+        }
+        if ((int) $user->status_id === \App\Models\UserStatus::BLOCKED) return response()->json(['error' => 'هذا الحساب موقوف'], 403);
+        return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user)]);
+    }
+
+    public function google(Request $r)
+    {
+        $g = Accounts::googleProfile((string) $r->input('accessToken', ''));
+        if (!$g) return response()->json(['error' => 'تعذر التحقق من حساب Google'], 401);
+        $user = Accounts::findByEmail($g['email'])
+            ?: Accounts::createAccount($g['name'] ?? explode('@', $g['email'])[0], $g['email'], null, $r->input('accountType') === 'talent' ? 'talent' : 'client');
+        return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user)]);
+    }
+
+    /** Invited narrator finishing the claim link: creates (or links) the talent account for that narrator */
+    public function claim(Request $r)
+    {
+        $token = (string) $r->input('claimToken', '');
+        $state = NarratorController::state();
+        $narrator = null;
+        foreach ($state['narrators'] as $n) if (($n['claimToken'] ?? '') === $token && $token !== '') { $narrator = $n; break; }
+        if (!$narrator) return response()->json(['error' => 'رابط التفعيل غير صالح'], 404);
+        if (!empty($narrator['claimTokenExpiresAt']) && strtotime($narrator['claimTokenExpiresAt']) < time()) return response()->json(['error' => 'انتهت صلاحية رابط التفعيل'], 410);
+        if (!NarratorController::claimVerified($token)) return response()->json(['error' => 'أكّد رمز التحقق المرسل إلى بريدك أولاً'], 403);
+
+        $email = (string) ($narrator['email'] ?? '');
+        $name = (string) ($narrator['displayName'] ?? '');
+        $password = (string) $r->input('password', '');
+        if ($r->filled('googleAccessToken')) {
+            $g = Accounts::googleProfile((string) $r->input('googleAccessToken'));
+            if (!$g) return response()->json(['error' => 'تعذر التحقق من حساب Google'], 401);
+            $email = $g['email'];
+            $name = $name ?: ($g['name'] ?? '');
+        } elseif (mb_strlen($password) < 8) {
+            return response()->json(['error' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'], 400);
+        }
+        if (!$email) return response()->json(['error' => 'لا يوجد بريد مسجّل لهذا المعلق'], 400);
+
+        $existing = Accounts::findByEmail($email);
+        $linked = $existing ? Accounts::narratorId($existing) : null;
+        if ($existing && $linked && $linked !== $narrator['id']) return response()->json(['error' => 'هذا البريد مرتبط بمعلق آخر'], 409);
+        $user = $existing ?: Accounts::createAccount($name, $email, $password ?: null, 'talent');
+        if ($existing) {
+            // Narrators of the old site already have a users row: the verified e-mail code proves ownership,
+            // so the password chosen on the claim page becomes the account password and the account is activated.
+            if ($password !== '') $existing->password = Hash::make($password);
+            if ((int) $existing->user_type_id === UserType::CLIENT) $existing->user_type_id = UserType::CLIENT_ADN_VOICE_ACTOR;
+            if ((int) $existing->status_id !== \App\Models\UserStatus::BLOCKED) $existing->status_id = \App\Models\UserStatus::ACCEPTED;
+            $existing->save();
+        }
+        Accounts::linkNarrator($user, $narrator['id']);
+        NarratorController::activateClaimed($narrator['id'], $token);
+        return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user)]);
+    }
+
+    public function logout(Request $r)
+    {
+        Accounts::revokeToken($r);
+        return response()->json(['success' => true]);
+    }
+
+    public function favoritesGet(Request $r)
+    {
+        $u = Accounts::currentUser($r);
+        return response()->json(['ids' => Accounts::account($u)['savedVoiceIds']]);
+    }
+
+    public function favoritesPut(Request $r)
+    {
+        $u = Accounts::currentUser($r);
+        $ids = $r->input('ids');
+        if (!is_array($ids)) return response()->json(['error' => 'قائمة غير صالحة'], 400);
+        $ids = array_values(array_unique(array_slice(array_filter($ids, fn ($x) => is_string($x) && mb_strlen($x) <= 120), 0, 500)));
+        Accounts::saveAccount($u, ['savedVoiceIds' => $ids]);
+        return response()->json(['ids' => $ids]);
+    }
+
+    /** Admin: open a client's workspace */
+    public function switchCompany(Request $r)
+    {
+        $uid = Accounts::userIdOfCompany((string) $r->input('companyId', ''));
+        $target = $uid ? User::find($uid) : null;
+        if (!$target) return response()->json(['error' => 'الشركة غير موجودة'], 404);
+        return response()->json(['user' => Accounts::publicUser($target), 'company' => Accounts::company($target), 'balanceCredits' => Accounts::balance($target->id)]);
+    }
+}
