@@ -89,8 +89,9 @@ class AdminController extends Controller
     public function bookings()
     {
         $bookings = Bookings::all();
-        // «زبون متكرر»: the same client (account, else e-mail) booked more than once (canceled orders not counted)
-        $key = fn ($b) => $b['companyId'] !== 'c' ? $b['companyId'] : mb_strtolower((string) ($b['customerEmail'] ?? $b['companyName']));
+        // «زبون متكرر»: the same client booked more than once (canceled orders not counted). Grouped by e-mail, so the
+        // bookings of one person count together whether made with the account or as a guest.
+        $key = fn ($b) => $b['customerEmail'] !== '' ? $b['customerEmail'] : $b['companyId'];
         $count = [];
         foreach ($bookings as $b) if ($b['status'] !== 'canceled') $count[$key($b)] = ($count[$key($b)] ?? 0) + 1;
         $revenue = 0.0; $narrators = 0.0; $n = 0;

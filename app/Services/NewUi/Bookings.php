@@ -153,6 +153,8 @@ class Bookings
             'charCount' => (int) $chars,
             'durationMinutes' => (int) $minutes,
             'customerContact' => $contact,
+            // who the client is across bookings (account e-mail, else the e-mail given on a guest booking)
+            'customerEmail' => mb_strtolower(trim((string) ($customer->email ?? '') ?: (string) ($contact['email'] ?? ''))),
             'createdAt' => Store::iso(Store::created($o, 'created_at')),
             'updatedAt' => Store::iso(Store::created($o, 'updated_at')),
         ];
