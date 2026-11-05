@@ -644,6 +644,11 @@ class NarratorService {
   // VOICE SAMPLES MANAGEMENT
   // ==========================================
 
+  /** Every narrator's library voices */
+  public allLibraryVoices(): LibraryVoice[] {
+    return [...this.libraryVoices];
+  }
+
   /** The narrator's voices in the voice library (with their price per minute) */
   public libraryVoicesOf(narratorId: string): LibraryVoice[] {
     return this.libraryVoices.filter(v => v.narratorId === narratorId);

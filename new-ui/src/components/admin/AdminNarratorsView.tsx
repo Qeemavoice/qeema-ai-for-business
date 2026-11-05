@@ -3,6 +3,10 @@ import { Search, RefreshCw, Send, Copy, Check, ExternalLink, Mail, Phone, Eye, B
 import { narratorService } from '../../services/narratorService';
 import { Narrator, NarratorNotification, NarratorStatus, VoiceOverBooking, VoiceSample, AIVoice } from '../../types';
 import { buildSampleSlug } from '../VoiceLibraryView';
+
+/** A narrator's price per minute above this is a typing mistake (e.g. a phone number in the price field) */
+const MAX_RATE_USD = 1000;
+const validRate = (p: number) => Number.isFinite(p) && p > 0 && p <= MAX_RATE_USD;
 import { finalPrice, commissionAmount, fmtUsd, PLATFORM_COMMISSION_PERCENT } from '../../../shared/pricing';
 import { reasonByCode } from '../../../shared/sampleRules';
 import { fmtDate, fmtDateTime, fmtMoney, fmtNum } from '../../lib/format';
@@ -78,8 +82,9 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const prices = narrators.map(n => n.rates?.perMinuteUsd).filter((p): p is number => !!p);
-  const avgFinal = prices.length ? finalPrice(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+  // what clients actually see in the library: the average client price of the library voices
+  const libraryPrices = narratorService.allLibraryVoices().map(v => Number(v.finalPriceUsd)).filter(p => p > 0);
+  const avgFinal = libraryPrices.length ? libraryPrices.reduce((a, b) => a + b, 0) / libraryPrices.length : 0;
   const pendingSamples = samples.filter(s => s.status === 'pending_review').length;
 
   const sendInvite = async (id: string) => {
@@ -123,7 +128,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
         <StatCard label="إجمالي المعلقين" value={fmtNum(narrators.length)} />
         <StatCard label="الحسابات المفعّلة" value={fmtNum(narrators.filter(n => n.status === 'active').length)} tone="green" />
         <StatCard label="عينات بانتظار المراجعة" value={fmtNum(pendingSamples)} tone="amber" hint="تُراجع من صفحة العينات" />
-        <StatCard label="متوسط السعر النهائي بالمكتبة" value={`$${fmtUsd(avgFinal)}`} tone="orange" hint={`سعر المعلق + عمولة ${PLATFORM_COMMISSION_PERCENT}%`} />
+        <StatCard label="متوسط السعر النهائي بالمكتبة" value={`$${fmtUsd(avgFinal)}`} tone="orange" hint={`متوسط ${fmtNum(libraryPrices.length)} صوت: سعر المعلق + عمولة ${PLATFORM_COMMISSION_PERCENT}%`} />
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-5 space-y-4">
@@ -184,8 +189,14 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
                       <span className="block text-[11px] text-slate-400">{n.email || '-'}</span>
                     </td>
                     <td className="p-3"><div className="flex flex-wrap gap-1 max-w-[190px]">{n.dialects.map(d => <span key={d} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">{d}</span>)}</div></td>
-                    <td className="p-3 font-mono font-bold text-slate-800">{price ? `$${fmtUsd(price)}` : '-'}</td>
-                    <td className="p-3 font-mono font-bold text-brand-text">{price ? `$${fmtUsd(finalPrice(price))}` : '-'}</td>
+                    {price && !validRate(price) ? (
+                      <td colSpan={2} className="p-3"><Badge tone="red">سعر غير صالح: {fmtNum(price)}</Badge></td>
+                    ) : (
+                      <>
+                        <td className="p-3 font-mono font-bold text-slate-800">{price ? `$${fmtUsd(price)}` : '-'}</td>
+                        <td className="p-3 font-mono font-bold text-brand-text">{price ? `$${fmtUsd(finalPrice(price))}` : '-'}</td>
+                      </>
+                    )}
                     <td className="p-3">
                       <span className="font-mono font-bold text-slate-800">{pub}/{ss.length}</span>
                       {pend > 0 && <Badge tone="amber" className="mr-1.5">{pend} بالانتظار</Badge>}
@@ -261,7 +272,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   }, [n.id]);
 
   const priceNum = parseFloat(priceInput);
-  const validPrice = !isNaN(priceNum) && priceNum > 0;
+  const validPrice = !isNaN(priceNum) && validRate(priceNum);
   const paidTotal = bookings.filter(b => b.status === 'paid').reduce((a, b) => a + b.amount, 0);
 
   const savePrice = async () => {
@@ -361,6 +372,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
                     className="mt-1 block w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono font-bold outline-hidden focus:border-brand" />
                 </label>
                 <button onClick={savePrice} disabled={!validPrice || priceNum === n.rates?.perMinuteUsd} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">حفظ السعر</button>
+              {priceNum > MAX_RATE_USD && <p className="text-[11px] font-bold text-rose-600">السعر أعلى من {MAX_RATE_USD}$ للدقيقة: تأكد من الرقم (قد يكون رقم هاتف)</p>}
               </div>
               {validPrice && (
                 <div className="grid grid-cols-3 gap-2 text-center">
