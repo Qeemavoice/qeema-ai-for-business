@@ -12,7 +12,9 @@ import {
 import { Company, User, Voice, Generation, ActiveView } from '../types';
 import { findPlan } from '../../shared/plans';
 import { api, UsageResponse, BillingResponse } from '../lib/api';
-import { DashboardSidebar, DashboardNavKey } from './dashboard/DashboardSidebar';
+import { DashboardSidebar, DashboardNavKey, GATED_NAV } from './dashboard/DashboardSidebar';
+import { useRowad } from '../lib/rowad';
+import { RowadBadge } from './RowadBadge';
 import { DashboardTopNav } from './dashboard/DashboardTopNav';
 import { HomeSubView } from './dashboard/HomeSubView';
 import { VoiceLibraryView, buildSampleSlug } from './VoiceLibraryView';
@@ -59,6 +61,10 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
 }) => {
   // Navigation State inside ElevenLabs-style Workspace
   const [activeNav, setActiveNav] = useState<DashboardNavKey>('home');
+  // «روّاد قيمة»: studio and billing tabs open to Rowad members now, to everyone from the public launch
+  const canUseNew = useRowad().canUse;
+  const navigateTo = useNavigate();
+  const goNav = (nav: DashboardNavKey) => (!canUseNew && GATED_NAV.includes(nav) ? navigateTo('/ar/waitlist') : setActiveNav(nav));
   const [searchQuery, setSearchQuery] = useState('');
   const [envMode, setEnvMode] = useState<'production' | 'sandbox'>('production');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -157,18 +163,18 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
   const handleQuickGenerateFromHome = (text: string, voiceId: string) => {
     setStudioInitialText(text);
     setStudioInitialVoiceId(voiceId);
-    setActiveNav('studio');
+    goNav('studio');
   };
 
   const handleOpenStudioPreset = (text: string, voiceId?: string) => {
     setStudioInitialText(text);
     if (voiceId) setStudioInitialVoiceId(voiceId);
-    setActiveNav('studio');
+    goNav('studio');
   };
 
   const handleSelectVoiceForStudio = (voiceId: string) => {
     setStudioInitialVoiceId(voiceId);
-    setActiveNav('studio');
+    goNav('studio');
   };
 
   const handleGenerationComplete = (newGen: Generation) => {
@@ -206,7 +212,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
     if (!newVoiceName.trim()) return;
     setIsCreateVoiceModalOpen(false);
     setStudioInitialText(`أهلاً بك! هذا الصوت مخصص باسم "${newVoiceName.trim()}".`);
-    setActiveNav('studio');
+    goNav('studio');
   };
 
   return (
@@ -217,7 +223,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
       {/* 1. ElevenLabs Left Sidebar */}
       <DashboardSidebar
         activeNav={activeNav}
-        onSelectNav={(nav) => setActiveNav(nav)}
+        onSelectNav={(nav) => goNav(nav)}
         currentCompany={currentCompany}
         currentUser={currentUser}
         availableCompanies={availableCompanies}
@@ -242,7 +248,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
           onToggleEnvMode={setEnvMode}
           onOpenAssistant={onOpenAssistant || (() => onNavigate('generate'))}
           onOpenTopUp={onOpenTopUp}
-          onNavigateTab={(tab) => setActiveNav(tab)}
+          onNavigateTab={(tab) => goNav(tab)}
           currentCompany={currentCompany}
           currentUser={currentUser}
           availableCompanies={availableCompanies}
@@ -259,7 +265,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
               generations={generations}
               playingId={playingId}
               onTogglePlay={handleTogglePlay}
-              onNavigateTab={(tab) => setActiveNav(tab)}
+              onNavigateTab={(tab) => goNav(tab)}
               onQuickGenerate={handleQuickGenerateFromHome}
               onOpenStudioPreset={handleOpenStudioPreset}
             />
@@ -298,7 +304,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
             />
           )}
 
-          {activeNav === 'flows' && <FlowsSubView onNavigateTab={(tab) => setActiveNav(tab)} />}
+          {activeNav === 'flows' && <FlowsSubView onNavigateTab={(tab) => goNav(tab)} />}
 
           {activeNav === 'projects' && (
             <ProjectsSubView
@@ -326,7 +332,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
 
           {activeNav === 'human-bookings' && (
             <HumanBookingsSubView
-              onBookTalent={() => setActiveNav('voices')}
+              onBookTalent={() => goNav('voices')}
             />
           )}
 

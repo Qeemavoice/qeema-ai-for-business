@@ -235,6 +235,15 @@ class RowadInvitesTest extends TestCase
         $this->get('/ar/early?code=WRONGCODE12')->assertStatus(302);
     }
 
+    /** SEO: invite pages are noindex and never in the sitemap */
+    public function test_invite_pages_are_not_indexed()
+    {
+        $this->get('/ar/early/welcome')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow')->assertSee('noindex, nofollow', false);
+        $sitemap = $this->get('/sitemap.xml')->assertOk()->getContent();
+        $this->assertStringNotContainsString('/ar/early', $sitemap);
+        $this->assertStringNotContainsString('/ar/waitlist', $sitemap);
+    }
+
     /** generator: 10-character codes without look-alike characters, export file, no second invite without --force */
     public function test_generate_invites_command()
     {

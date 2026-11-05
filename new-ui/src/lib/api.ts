@@ -1,10 +1,21 @@
 import { Voice, Generation, CreditTransaction, UsageMetrics, Plan, Company, User, HumanBooking } from '../types';
+import type { RowadFeatures } from './rowad';
 
 export interface MeResponse {
   user: User;
   company: Company;
   balanceCredits: number;
   availableCompanies: Company[];
+  features?: RowadFeatures;
+}
+
+/** «روّاد قيمة»: answer of /api/v1/early/redeem and /api/v1/early/status */
+export interface EarlyStatus {
+  status?: 'redeemed' | 'already' | 'used' | 'expired' | 'invalid' | 'error';
+  error?: string;
+  features?: RowadFeatures;
+  freeGrant?: { chars: number; remaining: number; used: number; expiresAt: string | null } | null;
+  balanceCredits?: number;
 }
 
 export interface VoicesResponse {
@@ -37,6 +48,9 @@ export interface BillingResponse {
     status: string;
   }[];
 }
+
+/** window event fired when a TTS generation is refused for lack of credits (detail: the API answer) */
+export const INSUFFICIENT_CREDITS_EVENT = 'qv:insufficient-credits';
 
 // ---------- Login session (token from /auth/login, /auth/signup or /auth/google) ----------
 const TOKEN_KEY = 'qeema_token';
@@ -97,6 +111,18 @@ export const api = {
     setToken('');
   },
 
+  // «روّاد قيمة»: activates the invite saved by /ar/early (HttpOnly cookie, sent automatically) or the given code
+  async earlyRedeem(code?: string): Promise<EarlyStatus> {
+    const res = await fetch('/api/v1/early/redeem', { method: 'POST', headers: getHeaders(), body: JSON.stringify(code ? { code } : {}) });
+    const data = await res.json().catch(() => ({}));
+    return res.status === 429 ? { status: 'error', error: data.error } : data;
+  },
+  async earlyStatus(): Promise<EarlyStatus> {
+    const res = await fetch('/api/v1/early/status', { headers: getHeaders() });
+    if (!res.ok) throw new Error('تعذر جلب حالة الدعوة');
+    return res.json();
+  },
+
   async switchCompany(companyId: string): Promise<MeResponse> {
     setActiveCompanyId(companyId);
     const res = await fetch('/api/v1/auth/switch-company', {
@@ -137,6 +163,8 @@ export const api = {
     });
     const data = await res.json();
     if (!res.ok) {
+      // «رصيدك لا يكفي»: App shows the top-up / Rowad price choice (INSUFFICIENT_CREDITS_EVENT)
+      if (res.status === 402) window.dispatchEvent(new CustomEvent(INSUFFICIENT_CREDITS_EVENT, { detail: data }));
       throw new Error(data.error || 'فشل التوليد الصوتي');
     }
     return data;

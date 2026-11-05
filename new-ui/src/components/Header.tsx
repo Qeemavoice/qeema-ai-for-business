@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { Company, User } from '../types';
 import { WhiteFridayBar } from './WhiteFridayBar';
+import { RowadBadge } from './RowadBadge';
+import { useRowad } from '../lib/rowad';
 
 interface HeaderProps {
   currentCompany: Company | null;
@@ -46,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const canUseNew = useRowad().canUse;   // TTS and pricing links: Rowad members now, everyone from the public launch
 
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -147,7 +150,8 @@ export const Header: React.FC<HeaderProps> = ({
                     </Link>
                     )}
 
-                    {/* أستوديو TTS */}
+                    {/* أستوديو TTS (Rowad members now, everyone from the public launch) */}
+                    {canUseNew && (
                     <Link
                       to="/ar/text-to-speech"
                       onClick={() => setOpenDropdown(null)}
@@ -161,6 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700">توليد فوري</span>
                       </div>
                     </Link>
+                    )}
 
                     <div className="my-1 border-t border-slate-100" />
 
@@ -242,6 +247,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* 3. الأسعار */}
+              {canUseNew && (
               <Link
                 to="/ar/pricing"
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
@@ -253,6 +259,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <CreditCard className="w-4 h-4 text-slate-500" />
                 <span>الأسعار</span>
               </Link>
+              )}
 
               {/* 4. تواصل معنا */}
               <div className="relative">
@@ -348,10 +355,12 @@ export const Header: React.FC<HeaderProps> = ({
 
                 {showCompanyMenu && (
                   <div className="absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
-                    <div className="px-3 py-2 border-b border-slate-100 text-xs text-slate-400 font-semibold">
-                      الملف الشخصي والحساب
+                    <div className="px-3 py-2 border-b border-slate-100 text-xs text-slate-400 font-semibold space-y-1.5">
+                      <div>الملف الشخصي والحساب</div>
+                      <RowadBadge />
                     </div>
-                    
+
+                    {canUseNew && (
                     <div className="p-2 border-b border-slate-100 space-y-1">
                       <Link
                         to="/ar/text-to-speech"
@@ -362,6 +371,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>استوديو تحويل النص إلى صوت (TTS)</span>
                       </Link>
                     </div>
+                    )}
 
                     <div className="p-2 border-t border-slate-100">
                       <button
@@ -414,6 +424,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[10px] text-slate-400">1000+ موهبة</span>
             </Link>
 
+            {canUseNew && (
             <Link
               to="/ar/text-to-speech"
               onClick={() => setMobileMenuOpen(false)}
@@ -425,6 +436,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">توليد فوري</span>
             </Link>
+            )}
 
             <Link
               to="/ar/booking-steps"
@@ -477,7 +489,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* 3. الأسعار */}
-          <div className="border-t border-slate-100 pt-3 space-y-1">
+          {canUseNew && <div className="border-t border-slate-100 pt-3 space-y-1">
             <Link
               to="/ar/pricing"
               onClick={() => setMobileMenuOpen(false)}
@@ -488,7 +500,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>الأسعار والباقات</span>
               </div>
             </Link>
-          </div>
+          </div>}
 
           {/* 4. تواصل معنا */}
           <div className="space-y-1 border-t border-slate-100 pt-3">

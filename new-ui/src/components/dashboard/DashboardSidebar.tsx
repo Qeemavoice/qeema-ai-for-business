@@ -1,4 +1,6 @@
 import React from 'react';
+import { RowadBadge } from '../RowadBadge';
+import { useRowad } from '../../lib/rowad';
 import { 
   Home, 
   Mic2, 
@@ -23,6 +25,9 @@ import {
 } from 'lucide-react';
 import { Company, User } from '../../types';
 import { findPlan } from '../../../shared/plans';
+
+/** Tabs closed until the public launch for accounts without early access (credits, plans, TTS) */
+export const GATED_NAV: string[] = ['studio', 'billing'];
 
 export type DashboardNavKey = 
   | 'home' 
@@ -66,6 +71,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onToggleCollapse
 }) => {
   const [isCompanyMenuOpen, setIsCompanyMenuOpen] = React.useState(false);
+  const canUseNew = useRowad().canUse;
 
   const mainNavItems = [
     { key: 'home' as DashboardNavKey, label: 'الرئيسية', icon: Home, badge: undefined },
@@ -142,7 +148,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-5 custom-scrollbar">
         {/* Main Section */}
         <div className="space-y-0.5">
-          {mainNavItems.map((item) => {
+          {mainNavItems.filter(item => canUseNew || !GATED_NAV.includes(item.key)).map((item) => {
             const Icon = item.icon;
             const isActive = activeNav === item.key;
             return (
@@ -197,8 +203,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </div>
         )}
 
-        {/* Upgrade / Credits Bar */}
-        <div className="p-2.5 rounded-2xl bg-gradient-to-r from-brand-ink to-brand-ink/90 text-white shadow-xs">
+        {/* Upgrade / Credits Bar (Rowad members now, everyone from the public launch) */}
+        {canUseNew && <div className="p-2.5 rounded-2xl bg-gradient-to-r from-brand-ink to-brand-ink/90 text-white shadow-xs">
           <div className="flex items-center justify-between mb-1.5">
             <div className="text-[11px] font-bold flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-brand-text" />
@@ -227,7 +233,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               </div>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* User Profile Mini Bar */}
         <div className="flex items-center justify-between p-1.5 rounded-xl hover:bg-white transition-colors">
@@ -243,6 +249,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 <div className="text-[10px] text-slate-400 truncate">
                   {currentUser?.email || ''}
                 </div>
+                <RowadBadge className="mt-1" />
               </div>
             )}
           </div>

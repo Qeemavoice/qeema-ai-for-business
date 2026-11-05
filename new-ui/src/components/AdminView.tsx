@@ -60,6 +60,7 @@ import { AI_VOICES_ENABLED } from '../../shared/features';
 import { AdminPageEditor } from './admin/AdminPageEditor';
 import { AdminGuidesView } from './admin/AdminGuidesView';
 import { AdminReviewsView } from './admin/AdminReviewsView';
+import { AdminRowadView } from './admin/AdminRowadView';
 import { AdminJobsView } from './admin/AdminJobsView';
 import { AdminVoicesView } from './admin/AdminVoicesView';
 import { AdminSettingsView, type SettingsSection } from './admin/AdminSettingsView';
@@ -1218,6 +1219,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {activeTab === 'ttsVoices' && <AdminTtsVoicesView />}
       {activeTab === 'guides' && <AdminGuidesView />}
       {activeTab === 'reviews' && <AdminReviewsView />}
+      {activeTab === 'rowad' && <AdminRowadView />}
       {activeTab.startsWith('settings-') && <AdminSettingsView key={activeTab} section={activeTab.replace('settings-', '') as SettingsSection} />}
 
       {activeTab === 'voices' && !showAiVoices && <AdminVoicesView />}

@@ -151,7 +151,9 @@ class PublicController extends Controller
 
     public function siteStatus()
     {
-        return response()->json(['maintenance' => (bool) (Store::settings()['maintenanceMode'] ?? false)]);
+        return response()->json(['maintenance' => (bool) (Store::settings()['maintenanceMode'] ?? false),
+            // «روّاد قيمة»: credits, plans and TTS open to everyone at this moment (config/rowad.php)
+            'publicLaunchAt' => \App\Services\RowadService::at('public_launch_at')->toIso8601String()]);
     }
 
     public function voiceTemplates()

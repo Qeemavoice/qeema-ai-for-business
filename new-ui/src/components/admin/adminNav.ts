@@ -6,7 +6,7 @@ import {
 
 export type AdminTab =
   | 'overview' | 'bookings' | 'financials' | 'transactions' | 'tts' | 'ttsVoices' | 'stories'
-  | 'companies' | 'narrators' | 'samples' | 'reviews'
+  | 'companies' | 'narrators' | 'samples' | 'reviews' | 'rowad'
   | 'messages' | 'feedback' | 'newsletter' | 'jobs'
   | 'articles' | 'faqs' | 'guides' | 'pages' | 'pageTexts' | 'voiceTemplates'
   | 'voices' | 'plans' | 'services' | 'dialects' | 'categories'
@@ -56,6 +56,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         label: 'المستخدمين', icon: Users,
         children: [
           { id: 'companies', label: 'العملاء', desc: 'حسابات العملاء والباقات والأرصدة' },
+          { id: 'rowad', label: 'دعوات روّاد قيمة', desc: 'دعوات الوصول المبكر لعملاء الحجز السابقين: الحالة والتفعيل والرصيد المجاني والمشتريات بسعر الروّاد' },
           { id: 'narrators', label: 'معلقين صوتيين', desc: 'دعوات المعلقين وتفعيل الحسابات' }
         ]
       },

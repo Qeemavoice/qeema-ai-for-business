@@ -57,6 +57,10 @@ import { Voice, Company, User, Generation, Plan } from './types';
 import { api, getToken } from './lib/api';
 import { getGoogleAccessToken } from './lib/googleSignIn';
 import { SignInGate } from './components/SignInGate';
+import { NewFeaturesGate } from './components/NewFeaturesGate';
+import { InsufficientCreditsDialog } from './components/InsufficientCreditsDialog';
+import { EarlyAccessPage, EarlyWelcomePage, WaitlistPage } from './pages/EarlyAccessPage';
+import { setRowadFeatures, setPublicLaunchAt, markRowadReady } from './lib/rowad';
 
 // Lazy loaded non-blocking widgets
 
@@ -157,6 +161,7 @@ export default function App() {
     setCurrentUser(meRes.user);
     setBalanceCredits(meRes.balanceCredits);
     setAvailableCompanies(meRes.availableCompanies);
+    setRowadFeatures(meRes.features ?? null, Boolean(meRes.user.isPlatformAdmin));
     if (meRes.user.narratorId) { try { localStorage.setItem('qeema_current_narrator', meRes.user.narratorId); } catch {} }
     return meRes.user;
   };
@@ -166,6 +171,7 @@ export default function App() {
     setCurrentUser(null);
     setCurrentCompany(null);
     setBalanceCredits(0);
+    setRowadFeatures(null);
     try { localStorage.removeItem('qeema_current_narrator'); } catch {}
   };
 
@@ -173,6 +179,7 @@ export default function App() {
   useEffect(() => {
     api.getVoices().then(r => setVoices(r.voices)).catch(err => console.error('Error loading voices:', err));
     if (getToken()) loadMe().catch(() => { api.logout(); signedOut(); }); // expired or revoked session
+    else markRowadReady();
   }, []);
 
   const handleSwitchCompany = async (companyId: string) => {
@@ -218,7 +225,7 @@ export default function App() {
   // «إعدادات الصيانة» in the admin dashboard: visitors see a maintenance page, admins keep working
   const [maintenance, setMaintenance] = useState(false);
   useEffect(() => {
-    fetch('/api/v1/site-status').then(r => (r.ok ? r.json() : null)).then(d => setMaintenance(Boolean(d?.maintenance))).catch(() => {});
+    fetch('/api/v1/site-status').then(r => (r.ok ? r.json() : null)).then(d => { setMaintenance(Boolean(d?.maintenance)); setPublicLaunchAt(d?.publicLaunchAt); }).catch(() => {});
   }, []);
   const siteClosed = maintenance && !currentUser?.isPlatformAdmin && !window.location.pathname.startsWith('/ar/admin');
 
@@ -305,8 +312,12 @@ export default function App() {
           <Route path="/ar/voice-models/stories" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['stories']} />} />
           <Route path="/ar/voice-models/promo" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['promo']} />} />
           <Route path="/ar/voice-models/religious" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['religious']} />} />
-          <Route path="/ar/text-to-speech" element={<TextToSpeechPage isLoggedIn={isLoggedIn} voices={voices} onGenerated={setBalanceCredits} onGoogle={loginWithGoogle} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} />} />
-          <Route path="/ar/pricing" element={<PricingPage />} />
+          <Route path="/ar/text-to-speech" element={<NewFeaturesGate><TextToSpeechPage isLoggedIn={isLoggedIn} voices={voices} onGenerated={setBalanceCredits} onGoogle={loginWithGoogle} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} /></NewFeaturesGate>} />
+          <Route path="/ar/pricing" element={<NewFeaturesGate><PricingPage /></NewFeaturesGate>} />
+          {/* «روّاد قيمة» invite links (the server checks the code first) and the waitlist */}
+          <Route path="/ar/early" element={<EarlyAccessPage isLoggedIn={isLoggedIn} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} onActivated={() => { loadMe().catch(() => {}); }} />} />
+          <Route path="/ar/early/welcome" element={<EarlyWelcomePage isLoggedIn={isLoggedIn} onOpenLogin={() => setAuthModalMode('login')} />} />
+          <Route path="/ar/waitlist" element={<WaitlistPage />} />
           <Route path="/ar/saudi-voice-over" element={<SaudiVoiceOverPage />} />
           <Route path="/ar/emirati-voice-over" element={<EmiratiVoiceOverPage />} />
           <Route path="/ar/egyptian-voice-over" element={<EgyptianVoiceOverPage />} />
@@ -364,6 +375,7 @@ export default function App() {
           <Route 
             path="/ar/generate" 
             element={
+              <NewFeaturesGate>
               <GenerateVoiceView
                 voices={voices}
                 balanceCredits={balanceCredits}
@@ -378,6 +390,7 @@ export default function App() {
                   setBalanceCredits(meRes.balanceCredits);
                 }}
               />
+              </NewFeaturesGate>
             } 
           />
           {/* the old back office lives at /ar/dashboard on the Laravel host; the client dashboard moved to /ar/account */}
@@ -441,6 +454,7 @@ export default function App() {
 
       {postAuthPath && <GoTo to={postAuthPath} onDone={() => setPostAuthPath(null)} />}
 
+      <InsufficientCreditsDialog onOpenTopUp={() => setIsTopUpOpen(true)} />
       {authModalMode && (
         <AuthModal
           isOpen={Boolean(authModalMode)}

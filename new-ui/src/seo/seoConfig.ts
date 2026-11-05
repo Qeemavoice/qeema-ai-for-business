@@ -141,6 +141,14 @@ export const STATIC_SEO_ROUTES: Record<string, SeoConfigItem> = {
       { name: 'تحويل النص إلى صوت', item: '/ar/text-to-speech' }
     ]
   },
+  // «روّاد قيمة»: never indexed (and not in the sitemap)
+  '/ar/waitlist': {
+    path: '/ar/waitlist',
+    title: 'قائمة الانتظار | قيمة فويس',
+    h1: 'قريباً للجميع',
+    description: 'استوديو TTS والرصيد والباقات تفتح للجميع قريباً. سجّل ليصلك التنبيه أولاً.',
+    noindex: true
+  },
   '/ar/pricing': {
     path: '/ar/pricing',
     title: 'أسعار التعليق الصوتي والفويس اوفر | قيمة فويس',
