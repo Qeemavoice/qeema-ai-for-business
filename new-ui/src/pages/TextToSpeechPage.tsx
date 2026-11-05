@@ -52,11 +52,6 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-brand-text text-xs font-bold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>محرك النطق العصبي العربي فائق الدقة</span>
-              </div>
-              
               {/* Strict Single H1 matching SEO spec */}
               <h1 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight">
                 تحويل النص إلى صوت عربي

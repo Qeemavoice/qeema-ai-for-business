@@ -146,6 +146,8 @@ class VoicesController extends Controller
 
     // ---------- admin: استوديو TTS ← الأصوات ----------
     private const DIALECTS = ['gulf', 'egyptian', 'levantine', 'maghrebi', 'fusha'];
+    /** what the client sees as the dialect (one field «اللهجة» in the admin form) */
+    private const DIALECT_AR = ['gulf' => 'خليجي', 'egyptian' => 'مصري', 'levantine' => 'شامي', 'maghrebi' => 'مغاربي', 'fusha' => 'فصحى'];
     private const PROVIDERS = ['elevenlabs', 'qeema_acoustic'];
     private const DEFAULT_SHARE = 40;
 
@@ -154,9 +156,13 @@ class VoicesController extends Controller
         $b = $r->all();
         $f = [];
         $text = fn ($v, $max) => mb_substr(trim((string) ($v ?? '')), 0, $max);
-        if ($creating || array_key_exists('name', $b)) { $f['name'] = $text($b['name'] ?? '', 80); if ($f['name'] === '') return ['error' => 'اسم الصوت مطلوب']; }
+        if ($creating || array_key_exists('name', $b)) { $f['name'] = $text($b['name'] ?? '', 80); if ($f['name'] === '') return ['error' => 'اسم المقطع مطلوب']; }
         if (array_key_exists('gender', $b)) $f['gender'] = $b['gender'] === 'female' ? 'female' : 'male';
-        if (array_key_exists('dialect', $b)) { if (!in_array($b['dialect'], self::DIALECTS, true)) return ['error' => 'لهجة غير صالحة']; $f['dialect'] = $b['dialect']; }
+        if (array_key_exists('dialect', $b)) {
+            if (!in_array($b['dialect'], self::DIALECTS, true)) return ['error' => 'لهجة غير صالحة'];
+            $f['dialect'] = $b['dialect'];
+            if (!array_key_exists('dialectLabel', $b)) $f['dialect_label'] = self::DIALECT_AR[$b['dialect']];
+        }
         if (array_key_exists('dialectLabel', $b)) $f['dialect_label'] = $text($b['dialectLabel'], 60);
         if (array_key_exists('styleLabel', $b)) $f['style_label'] = $text($b['styleLabel'], 60);
         if (array_key_exists('provider', $b)) { if (!in_array($b['provider'], self::PROVIDERS, true)) return ['error' => 'مزوّد غير صالح']; $f['provider'] = $b['provider']; }
@@ -167,7 +173,11 @@ class VoicesController extends Controller
             $f['preview_url'] = $url;
         }
         if (array_key_exists('avatar', $b)) $f['avatar'] = $text($b['avatar'], 500);
-        if (array_key_exists('narratorId', $b)) $f['narrator_id'] = $text($b['narratorId'], 80) ?: null;
+        // every voice belongs to a narrator (internal only: never sent to clients, see publicVoice())
+        if ($creating || array_key_exists('narratorId', $b)) {
+            $f['narrator_id'] = $text($b['narratorId'] ?? '', 80) ?: null;
+            if (!$f['narrator_id']) return ['error' => 'اختر المعلق صاحب الصوت'];
+        }
         if (array_key_exists('narratorSharePercent', $b)) {
             $n = (float) $b['narratorSharePercent'];
             if ($n < 0 || $n > 100) return ['error' => 'نسبة المعلق يجب أن تكون بين 0 و100'];
@@ -188,12 +198,12 @@ class VoicesController extends Controller
         $p = $this->parse($r, true);
         if (isset($p['error'])) return response()->json(['error' => $p['error']], 400);
         $f = $p['fields'];
-        $provider = $f['provider'] ?? 'elevenlabs';
+        $provider = $f['provider'] ?? 'qeema_acoustic';   // own voices: the uploaded sample, no ElevenLabs id
         if ($provider === 'elevenlabs' && empty($f['provider_voice_id'])) return response()->json(['error' => 'معرّف الصوت في ElevenLabs (voice_id) مطلوب'], 400);
         if (empty($f['preview_url'])) return response()->json(['error' => 'العينة الصوتية مطلوبة'], 400);
         $id = 'voice-ai-' . round(microtime(true) * 1000);
         DB::table('qv_tts_voices')->insert(array_merge([
-            'id' => $id, 'gender' => 'male', 'dialect' => 'gulf', 'style' => 'commercial', 'style_label' => 'رسمي واحترافي', 'provider' => $provider,
+            'id' => $id, 'gender' => 'male', 'dialect' => 'gulf', 'dialect_label' => self::DIALECT_AR['gulf'], 'style' => 'commercial', 'style_label' => 'رسمي واحترافي', 'provider' => $provider,
             'use_cases' => json_encode(['ads', 'corporate', 'social_media']), 'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
         ], $f, [
             'narrator_share_percent' => !empty($f['narrator_id']) ? ($f['narrator_share_percent'] ?? self::DEFAULT_SHARE) : null,
