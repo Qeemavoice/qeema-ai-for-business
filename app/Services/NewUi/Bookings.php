@@ -80,6 +80,41 @@ class Bookings
         return Order::query()->where('order_type_id', OrderType::BOOKING_VOICE)->with(['items.details', 'voiceActor', 'customer']);
     }
 
+    /** Platform commission on top of the narrator price: 50% for bookings before the change, then the current rate (30%). */
+    public const LEGACY_COMMISSION_PERCENT = 50;
+    public const COMMISSION_CHANGED_AT = '2026-11-05 00:00:00';   // Africa/Cairo
+
+    private static function isNewUi(Order $o): bool
+    {
+        $raw = $o->getAttributes()['list_of_price'] ?? null;
+        $lp = is_string($raw) ? json_decode($raw, true) : (is_array($raw) ? $raw : null);
+        return ($lp['source'] ?? null) === 'new-ui';
+    }
+
+    /** Commission % the order was priced with */
+    public static function commissionPctOf(Order $o, ?object $meta = null): float
+    {
+        if (($meta && $meta->talent_payout_usd !== null) || self::isNewUi($o)) {
+            $share = self::narratorShare($o, $meta);
+            return $share > 0 ? round(((float) $o->total / $share - 1) * 100, 1) : Plans::commissionPercent();
+        }
+        $created = Store::carbon(Store::created($o, 'created_at'));
+        $cut = \Carbon\Carbon::parse(self::COMMISSION_CHANGED_AT, 'Africa/Cairo');
+        return $created && $created->lt($cut) ? (float) self::LEGACY_COMMISSION_PERCENT : Plans::commissionPercent();
+    }
+
+    /**
+     * The narrator's share of an order. New-UI bookings store it (narrator price × minutes). Old-site bookings:
+     * total ÷ (1 + commission), with the 50% rule before COMMISSION_CHANGED_AT and the current rate after it
+     * (the old price breakdown's subTotal is not consistent with that rule, so it is not used).
+     */
+    public static function narratorShare(Order $o, ?object $meta = null): float
+    {
+        if ($meta && $meta->talent_payout_usd !== null) return (float) $meta->talent_payout_usd;
+        if (self::isNewUi($o) && (float) $o->sub_total > 0) return (float) $o->sub_total;
+        return Plans::narratorShareOf((float) $o->total, self::commissionPctOf($o, $meta));
+    }
+
     /** Full booking (admin view). Contact details and payout are included. */
     public static function view(Order $o, ?object $meta = null, ?array $voice = null): array
     {
@@ -105,7 +140,8 @@ class Bookings
             'usageLicense' => $meta->usage_license ?? 'commercial_ads',
             'notes' => (string) ($item->notes ?? $o->note ?? ''),
             'priceUsd' => (float) $o->total,
-            'talentPayoutUsd' => (float) ($meta->talent_payout_usd ?? $o->sub_total),
+            'talentPayoutUsd' => self::narratorShare($o, $meta),
+            'commissionPct' => self::commissionPctOf($o, $meta),
             'paymentModel' => 'direct_escrow_100',
             'status' => self::status($o, $meta),
             'deliverableAudioUrl' => $meta->deliverable_url ?? null,

@@ -88,7 +88,24 @@ class AdminController extends Controller
 
     public function bookings()
     {
-        return response()->json(['bookings' => Bookings::all()]);
+        $bookings = Bookings::all();
+        // «زبون متكرر»: the same client (account, else e-mail) booked more than once (canceled orders not counted)
+        $key = fn ($b) => $b['companyId'] !== 'c' ? $b['companyId'] : mb_strtolower((string) ($b['customerEmail'] ?? $b['companyName']));
+        $count = [];
+        foreach ($bookings as $b) if ($b['status'] !== 'canceled') $count[$key($b)] = ($count[$key($b)] ?? 0) + 1;
+        $revenue = 0.0; $narrators = 0.0; $n = 0;
+        foreach ($bookings as &$b) {
+            $b['customerBookingsCount'] = $count[$key($b)] ?? 0;
+            $b['repeatCustomer'] = $b['customerBookingsCount'] > 1;
+            if ($b['status'] === 'canceled') continue;
+            $revenue += $b['priceUsd']; $narrators += $b['talentPayoutUsd']; $n++;
+        }
+        unset($b);
+        return response()->json(['bookings' => $bookings, 'summary' => [
+            'bookingsCount' => $n,   // canceled / rejected orders excluded from every figure
+            'revenueUsd' => round($revenue, 2), 'narratorEarningsUsd' => round($narrators, 2), 'platformEarningsUsd' => round($revenue - $narrators, 2),
+            'repeatCustomers' => count(array_filter($count, fn ($c) => $c > 1)), 'customers' => count($count),
+        ]]);
     }
 
     public function bookingStatus(Request $r, string $id)

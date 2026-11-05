@@ -162,7 +162,7 @@ class Store
         return is_object($row) ? ($row->{$field} ?? null) : (is_array($row) ? ($row[$field] ?? null) : $row);
     }
 
-    private static function carbon($dt): ?\Carbon\Carbon
+    public static function carbon($dt): ?\Carbon\Carbon
     {
         if (!$dt) return null;
         if ($dt instanceof \DateTimeInterface) return \Carbon\Carbon::instance($dt);
