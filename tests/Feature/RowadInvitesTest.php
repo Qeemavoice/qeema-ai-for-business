@@ -146,13 +146,16 @@ class RowadInvitesTest extends TestCase
     public function test_feature_gate_before_and_after_public_launch()
     {
         $u = $this->client('regular@example.test');
-        $this->api($u)->getJson('/api/v1/credits')->assertStatus(403)->assertJsonPath('redirect', '/ar/waitlist');
-        $this->api($u)->postJson('/api/v1/generations', ['text' => 'نص تجريبي', 'voiceId' => 'x'])->assertStatus(403);
+        $this->api($u)->postJson('/api/v1/generations', ['text' => 'نص تجريبي', 'voiceId' => 'x'])->assertStatus(403)->assertJsonPath('redirect', '/ar/waitlist');
+        $this->api($u)->getJson('/api/v1/generations')->assertStatus(403);
+        // plans and top-up stay open to every client
+        $this->api($u)->getJson('/api/v1/credits')->assertOk();
+        $this->api($u)->getJson('/api/v1/billing')->assertOk();
         $this->api($u)->getJson('/api/v1/auth/me')->assertJsonPath('features.newFeatures', false);
         $this->assertFalse(canUseNewFeatures($u));
 
         $this->travelTo($this->cairo('2026-11-27 00:00:00'));
-        $this->api($u)->getJson('/api/v1/credits')->assertOk();
+        $this->api($u)->getJson('/api/v1/generations')->assertOk();
         $this->api($u)->getJson('/api/v1/auth/me')->assertJsonPath('features.newFeatures', true);
         $this->assertTrue(canUseNewFeatures($u));
     }
@@ -162,6 +165,8 @@ class RowadInvitesTest extends TestCase
     {
         $u = $this->client('sub@example.test');
         $this->api($u)->postJson('/api/v1/early/redeem', ['code' => $this->invite()->code])->assertOk();
+        $this->api($u)->getJson('/api/v1/billing/offers')->assertOk()
+            ->assertJsonPath('offers.plan-starter.subscription.price', 16)->assertJsonPath('offers.plan-starter.topup.bonusChars', 5000);
         $this->api($u)->postJson('/api/v1/billing/change-plan', ['planId' => 'plan-starter'])
             ->assertOk()->assertJsonPath('priceUsd', 16)->assertJsonPath('offer', 'rowad');   // 20 USD − 20%
         $acc = DB::table('qv_client_accounts')->where('user_id', $u->id)->first();

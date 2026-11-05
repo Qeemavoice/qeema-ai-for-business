@@ -224,8 +224,8 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
               >
                 <div className="px-3.5 pt-3 pb-1 empty:hidden"><RowadBadge /></div>
 
-                {/* 1. Balance Box (Rowad members now, everyone from the public launch) */}
-                {canUseNew && <div className="p-3.5 space-y-2.5 bg-slate-50/50">
+                {/* 1. Balance Box */}
+                {<div className="p-3.5 space-y-2.5 bg-slate-50/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-slate-800">رصيد الحساب</span>

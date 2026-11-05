@@ -48,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const location = useLocation();
   const currentPath = location.pathname;
-  const canUseNew = useRowad().canUse;   // TTS and pricing links: Rowad members now, everyone from the public launch
+  const canUseNew = useRowad().canUse;   // TTS links: Rowad members now, everyone from the public launch (plans are open to all)
 
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -247,7 +247,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* 3. الأسعار */}
-              {canUseNew && (
+              {(
               <Link
                 to="/ar/pricing"
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
@@ -489,7 +489,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* 3. الأسعار */}
-          {canUseNew && <div className="border-t border-slate-100 pt-3 space-y-1">
+          {<div className="border-t border-slate-100 pt-3 space-y-1">
             <Link
               to="/ar/pricing"
               onClick={() => setMobileMenuOpen(false)}

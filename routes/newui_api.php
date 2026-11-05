@@ -58,18 +58,20 @@ Route::middleware('qv.user')->group(function () {
 
 // ---- signed-in clients ----
 Route::middleware('qv.user')->group(function () {
-    // credits, plans, top-up and TTS: Rowad members now, everyone from config('rowad.public_launch_at')
+    // TTS studio: Rowad members now, everyone from config('rowad.public_launch_at')
     Route::middleware('qv.features')->group(function () {
         Route::post('generations', 'ClientController@generate');
         Route::get('generations', 'ClientController@generations');
         Route::get('generations/{id}', 'ClientController@generation');
         Route::delete('generations/{id}', 'ClientController@deleteGeneration');
-        Route::get('credits', 'ClientController@credits');
-        Route::post('credits/topup', 'ClientController@topup');
-        Route::get('usage', 'ClientController@usage');
-        Route::get('billing', 'ClientController@billing');
-        Route::post('billing/change-plan', 'ClientController@changePlan');
     });
+    // plans and top-up: open to every client (the Rowad price applies to members inside the early window)
+    Route::get('credits', 'ClientController@credits');
+    Route::post('credits/topup', 'ClientController@topup');
+    Route::get('usage', 'ClientController@usage');
+    Route::get('billing', 'ClientController@billing');
+    Route::get('billing/offers', 'ClientController@offers');
+    Route::post('billing/change-plan', 'ClientController@changePlan');
     Route::get('client/bookings', 'ClientController@bookings');
     Route::post('client/bookings/{id}/review', 'ClientController@review');
     Route::post('client/feedback', 'ClientController@feedback');

@@ -49,6 +49,14 @@ export interface BillingResponse {
   }[];
 }
 
+export interface PlanOffer {
+  subscription: { price: number; listPrice: number; offer: 'rowad' | 'rowad_locked' | 'white_friday' | null; discountPct: number };
+  topup: { price: number; listPrice: number; chars: number; bonusChars: number; offer: 'rowad' | 'white_friday' | null };
+}
+
+/** window event: the balance or plan changed outside App (App reloads the account) */
+export const ACCOUNT_CHANGED_EVENT = 'qv:account-changed';
+
 /** window event fired when a TTS generation is refused for lack of credits (detail: the API answer) */
 export const INSUFFICIENT_CREDITS_EVENT = 'qv:insufficient-credits';
 
@@ -224,7 +232,14 @@ export const api = {
     return res.json();
   },
 
-  async changePlan(planId: string): Promise<{ success: boolean; currentPlan: Plan; newBalanceCredits: number; message: string }> {
+  /** What this account pays per plan now: Rowad price / top-up gift / White Friday (server: ClientController::offers) */
+  async getOffers(): Promise<{ offers: Record<string, PlanOffer>; rowadPriceActive: boolean; rowadPriceUntil: string | null }> {
+    const res = await fetch('/api/v1/billing/offers', { headers: getHeaders() });
+    if (!res.ok) throw new Error('تعذر جلب الأسعار');
+    return res.json();
+  },
+
+  async changePlan(planId: string): Promise<{ success: boolean; currentPlan: Plan; newBalanceCredits: number; message: string; priceUsd?: number; offer?: string | null }> {
     const res = await fetch('/api/v1/billing/change-plan', {
       method: 'POST',
       headers: getHeaders(),

@@ -152,6 +152,20 @@ class ClientController extends Controller
         return response()->json(['company' => $ctx['company'], 'currentPlan' => $plan, 'availablePlans' => Plans::all(), 'balanceCredits' => $ctx['balance'], 'invoices' => $invoices]);
     }
 
+    /** GET billing/offers: what this account pays per plan now (Rowad price / top-up gift / White Friday, never combined) */
+    public function offers(Request $r)
+    {
+        $cu = Accounts::context($r)['companyUser'];
+        $out = [];
+        foreach (Plans::all() as $p) {
+            if (empty($p['priceUsd']) || empty($p['monthlyCredits'])) continue;
+            $out[$p['id']] = ['subscription' => array_diff_key(RowadService::subscriptionPrice($cu, $p), ['lock' => 1]),
+                'topup' => RowadService::topupPrice($cu, (float) $p['priceUsd'], (int) $p['monthlyCredits'])];
+        }
+        return response()->json(['offers' => $out, 'rowadPriceActive' => RowadService::rowadPriceActive($cu),
+            'rowadPriceUntil' => $cu->rowad_price_until ? $cu->rowad_price_until->toIso8601String() : null]);
+    }
+
     public function changePlan(Request $r)
     {
         $ctx = Accounts::context($r);

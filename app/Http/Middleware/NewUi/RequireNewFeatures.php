@@ -7,7 +7,7 @@ use App\Services\RowadService;
 use Closure;
 
 /**
- * Credits, plans, top-up and TTS endpoints: Rowad members now, everyone from public_launch_at (config/rowad.php).
+ * TTS studio endpoints: Rowad members now, everyone from public_launch_at (config/rowad.php). Plans and top-up are open to all.
  * The front end hides the links and sends visitors to /ar/waitlist; this keeps the API closed too.
  */
 class RequireNewFeatures

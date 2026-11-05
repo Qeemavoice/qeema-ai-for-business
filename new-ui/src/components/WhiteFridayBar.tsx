@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useRowad } from '../lib/rowad';
 
 // ponytail: fixed end date; move it to the dashboard settings if offers start changing often
 const ENDS_AT = new Date('2026-12-01T00:00:00+03:00').getTime();   // end of 30 Nov 2026, Riyadh time
@@ -10,8 +9,7 @@ const two = (n: number) => String(n).padStart(2, '0');
 /** «عروض الجمعة البيضاء» strip at the top of the header with a live countdown; hidden once the offer ends. */
 export const WhiteFridayBar: React.FC = () => {
   const [now, setNow] = useState(() => Date.now());
-  // plans open to Rowad members now and to everyone from the public launch; until then the open offer is human voices
-  const target = useRowad().canUse ? '/ar/pricing' : '/ar/voices';
+  const target = '/ar/pricing';
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);

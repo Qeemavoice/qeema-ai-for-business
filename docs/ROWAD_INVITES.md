@@ -35,9 +35,11 @@ Spending takes from the batch that expires soonest. `ExpireTtsCredits` closes la
 e-mails a reminder 7 days before expiry.
 
 ## Feature gate
-`canUseNewFeatures($user)` (helper), `Gate::allows('new-features')`, middleware `qv.features` on credits / top-up / billing /
-plan change / usage / generations / TTS trial APIs (403 JSON `redirect: /ar/waitlist`). The React site hides the links and
-sends closed pages to `/ar/waitlist`. Opens for everyone at `public_launch_at` without a deploy.
+`canUseNewFeatures($user)` (helper), `Gate::allows('new-features')`, middleware `qv.features` on the TTS studio APIs
+(generations, TTS trial; 403 JSON `redirect: /ar/waitlist`). The React site hides the TTS links and sends the TTS pages to
+`/ar/waitlist`. Opens for everyone at `public_launch_at` without a deploy.
+Plans, top-up and credits are open to every client (decision 2026-11-05); `GET /api/v1/billing/offers` returns what the
+account pays per plan (Rowad price / top-up gift / White Friday), shown in the top-up window and the plans tab.
 
 ## Rowad price
 - Subscription: `rowad_discount_pct` off, stored on `qv_client_accounts.locked_plan_id / locked_price / locked_until`

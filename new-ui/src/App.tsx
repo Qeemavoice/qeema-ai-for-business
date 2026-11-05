@@ -54,7 +54,7 @@ import { TALENT_SIGNUP_EVENT, openTalentSignup } from './lib/talentJoin';
 import { narratorService } from './services/narratorService';
 
 import { Voice, Company, User, Generation, Plan } from './types';
-import { api, getToken } from './lib/api';
+import { api, getToken, ACCOUNT_CHANGED_EVENT } from './lib/api';
 import { getGoogleAccessToken } from './lib/googleSignIn';
 import { SignInGate } from './components/SignInGate';
 import { NewFeaturesGate } from './components/NewFeaturesGate';
@@ -181,6 +181,13 @@ export default function App() {
     api.getVoices().then(r => setVoices(r.voices)).catch(err => console.error('Error loading voices:', err));
     if (getToken()) loadMe().catch(() => { api.logout(); signedOut(); }); // expired or revoked session
     else markRowadReady();
+  }, []);
+
+  // a plan bought inside a page (BillingTab): reload balance, plan and Rowad state
+  useEffect(() => {
+    const reload = () => { if (getToken()) loadMe().catch(() => {}); };
+    window.addEventListener(ACCOUNT_CHANGED_EVENT, reload);
+    return () => window.removeEventListener(ACCOUNT_CHANGED_EVENT, reload);
   }, []);
 
   const handleSwitchCompany = async (companyId: string) => {
@@ -314,7 +321,7 @@ export default function App() {
           <Route path="/ar/voice-models/promo" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['promo']} />} />
           <Route path="/ar/voice-models/religious" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['religious']} />} />
           <Route path="/ar/text-to-speech" element={<NewFeaturesGate><TextToSpeechPage isLoggedIn={isLoggedIn} voices={voices} onGenerated={setBalanceCredits} onGoogle={loginWithGoogle} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} /></NewFeaturesGate>} />
-          <Route path="/ar/pricing" element={<NewFeaturesGate><PricingPage /></NewFeaturesGate>} />
+          <Route path="/ar/pricing" element={<PricingPage />} />
           {/* «روّاد قيمة» invite links (the server checks the code first) and the waitlist */}
           <Route path="/ar/early" element={<EarlyAccessPage isLoggedIn={isLoggedIn} onOpenLogin={(email) => { setAuthEmail(email || ''); setAuthModalMode('login'); }} onOpenSignup={(email) => { setAuthEmail(email || ''); setAuthRole('client'); setAuthModalMode('signup'); }} onActivated={() => { loadMe().catch(() => {}); }} />} />
           <Route path="/ar/early/welcome" element={<EarlyWelcomePage isLoggedIn={isLoggedIn} onOpenLogin={() => setAuthModalMode('login')} />} />

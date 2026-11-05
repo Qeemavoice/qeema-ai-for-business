@@ -26,8 +26,8 @@ import {
 import { Company, User } from '../../types';
 import { findPlan } from '../../../shared/plans';
 
-/** Tabs closed until the public launch for accounts without early access (credits, plans, TTS) */
-export const GATED_NAV: string[] = ['studio', 'billing'];
+/** Tabs closed until the public launch for accounts without early access (the TTS studio; plans are open to all) */
+export const GATED_NAV: string[] = ['studio'];
 
 export type DashboardNavKey = 
   | 'home' 
@@ -203,8 +203,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </div>
         )}
 
-        {/* Upgrade / Credits Bar (Rowad members now, everyone from the public launch) */}
-        {canUseNew && <div className="p-2.5 rounded-2xl bg-gradient-to-r from-brand-ink to-brand-ink/90 text-white shadow-xs">
+        {/* Upgrade / Credits Bar (plans and top-up are open to every client) */}
+        {<div className="p-2.5 rounded-2xl bg-gradient-to-r from-brand-ink to-brand-ink/90 text-white shadow-xs">
           <div className="flex items-center justify-between mb-1.5">
             <div className="text-[11px] font-bold flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-brand-text" />

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, Coins, Check, Zap, ShieldCheck, CreditCard } from 'lucide-react';
-import { api } from '../lib/api';
+import React, { useEffect, useState } from 'react';
+import { X, Coins, Check, Zap, ShieldCheck, CreditCard, Gift } from 'lucide-react';
+import { api, type PlanOffer } from '../lib/api';
 import { PLANS } from '../../shared/plans';
 
 interface TopUpCreditsModalProps {
@@ -19,6 +19,9 @@ export const TopUpCreditsModal: React.FC<TopUpCreditsModalProps> = ({ isOpen, on
   const [selectedPack, setSelectedPack] = useState(PACKS.find(p => p.featured)?.id || PACKS[0]?.id);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // this account's price per pack (Rowad gift / White Friday); list prices until it answers
+  const [offers, setOffers] = useState<Record<string, PlanOffer>>({});
+  useEffect(() => { if (isOpen) api.getOffers().then(r => setOffers(r.offers || {})).catch(() => setOffers({})); }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -99,18 +102,30 @@ export const TopUpCreditsModal: React.FC<TopUpCreditsModalProps> = ({ isOpen, on
                     {selectedPack === pack.id && <Check className="w-3 h-3" />}
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-bold text-slate-900 text-sm">{pack.title}</h4>
                       <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 font-mono text-slate-700 font-bold">
                         {pack.credits.toLocaleString('en-US')} حرف
                       </span>
+                      {(offers[pack.id]?.topup.bonusChars || 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-brand-ink text-white font-bold">
+                          <Gift className="w-3 h-3 text-brand-yellow" />+{offers[pack.id].topup.bonusChars.toLocaleString('en-US')} حرف هدية روّاد قيمة
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">{pack.description}</p>
                   </div>
                 </div>
 
                 <div className="text-left">
-                  <div className="text-lg font-black text-slate-900 font-mono">${pack.price}</div>
+                  {offers[pack.id] && offers[pack.id].topup.price < pack.price ? (
+                    <div className="flex items-baseline gap-1.5 justify-end">
+                      <span className="text-xs text-slate-400 line-through font-mono">${pack.price}</span>
+                      <span className="text-lg font-black text-brand-text font-mono">${offers[pack.id].topup.price}</span>
+                    </div>
+                  ) : (
+                    <div className="text-lg font-black text-slate-900 font-mono">${pack.price}</div>
+                  )}
                   <div className="text-[10px] text-slate-500">{pack.unitCost}</div>
                 </div>
               </div>
@@ -146,7 +161,7 @@ export const TopUpCreditsModal: React.FC<TopUpCreditsModalProps> = ({ isOpen, on
               className="px-6 py-2.5 rounded-xl bg-brand text-white text-sm font-bold shadow-lg shadow-brand/25 hover:bg-brand-orange transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               <CreditCard className="w-4 h-4" />
-              {loading ? 'جارٍ معالجة الدفع...' : `ادفع الآن $${packs.find(p => p.id === selectedPack)?.price ?? ''}`}
+              {loading ? 'جارٍ معالجة الدفع...' : 'ادفع الآن'}
             </button>
           </div>
         </div>
