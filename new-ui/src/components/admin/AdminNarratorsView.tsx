@@ -82,9 +82,9 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // what clients actually see in the library: the average client price of the library voices
-  const libraryPrices = narratorService.allLibraryVoices().map(v => Number(v.finalPriceUsd)).filter(p => p > 0);
-  const avgFinal = libraryPrices.length ? libraryPrices.reduce((a, b) => a + b, 0) / libraryPrices.length : 0;
+  // voices in «مكتبة الأصوات» and how many narrators they belong to
+  const libraryVoices = narratorService.allLibraryVoices();
+  const libraryNarrators = new Set(libraryVoices.map(v => v.narratorId)).size;
   const pendingSamples = samples.filter(s => s.status === 'pending_review').length;
 
   const sendInvite = async (id: string) => {
@@ -128,7 +128,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
         <StatCard label="إجمالي المعلقين" value={fmtNum(narrators.length)} />
         <StatCard label="الحسابات المفعّلة" value={fmtNum(narrators.filter(n => n.status === 'active').length)} tone="green" />
         <StatCard label="عينات بانتظار المراجعة" value={fmtNum(pendingSamples)} tone="amber" hint="تُراجع من صفحة العينات" />
-        <StatCard label="متوسط السعر النهائي بالمكتبة" value={`$${fmtUsd(avgFinal)}`} tone="orange" hint={`متوسط ${fmtNum(libraryPrices.length)} صوت: سعر المعلق + عمولة ${PLATFORM_COMMISSION_PERCENT}%`} />
+        <StatCard label="عدد الأصوات" value={fmtNum(libraryVoices.length)} tone="orange" hint={`في مكتبة الأصوات، لـ ${fmtNum(libraryNarrators)} معلق`} />
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-5 space-y-4">
