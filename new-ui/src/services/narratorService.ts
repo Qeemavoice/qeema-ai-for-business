@@ -10,8 +10,7 @@ import {
   VoiceSampleStatus,
   VoiceOverBooking,
   VoiceOverBookingStatus,
-  NarratorNotification
-} from '../types';
+  NarratorNotification, LibraryVoice } from '../types';
 import { SAMPLE_RULES, reasonByCode } from '../../shared/sampleRules';
 import { DIALECTS } from '../data/dialects';
 import { getToken } from '../lib/api';
@@ -26,6 +25,8 @@ class NarratorService {
   private usageEvents: UsageEvent[] = [];
   private auditLogs: AuditLog[] = [];
   private voiceSamples: VoiceSample[] = [];
+  /** voices of «مكتبة الأصوات» per narrator: read-only, sent by the server on every load, never saved back */
+  private libraryVoices: LibraryVoice[] = [];
   private voiceOverBookings: VoiceOverBooking[] = [];
   private notifications: NarratorNotification[] = [];
   private verificationCodes: Record<string, string> = {};
@@ -60,6 +61,7 @@ class NarratorService {
     this.usageEvents = data?.usageEvents || [];
     this.auditLogs = data?.auditLogs || [];
     this.voiceSamples = data?.voiceSamples || [];
+    this.libraryVoices = data?.libraryVoices || [];
     this.voiceOverBookings = data?.voiceOverBookings || [];
     this.notifications = data?.notifications || [];
     // dialects are picked from the platform list (src/data/dialects.ts); old free-text ones are mapped
@@ -641,6 +643,11 @@ class NarratorService {
   // ==========================================
   // VOICE SAMPLES MANAGEMENT
   // ==========================================
+
+  /** The narrator's voices in the voice library (with their price per minute) */
+  public libraryVoicesOf(narratorId: string): LibraryVoice[] {
+    return this.libraryVoices.filter(v => v.narratorId === narratorId);
+  }
 
   public async getVoiceSamples(narratorId: string): Promise<VoiceSample[]> {
     await this.ready;

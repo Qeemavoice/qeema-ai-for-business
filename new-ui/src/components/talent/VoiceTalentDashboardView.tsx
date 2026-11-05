@@ -2157,6 +2157,46 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                   </div>
                 </div>
 
+                {/* «أصواتي في مكتبة الأصوات»: the narrator's published library voices with their price (read-only) */}
+                {narrator && narratorService.libraryVoicesOf(narrator.id).length > 0 && (
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+                    <div>
+                      <h3 className="font-black text-slate-900 text-sm">أصواتي في مكتبة الأصوات ({narratorService.libraryVoicesOf(narrator.id).length})</h3>
+                      <p className="text-[11px] text-slate-500 mt-1">أصواتك المنشورة التي يراها العملاء ويحجزونها. سعر الدقيقة هنا هو سعرك أنت، والعميل يرى سعرك مضافاً إليه عمولة المنصة {PLATFORM_COMMISSION_PERCENT}%. لتعديل صوت أو سعره تواصل مع الإدارة.</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {narratorService.libraryVoicesOf(narrator.id).map(v => {
+                        const own = v.narratorPriceUsd > 0 ? v.narratorPriceUsd : (narrator.rates?.perMinuteUsd || 0);
+                        const isPlaying = playingAudioId === `lib-${v.id}`;
+                        return (
+                          <div key={v.id} className="rounded-2xl border border-slate-200 p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-bold text-sm text-slate-900 truncate">{v.title || 'بدون اسم'}</p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">{[v.category, v.dialect].filter(Boolean).join(' • ')}</p>
+                              </div>
+                              {v.audioUrl && (
+                                <button
+                                  onClick={() => handleTogglePlayAudio(`lib-${v.id}`, v.audioUrl)}
+                                  className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center cursor-pointer ${isPlaying ? 'bg-brand text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                                  aria-label={isPlaying ? 'إيقاف' : 'استماع'}
+                                >
+                                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">سعرك / دقيقة</p><p className="font-mono font-black text-slate-900 text-sm">{own ? `$${fmtUsd(own)}` : '—'}</p></div>
+                              <div className="rounded-xl bg-orange-50 p-2"><p className="text-[9px] text-slate-500">يراه العميل</p><p className="font-mono font-black text-brand-text text-sm">{own ? `$${fmtUsd(own * (1 + PLATFORM_COMMISSION_PERCENT / 100))}` : '—'}</p></div>
+                              <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">حجوزات</p><p className="font-mono font-black text-slate-900 text-sm">{v.bookingsCount}</p></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
               </div>
             )}
 

@@ -185,8 +185,31 @@ class NarratorController extends Controller
         $st = self::state();
         $who = self::actorFor($r, $st);
         if (!$who) return response()->json(['error' => 'يلزم تسجيل الدخول'], 401);
-        if ($who === 'all') { $st['aiVoices'] = (object) $st['aiVoices']; $st['contracts'] = (object) $st['contracts']; return response()->json($st); }
-        return response()->json(self::sliceFor($st, $who));
+        if ($who === 'all') {
+            $st['aiVoices'] = (object) $st['aiVoices']; $st['contracts'] = (object) $st['contracts'];
+            return response()->json($st + ['libraryVoices' => self::libraryVoices()]);
+        }
+        return response()->json(self::sliceFor($st, $who) + ['libraryVoices' => self::libraryVoices($who)]);
+    }
+
+    /**
+     * The narrator's voices in «مكتبة الأصوات» (old `voices` table, linked by voiceover_id), with the narrator's price
+     * per minute and the client's final price. Read-only and computed on every read (never stored in the narrator state,
+     * not counted in the 3 uploaded samples).
+     */
+    public static function libraryVoices(?string $narratorId = null): array
+    {
+        $out = [];
+        foreach (\App\Services\NewUi\Library::all() as $v) {
+            if (empty($v['_talentUserId']) || str_starts_with((string) $v['id'], 'ns-')) continue;
+            $nid = 'narrator_u' . $v['_talentUserId'];
+            if ($narratorId && $nid !== $narratorId) continue;
+            $out[] = ['id' => (string) $v['id'], 'narratorId' => $nid, 'title' => (string) $v['sampleName'], 'category' => (string) $v['category'],
+                'dialect' => (string) $v['dialect'], 'language' => (string) $v['language'], 'gender' => $v['gender'], 'audioUrl' => (string) $v['previewUrl'],
+                'narratorPriceUsd' => (float) $v['narratorPriceUsd'], 'finalPriceUsd' => (float) $v['finalPriceUsd'],
+                'bookingsCount' => (int) $v['bookingsCount'], 'listensCount' => (int) $v['usageCount'], 'createdAt' => (string) $v['createdAt']];
+        }
+        return $out;
     }
 
     public function putState(Request $r)

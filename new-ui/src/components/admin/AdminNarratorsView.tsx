@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, RefreshCw, Send, Copy, Check, ExternalLink, Mail, Phone, Eye, Ban, RotateCcw, Plus, ShieldCheck } from 'lucide-react';
 import { narratorService } from '../../services/narratorService';
 import { Narrator, NarratorNotification, NarratorStatus, VoiceOverBooking, VoiceSample, AIVoice } from '../../types';
+import { buildSampleSlug } from '../VoiceLibraryView';
 import { finalPrice, commissionAmount, fmtUsd, PLATFORM_COMMISSION_PERCENT } from '../../../shared/pricing';
 import { reasonByCode } from '../../../shared/sampleRules';
 import { fmtDate, fmtDateTime, fmtMoney, fmtNum } from '../../lib/format';
@@ -108,6 +109,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
     { header: 'السعر النهائي بالمكتبة / دقيقة ($)', value: n => n.rates?.perMinuteUsd ? finalPrice(n.rates.perMinuteUsd) : '' },
     { header: 'العينات المعتمدة', value: n => samplesOf(n.id).filter(s => s.status === 'published').length },
     { header: 'إجمالي العينات', value: n => samplesOf(n.id).length },
+    { header: 'أصوات المكتبة', value: n => narratorService.libraryVoicesOf(n.id).length },
     { header: 'تاريخ الانضمام', value: n => fmtDate(n.createdAt) }
   ], filtered);
 
@@ -187,6 +189,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
                     <td className="p-3">
                       <span className="font-mono font-bold text-slate-800">{pub}/{ss.length}</span>
                       {pend > 0 && <Badge tone="amber" className="mr-1.5">{pend} بالانتظار</Badge>}
+                      {narratorService.libraryVoicesOf(n.id).length > 0 && <span className="block text-[10px] text-slate-500 mt-0.5">{narratorService.libraryVoicesOf(n.id).length} صوت في المكتبة</span>}
                     </td>
                     <td className="p-3"><Badge tone={(KYC[n.kycStatus] || KYC.none).tone}>{(KYC[n.kycStatus] || KYC.none).label}</Badge></td>
                     <td className="p-3"><Badge tone={BADGE[n.humanBadge || 'none'].tone}>{BADGE[n.humanBadge || 'none'].label}</Badge></td>
@@ -247,6 +250,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   const [msgBody, setMsgBody] = useState('');
 
   const refreshNotifs = async () => setNotifs(await narratorService.getNotifications(n.id));
+  const library = useMemo(() => narratorService.libraryVoicesOf(n.id), [n.id]);
 
   useEffect(() => {
     narratorService.getVoiceOverBookings(n.id).then(setBookings);
@@ -292,6 +296,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
       <Tabs active={tab} onChange={setTab} tabs={[
         { id: 'overview', label: 'نظرة عامة' },
         { id: 'samples', label: 'العينات', count: samples.length },
+        { id: 'library', label: 'أصواته في المكتبة', count: library.length },
         { id: 'earnings', label: 'الحجوزات والأرباح', count: bookings.length },
         { id: 'notifs', label: 'الإشعارات', count: notifs.length },
         { id: 'notes', label: 'ملاحظات الإدارة', count: n.adminNotes?.length || 0 }
@@ -413,6 +418,34 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
               );
             })}
             {onOpenSamples && <button onClick={onOpenSamples} className="text-xs font-bold text-brand-text hover:underline cursor-pointer">الذهاب إلى صفحة العينات للمراجعة والاعتماد ←</button>}
+          </>
+        )}
+
+        {tab === 'library' && (
+          <>
+            <p className="text-[11px] text-slate-500 leading-relaxed">أصوات المعلق المنشورة في مكتبة الأصوات، بسعر الدقيقة الخاص بكل صوت والسعر الذي يراه العميل (سعر المعلق + عمولة المنصة {PLATFORM_COMMISSION_PERCENT}%).</p>
+            {library.length === 0 && <p className="text-center text-slate-400 text-xs py-10">لا توجد أصوات لهذا المعلق في مكتبة الأصوات</p>}
+            {library.map(v => {
+              const own = v.narratorPriceUsd > 0 ? v.narratorPriceUsd : (n.rates?.perMinuteUsd || 0);
+              return (
+                <div key={v.id} className="rounded-2xl border border-slate-200 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-slate-900">{v.title || 'بدون اسم'}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{[v.category, v.dialect, v.language, v.gender === 'female' ? 'نسائي' : 'رجالي'].filter(Boolean).join(' • ')}</p>
+                    </div>
+                    <a href={`/ar/booking/${buildSampleSlug({ id: v.id, sampleName: v.title, name: v.title })}`} target="_blank" rel="noopener noreferrer"
+                      className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-brand-text hover:underline"><ExternalLink className="w-3 h-3" />صفحة الصوت</a>
+                  </div>
+                  {v.audioUrl && <SamplePlayer url={v.audioUrl} />}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-slate-50 p-2"><p className="text-[10px] text-slate-500">سعر المعلق / دقيقة</p><p className="font-mono font-black text-slate-900 text-sm">{own ? `$${fmtUsd(own)}` : '—'}</p>{v.narratorPriceUsd <= 0 && own > 0 && <p className="text-[9px] text-slate-400">من سعره العام</p>}</div>
+                    <div className="rounded-xl bg-orange-50 p-2"><p className="text-[10px] text-slate-500">السعر للعميل / دقيقة</p><p className="font-mono font-black text-brand-text text-sm">{own ? `$${fmtUsd(finalPrice(own))}` : '—'}</p></div>
+                    <div className="rounded-xl bg-slate-50 p-2"><p className="text-[10px] text-slate-500">الحجوزات / الاستماع</p><p className="font-mono font-black text-slate-900 text-sm">{fmtNum(v.bookingsCount)} / {fmtNum(v.listensCount)}</p></div>
+                  </div>
+                </div>
+              );
+            })}
           </>
         )}
 

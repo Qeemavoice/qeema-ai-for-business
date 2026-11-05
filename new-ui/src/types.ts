@@ -402,6 +402,25 @@ export interface VoiceSample {
   createdAt: string;
 }
 
+/** A narrator's voice in «مكتبة الأصوات» (read-only; server: NarratorController::libraryVoices) */
+export interface LibraryVoice {
+  id: string;
+  narratorId: string;
+  title: string;
+  category: string;
+  dialect: string;
+  language: string;
+  gender: 'male' | 'female';
+  audioUrl: string;
+  /** the narrator's own price per minute for this voice (0 = not set, the narrator's rate applies) */
+  narratorPriceUsd: number;
+  /** what the client pays per minute (narrator price + platform commission) */
+  finalPriceUsd: number;
+  bookingsCount: number;
+  listensCount: number;
+  createdAt: string;
+}
+
 export type NarratorNotificationType = 'sample_rejected' | 'sample_approved' | 'account' | 'info';
 
 export interface NarratorNotification {
