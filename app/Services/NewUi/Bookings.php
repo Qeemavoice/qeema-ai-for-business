@@ -100,7 +100,12 @@ class Bookings
         }
         $created = Store::carbon(Store::created($o, 'created_at'));
         $cut = \Carbon\Carbon::parse(self::COMMISSION_CHANGED_AT, 'Africa/Cairo');
-        return $created && $created->lt($cut) ? (float) self::LEGACY_COMMISSION_PERCENT : Plans::commissionPercent();
+        if ($created && $created->lt($cut)) return (float) self::LEGACY_COMMISSION_PERCENT;
+        // after the change: the rate the booking was priced with, so a later change of the setting doesn't rewrite it
+        $raw = $o->getAttributes()['list_of_price'] ?? null;
+        $lp = is_string($raw) ? json_decode($raw, true) : (is_array($raw) ? $raw : null);
+        $stored = $lp['script']['platFormCommission']['percentage'] ?? null;
+        return is_numeric($stored) ? (float) $stored : Plans::commissionPercent();
     }
 
     /**

@@ -4,7 +4,7 @@ import { api } from '../../lib/api';
 import { narratorService } from '../../services/narratorService';
 import { fmtDateTime } from '../../lib/format';
 import { exportToExcel } from '../../lib/exportExcel';
-import { finalPrice, fmtUsd, PLATFORM_COMMISSION_PERCENT } from '../../../shared/pricing';
+import { finalPrice, fmtUsd, commissionPercent } from '../../../shared/pricing';
 import { VOICE_CATEGORY_FILTERS } from '../../data/humanVoices';
 import { getShortDialect } from '../VoiceLibraryView';
 import { Badge, ExcelButton, Pager } from './adminUi';
@@ -32,7 +32,7 @@ export const AdminVoicesView: React.FC = () => {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<Partial<VoiceSampleRow> | null>(null);
-  const [commission, setCommission] = useState(PLATFORM_COMMISSION_PERCENT);
+  const [commission, setCommission] = useState(commissionPercent());
   const [copied, setCopied] = useState<string | null>(null);
 
   const load = async () => {

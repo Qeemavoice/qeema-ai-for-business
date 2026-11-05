@@ -66,7 +66,7 @@ import {
   NarratorNotification
 } from '../../types';
 import { SAMPLE_RULES } from '../../../shared/sampleRules';
-import { fmtUsd, PLATFORM_COMMISSION_PERCENT } from '../../../shared/pricing';
+import { fmtUsd, commissionPercent } from '../../../shared/pricing';
 import { fmtDate, fmtDateTime } from '../../lib/format';
 import { narratorService } from '../../services/narratorService';
 import { audioSynth } from '../../utils/audioSynthesizer';
@@ -2162,7 +2162,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                   <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
                     <div>
                       <h3 className="font-black text-slate-900 text-sm">أصواتي في مكتبة الأصوات ({narratorService.libraryVoicesOf(narrator.id).length})</h3>
-                      <p className="text-[11px] text-slate-500 mt-1">أصواتك المنشورة التي يراها العملاء ويحجزونها. سعر الدقيقة هنا هو سعرك أنت، والعميل يرى سعرك مضافاً إليه عمولة المنصة {PLATFORM_COMMISSION_PERCENT}%. لتعديل صوت أو سعره تواصل مع الإدارة.</p>
+                      <p className="text-[11px] text-slate-500 mt-1">أصواتك المنشورة التي يراها العملاء ويحجزونها. سعر الدقيقة هنا هو سعرك أنت، والعميل يرى سعرك مضافاً إليه عمولة المنصة {commissionPercent()}%. لتعديل صوت أو سعره تواصل مع الإدارة.</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {narratorService.libraryVoicesOf(narrator.id).map(v => {
@@ -2187,7 +2187,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-center">
                               <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">سعرك / دقيقة</p><p className="font-mono font-black text-slate-900 text-sm">{own ? `$${fmtUsd(own)}` : '—'}</p></div>
-                              <div className="rounded-xl bg-orange-50 p-2"><p className="text-[9px] text-slate-500">يراه العميل</p><p className="font-mono font-black text-brand-text text-sm">{own ? `$${fmtUsd(own * (1 + PLATFORM_COMMISSION_PERCENT / 100))}` : '—'}</p></div>
+                              <div className="rounded-xl bg-orange-50 p-2"><p className="text-[9px] text-slate-500">يراه العميل</p><p className="font-mono font-black text-brand-text text-sm">{own ? `$${fmtUsd(own * (1 + commissionPercent() / 100))}` : '—'}</p></div>
                               <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">حجوزات</p><p className="font-mono font-black text-slate-900 text-sm">{v.bookingsCount}</p></div>
                             </div>
                           </div>
@@ -2730,7 +2730,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between">
                 <div>
                   <span className="text-slate-700 font-bold block">سعر الدقيقة المعتمد:</span>
-                  <span className="text-[10px] text-slate-500">سعرك الخاص. يرى العميل السعر شاملاً عمولة المنصة ({PLATFORM_COMMISSION_PERCENT}%)</span>
+                  <span className="text-[10px] text-slate-500">سعرك الخاص. يرى العميل السعر شاملاً عمولة المنصة ({commissionPercent()}%)</span>
                 </div>
                 <div className="px-3 py-1 rounded-lg bg-white border border-slate-200 font-mono font-black text-slate-900 text-sm">
                   ${fmtUsd(narrator?.rates?.perMinuteUsd ?? 0)} / دقيقة

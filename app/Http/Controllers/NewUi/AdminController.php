@@ -172,7 +172,11 @@ class AdminController extends Controller
     public function systemSettings(Request $r)
     {
         $s = [];
-        if ($r->has('platformCommissionPercent')) $s['platformCommissionPercent'] = (float) $r->input('platformCommissionPercent');
+        if ($r->has('platformCommissionPercent')) {
+            $v = (float) $r->input('platformCommissionPercent');
+            if ($v < 0 || $v > 100) return response()->json(['error' => 'نسبة رسوم المنصة يجب أن تكون بين 0 و 100'], 400);
+            Plans::setCommissionPercent($v);
+        }
         if ($r->has('maintenanceMode')) $s['maintenanceMode'] = (bool) $r->input('maintenanceMode');
         if ($r->has('creditRatePer10kCharsUsd')) $s['creditRatePer10kCharsUsd'] = (float) $r->input('creditRatePer10kCharsUsd');
         Store::saveSettings($s);
@@ -285,7 +289,7 @@ class AdminController extends Controller
         if (array_key_exists('platformCommissionPercent', $settings)) {
             $v = (float) $settings['platformCommissionPercent'];
             if ($v < 0 || $v > 100) return response()->json(['error' => 'نسبة رسوم المنصة يجب أن تكون بين 0 و 100'], 400);
-            $s['platformCommissionPercent'] = $v;
+            Plans::setCommissionPercent($v);
         }
         if (array_key_exists('stripeFeePercent', $settings)) {
             $v = (float) $settings['stripeFeePercent'];

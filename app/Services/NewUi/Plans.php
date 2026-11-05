@@ -83,9 +83,22 @@ class Plans
         return $p['priceUsd'] / $p['monthlyCredits'];
     }
 
+    /** The one platform rate: «الإعدادات ← العمولات» in the new admin (the old site's helpers read it too). */
     public static function commissionPercent(): float
     {
         return (float) (Store::settings()['platformCommissionPercent'] ?? self::PLATFORM_COMMISSION_PERCENT);
+    }
+
+    /** Saves the rate for the new UI and mirrors it into the old site's «commissions» setting, so both admin pages show it. */
+    public static function setCommissionPercent(float $pct): void
+    {
+        Store::saveSettings(['platformCommissionPercent' => $pct]);
+        $row = \App\Models\Setting::where('key', 'commissions')->first();
+        $old = $row ? (json_decode($row->value, true) ?: []) : [];
+        $old += ['paypal' => COMMISSION_PAYPAL, 'stripe' => COMMISSION_STRIPE];
+        $old['platform'] = $pct;
+        \App\Models\Setting::updateOrCreate(['key' => 'commissions'], ['value' => json_encode($old)]);
+        \Illuminate\Support\Facades\Cache::forget('settings');
     }
 
     /** Final price shown to the client (narrator price + commission). */

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { api } from '../../lib/api';
+import { setCommissionPercent } from '../../../shared/pricing';
 
 export type SettingsSection = 'currency' | 'commission' | 'payments' | 'smtp' | 'maintenance';
 
@@ -71,6 +72,7 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
         : { integrations: { [section === 'payments' ? 'stripe' : 'smtp']: section === 'payments' ? stripe : smtp } };
       const d = await api.saveAdminSettings(payload);
       setData(d); setDraft(structuredClone(d));
+      setCommissionPercent(d.platformCommissionPercent);
       setToast({ ok: true, text: 'تم حفظ الإعدادات' });
     } catch (err: any) {
       setToast({ ok: false, text: err.message || 'تعذر الحفظ' });

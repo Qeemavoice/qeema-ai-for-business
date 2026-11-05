@@ -61,6 +61,7 @@ import { NewFeaturesGate } from './components/NewFeaturesGate';
 import { InsufficientCreditsDialog } from './components/InsufficientCreditsDialog';
 import { EarlyAccessPage, EarlyWelcomePage, WaitlistPage } from './pages/EarlyAccessPage';
 import { setRowadFeatures, setPublicLaunchAt, markRowadReady } from './lib/rowad';
+import { setCommissionPercent } from '../shared/pricing';
 
 // Lazy loaded non-blocking widgets
 
@@ -233,7 +234,7 @@ export default function App() {
   // «إعدادات الصيانة» in the admin dashboard: visitors see a maintenance page, admins keep working
   const [maintenance, setMaintenance] = useState(false);
   useEffect(() => {
-    fetch('/api/v1/site-status').then(r => (r.ok ? r.json() : null)).then(d => { setMaintenance(Boolean(d?.maintenance)); setPublicLaunchAt(d?.publicLaunchAt); }).catch(() => {});
+    fetch('/api/v1/site-status').then(r => (r.ok ? r.json() : null)).then(d => { setCommissionPercent(d?.commissionPercent); setMaintenance(Boolean(d?.maintenance)); setPublicLaunchAt(d?.publicLaunchAt); }).catch(() => {});
   }, []);
   const siteClosed = maintenance && !currentUser?.isPlatformAdmin && !window.location.pathname.startsWith('/ar/admin');
 

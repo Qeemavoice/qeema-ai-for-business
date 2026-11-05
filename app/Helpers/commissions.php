@@ -6,8 +6,7 @@ use App\Models\Service;
 if (!function_exists('platformCommission')) {
     function platformCommission($price)
     {
-        $commissions = getSetting('commissions', true);
-        $fee = $commissions ? $commissions->platform : COMMISSION_PLATFORM;
+        $fee = \App\Services\NewUi\Plans::commissionPercent();
         return $price * $fee / 100;
     }
 }
@@ -82,7 +81,9 @@ if (!function_exists('commissions')) {
             'stripe' => COMMISSION_STRIPE,
         ]));
 
-        return $commission ? ($type ? $commission->{$type} : $commission) : ($type ? $defCommissions->{$type} : $defCommissions);
+        $out = $commission ? clone $commission : $defCommissions;
+        $out->platform = \App\Services\NewUi\Plans::commissionPercent();   // one rate for the whole site
+        return $type ? ($out->{$type} ?? null) : $out;
     }
 }
 

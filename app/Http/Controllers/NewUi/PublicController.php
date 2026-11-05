@@ -152,6 +152,7 @@ class PublicController extends Controller
     public function siteStatus()
     {
         return response()->json(['maintenance' => (bool) (Store::settings()['maintenanceMode'] ?? false),
+            'commissionPercent' => \App\Services\NewUi\Plans::commissionPercent(),
             // «روّاد قيمة»: credits, plans and TTS open to everyone at this moment (config/rowad.php)
             'publicLaunchAt' => \App\Services\RowadService::at('public_launch_at')->toIso8601String()]);
     }

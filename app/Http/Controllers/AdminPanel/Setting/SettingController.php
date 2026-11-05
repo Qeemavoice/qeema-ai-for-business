@@ -103,6 +103,10 @@ class SettingController extends CoreController
 
         Cache::forget('settings');
 
+        // the old «commissions» page edits the same platform rate as the new admin
+        $platform = $request->input('commissions.platform');
+        if (is_numeric($platform)) \App\Services\NewUi\Store::saveSettings(['platformCommissionPercent' => (float) $platform]);
+
         return $this->successResponse($save);
     }
 

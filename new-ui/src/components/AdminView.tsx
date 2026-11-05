@@ -72,7 +72,7 @@ import type { AdminTab } from './admin/adminNav';
 import { ExcelButton } from './admin/adminUi';
 import { exportToExcel } from '../lib/exportExcel';
 import { fmtNum, fmtDate, fmtTime, fmtDateTime } from '../lib/format';
-import { PLATFORM_COMMISSION_PERCENT } from '../../shared/pricing';
+import { commissionPercent } from '../../shared/pricing';
 
 interface AdminViewProps {
   voices: Voice[];

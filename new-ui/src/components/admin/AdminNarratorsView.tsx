@@ -7,7 +7,7 @@ import { buildSampleSlug } from '../VoiceLibraryView';
 /** A narrator's price per minute above this is a typing mistake (e.g. a phone number in the price field) */
 const MAX_RATE_USD = 1000;
 const validRate = (p: number) => Number.isFinite(p) && p > 0 && p <= MAX_RATE_USD;
-import { finalPrice, commissionAmount, fmtUsd, PLATFORM_COMMISSION_PERCENT } from '../../../shared/pricing';
+import { finalPrice, commissionAmount, fmtUsd, commissionPercent } from '../../../shared/pricing';
 import { reasonByCode } from '../../../shared/sampleRules';
 import { fmtDate, fmtDateTime, fmtMoney, fmtNum } from '../../lib/format';
 import { exportToExcel } from '../../lib/exportExcel';
@@ -110,7 +110,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
     { header: 'التوثيق (KYC)', value: n => (KYC[n.kycStatus] || KYC.none).label },
     { header: 'شارة معلق بشري', value: n => BADGE[n.humanBadge || 'none'].label },
     { header: 'سعر المعلق / دقيقة ($)', value: n => n.rates?.perMinuteUsd ?? '' },
-    { header: `عمولة المنصة ${PLATFORM_COMMISSION_PERCENT}% ($)`, value: n => n.rates?.perMinuteUsd ? commissionAmount(n.rates.perMinuteUsd) : '' },
+    { header: `عمولة المنصة ${commissionPercent()}% ($)`, value: n => n.rates?.perMinuteUsd ? commissionAmount(n.rates.perMinuteUsd) : '' },
     { header: 'السعر النهائي بالمكتبة / دقيقة ($)', value: n => n.rates?.perMinuteUsd ? finalPrice(n.rates.perMinuteUsd) : '' },
     { header: 'العينات المعتمدة', value: n => samplesOf(n.id).filter(s => s.status === 'published').length },
     { header: 'إجمالي العينات', value: n => samplesOf(n.id).length },
@@ -365,7 +365,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
             {/* Pricing */}
             <div className="rounded-2xl border border-orange-200 bg-orange-50/40 p-4 space-y-3">
               <h4 className="text-sm font-black text-slate-900">التسعير</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed">لكل معلق سعره الخاص للدقيقة. السعر الذي يراه العميل في مكتبة الأصوات البشرية هو السعر النهائي (سعر المعلق + عمولة المنصة {PLATFORM_COMMISSION_PERCENT}%).</p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">لكل معلق سعره الخاص للدقيقة. السعر الذي يراه العميل في مكتبة الأصوات البشرية هو السعر النهائي (سعر المعلق + عمولة المنصة {commissionPercent()}%).</p>
               <div className="flex items-end gap-3 flex-wrap">
                 <label className="text-xs font-bold text-slate-700">سعر المعلق / دقيقة ($)
                   <input type="number" min="1" step="1" value={priceInput} onChange={e => setPriceInput(e.target.value)} dir="ltr"
@@ -377,7 +377,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
               {validPrice && (
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-white rounded-xl p-2.5 border border-slate-200"><p className="text-[10px] text-slate-400">للمعلق</p><p className="font-mono font-black">${fmtUsd(priceNum)}</p></div>
-                  <div className="bg-white rounded-xl p-2.5 border border-slate-200"><p className="text-[10px] text-slate-400">عمولة المنصة {PLATFORM_COMMISSION_PERCENT}%</p><p className="font-mono font-black text-emerald-600">+${fmtUsd(commissionAmount(priceNum))}</p></div>
+                  <div className="bg-white rounded-xl p-2.5 border border-slate-200"><p className="text-[10px] text-slate-400">عمولة المنصة {commissionPercent()}%</p><p className="font-mono font-black text-emerald-600">+${fmtUsd(commissionAmount(priceNum))}</p></div>
                   <div className="bg-white rounded-xl p-2.5 border border-orange-300"><p className="text-[10px] text-slate-400">السعر النهائي للعميل</p><p className="font-mono font-black text-brand-text">${fmtUsd(finalPrice(priceNum))}</p></div>
                 </div>
               )}
@@ -435,7 +435,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
 
         {tab === 'library' && (
           <>
-            <p className="text-[11px] text-slate-500 leading-relaxed">أصوات المعلق المنشورة في مكتبة الأصوات، بسعر الدقيقة الخاص بكل صوت والسعر الذي يراه العميل (سعر المعلق + عمولة المنصة {PLATFORM_COMMISSION_PERCENT}%).</p>
+            <p className="text-[11px] text-slate-500 leading-relaxed">أصوات المعلق المنشورة في مكتبة الأصوات، بسعر الدقيقة الخاص بكل صوت والسعر الذي يراه العميل (سعر المعلق + عمولة المنصة {commissionPercent()}%).</p>
             {library.length === 0 && <p className="text-center text-slate-400 text-xs py-10">لا توجد أصوات لهذا المعلق في مكتبة الأصوات</p>}
             {library.map(v => {
               const own = v.narratorPriceUsd > 0 ? v.narratorPriceUsd : (n.rates?.perMinuteUsd || 0);
