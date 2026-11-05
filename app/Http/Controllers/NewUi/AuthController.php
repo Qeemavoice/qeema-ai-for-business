@@ -130,6 +130,7 @@ class AuthController extends Controller
     public function logout(Request $r)
     {
         Accounts::revokeToken($r);
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget(RowadService::COOKIE));   // a pending invite never passes to the next account
         return response()->json(['success' => true]);
     }
 

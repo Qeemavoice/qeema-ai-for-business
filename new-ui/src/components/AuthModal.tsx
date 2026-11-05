@@ -9,6 +9,8 @@ interface AuthModalProps {
   mode?: 'login' | 'signup';
   initialMode?: 'login' | 'signup';
   initialRole?: 'talent' | 'client';
+  /** pre-filled e-mail (e.g. the address a «روّاد قيمة» invite was sent to) */
+  initialEmail?: string;
   onClose: () => void;
   /** Called with the signed-in account (the session token is already stored) */
   onAuthSuccess?: (user: AppUser) => void;
@@ -17,6 +19,7 @@ interface AuthModalProps {
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   mode: propMode,
+  initialEmail,
   initialMode = 'login',
   initialRole = 'client',
   onClose,
@@ -37,9 +40,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (isOpen) {
       setMode(propMode || initialMode);
       if (initialRole) setAccountType(initialRole);
+      if (initialEmail) setEmail(initialEmail);
       setMessage(null);
     }
-  }, [isOpen, propMode, initialMode, initialRole]);
+  }, [isOpen, propMode, initialMode, initialRole, initialEmail]);
 
   if (!isOpen) return null;
 

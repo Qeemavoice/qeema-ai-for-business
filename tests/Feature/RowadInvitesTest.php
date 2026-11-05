@@ -79,10 +79,10 @@ class RowadInvitesTest extends TestCase
     /** 2. valid code + guest who then creates an account: activated right after the sign-up */
     public function test_guest_then_signup_is_activated_automatically()
     {
-        $inv = $this->invite();
+        $inv = $this->invite(['email' => 'new@example.test']);
         $this->get('/ar/early?code=' . $inv->code)->assertRedirect();
         $this->withSession(['rowad_code' => $inv->code])->get('/ar/early')->assertOk()->assertSee('"state":"login"', false)
-            ->assertSee('noindex, nofollow', false);
+            ->assertSee('"accountExists":false', false)->assertSee('noindex, nofollow', false);
         $this->assertSame(Invite::OPENED, $inv->fresh()->status);
 
         // the browser sends the HttpOnly cookie set by /ar/early with the sign-up call (withCredentials: JSON test calls skip cookies otherwise)
@@ -248,6 +248,17 @@ class RowadInvitesTest extends TestCase
 
         $client = $this->client('client@example.test');
         $this->api($client)->postJson('/api/v1/early/redeem', ['code' => $inv->code])->assertOk()->assertJsonPath('status', 'redeemed');
+    }
+
+    /** signing out clears a pending invite, so the next account on the same device cannot take it */
+    public function test_logout_clears_the_pending_invite()
+    {
+        $u = $this->client('leaving@example.test');
+        $res = $this->withCredentials()->withUnencryptedCookie(RowadService::COOKIE, 'ABCDEFGHJK')->api($u)->postJson('/api/v1/auth/logout');
+        $res->assertOk();
+        $cookie = collect($res->headers->getCookies())->first(fn ($c) => $c->getName() === RowadService::COOKIE);
+        $this->assertNotNull($cookie);
+        $this->assertTrue($cookie->isCleared());
     }
 
     /** SEO: invite pages are noindex and never in the sitemap */

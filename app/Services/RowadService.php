@@ -19,6 +19,7 @@ class RowadService
     public const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
     public const CODE_LENGTH = 10;
     public const COOKIE = 'qv_rowad_code';
+    public const COOKIE_MINUTES = 120;
 
     /** A config date (Africa/Cairo) as a Carbon instant */
     public static function at(string $key): Carbon

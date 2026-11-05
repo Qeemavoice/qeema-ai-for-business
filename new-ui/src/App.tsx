@@ -145,6 +145,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => Boolean(getToken()));
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | null>(null);
   const [authRole, setAuthRole] = useState<'talent' | 'client'>('client');
+  const [authEmail, setAuthEmail] = useState('');
   const [postAuthPath, setPostAuthPath] = useState<string | null>(null);
 
   // «انضم كمعلق صوتي» anywhere on the site opens the narrator sign-up
@@ -315,7 +316,7 @@ export default function App() {
           <Route path="/ar/text-to-speech" element={<NewFeaturesGate><TextToSpeechPage isLoggedIn={isLoggedIn} voices={voices} onGenerated={setBalanceCredits} onGoogle={loginWithGoogle} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} /></NewFeaturesGate>} />
           <Route path="/ar/pricing" element={<NewFeaturesGate><PricingPage /></NewFeaturesGate>} />
           {/* «روّاد قيمة» invite links (the server checks the code first) and the waitlist */}
-          <Route path="/ar/early" element={<EarlyAccessPage isLoggedIn={isLoggedIn} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} onActivated={() => { loadMe().catch(() => {}); }} />} />
+          <Route path="/ar/early" element={<EarlyAccessPage isLoggedIn={isLoggedIn} onOpenLogin={(email) => { setAuthEmail(email || ''); setAuthModalMode('login'); }} onOpenSignup={(email) => { setAuthEmail(email || ''); setAuthRole('client'); setAuthModalMode('signup'); }} onActivated={() => { loadMe().catch(() => {}); }} />} />
           <Route path="/ar/early/welcome" element={<EarlyWelcomePage isLoggedIn={isLoggedIn} onOpenLogin={() => setAuthModalMode('login')} />} />
           <Route path="/ar/waitlist" element={<WaitlistPage />} />
           <Route path="/ar/saudi-voice-over" element={<SaudiVoiceOverPage />} />
@@ -460,7 +461,8 @@ export default function App() {
           isOpen={Boolean(authModalMode)}
           mode={authModalMode}
           initialRole={authRole}
-          onClose={() => { setAuthModalMode(null); setAuthRole('client'); }}
+          initialEmail={authEmail}
+          onClose={() => { setAuthModalMode(null); setAuthRole('client'); setAuthEmail(''); }}
           onAuthSuccess={completeAuth}
         />
       )}

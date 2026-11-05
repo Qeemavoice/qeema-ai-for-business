@@ -43,39 +43,41 @@ class RowadSeedDemo extends Command
             'name' => $email ? explode('@', $email)[0] : null, 'campaign' => config('rowad.campaign'), 'status' => Invite::SENT,
             'sent_at' => now(), 'expires_at' => RowadService::at('invite_expires_at')], $extra));
         $link = fn (Invite $i) => RowadService::link($i->code, 'email');
+        $page = fn (string $path) => rtrim((string) config('rowad.site_url'), '/') . $path;
+        $fresh = ' (نافذة خاصة جديدة)';
 
         [$u, $p] = $mk('case1-member', 'حالة 1: مسجّل + كود صالح');
-        $rows[] = ['1 / 3', 'سجّل الدخول ثم افتح الرابط (ومرة ثانية لاختبار عدم التكرار)', $u->email, $p, $link($invite($u->email))];
+        $rows[] = ['1 / 3', 'سجّل الدخول من الصفحة الرئيسية ثم افتح الرابط، وافتحه مرة ثانية لاختبار عدم التكرار' . $fresh, $u->email, $p, $link($invite($u->email))];
 
         $i = $invite('case2-new@' . self::DOMAIN);
-        $rows[] = ['2', 'افتح الرابط بدون دخول ثم أنشئ حساباً بهذا البريد', $i->email, '(تختارها عند التسجيل)', $link($i)];
+        $rows[] = ['2', 'افتح الرابط بدون دخول، اضغط «إنشاء حساب جديد» واختر كلمة سر 8 أحرف أو أكثر' . $fresh, $i->email, '(تختارها عند التسجيل)', $link($i)];
 
         [$a] = $mk('case4-owner', 'حالة 4: صاحب الدعوة');
         [$b, $pb] = $mk('case4-other', 'حالة 4: حساب آخر');
         $i = $invite($a->email);
         RowadService::redeem($a, $i);
-        $rows[] = ['4', 'سجّل الدخول بهذا الحساب ثم افتح الرابط: «الدعوة مستخدمة»', $b->email, $pb, $link($i)];
+        $rows[] = ['4', 'سجّل الدخول بهذا الحساب ثم افتح الرابط: «هذه الدعوة مستخدمة»' . $fresh, $b->email, $pb, $link($i)];
 
         $i = $invite('case5-expired@' . self::DOMAIN, ['expires_at' => now()->subDay()]);
-        $rows[] = ['5', 'افتح الرابط: «انتهى الوصول المبكر»', $i->email, '-', $link($i)];
+        $rows[] = ['5', 'افتح الرابط: «انتهى الوصول المبكر»' . $fresh, $i->email, '-', $link($i)];
 
         [$u, $p] = $mk('case6-mismatch', 'حالة 6: بريد مختلف');
-        $rows[] = ['6', 'سجّل الدخول بهذا الحساب ثم افتح الرابط (الدعوة لبريد آخر)', $u->email, $p, $link($invite('someone-else@' . self::DOMAIN))];
+        $rows[] = ['6', 'سجّل الدخول بهذا الحساب ثم افتح الرابط (الدعوة لبريد آخر): تتفعّل ويظهر «إيميل مختلف» في الإدارة' . $fresh, $u->email, $p, $link($invite('someone-else@' . self::DOMAIN))];
 
         [$u, $p] = $mk('case7-regular', 'حالة 7: بدون وصول مبكر');
-        $rows[] = ['7', 'سجّل الدخول: لا تظهر روابط TTS والرصيد والباقات قبل 27 نوفمبر', $u->email, $p, '/ar/text-to-speech'];
+        $rows[] = ['7', 'افتح الرابط وسجّل الدخول: لا تظهر روابط TTS والأسعار، وصفحة TTS تحوّلك لقائمة الانتظار' . $fresh, $u->email, $p, $page('/ar/text-to-speech')];
 
         [$u, $p] = $mk('case8-rowad', 'حالة 8/9: رائد قيمة');
         RowadService::redeem($u, $invite($u->email));
-        $rows[] = ['8 / 9', 'رائد مفعّل: اشترك في باقة أو اشحن من لوحة العميل (سعر الروّاد / هدية الشحن)', $u->email, $p, '/ar/account'];
+        $rows[] = ['8 / 9', 'افتح الرابط وسجّل الدخول (رائد مفعّل): من «الباقة والفوترة» اشترك أو اشحن: 16$ بدل 20$ / هدية حروف' . $fresh, $u->email, $p, $page('/ar/account')];
 
         [$u, $p] = $mk('case10-expiry', 'حالة 10: رصيد منتهي');
         RowadService::redeem($u, $invite($u->email));
         DB::table('qv_credit_transactions')->where('idempotency_key', "early:{$u->id}")->update(['expires_at' => now()->subMinute(), 'created_at' => now()->subDays(31)]);
         (new \App\Jobs\ExpireTtsCredits)->handle();
-        $rows[] = ['10', 'الرصيد المجاني انتهى (قيد expire مسجّل): الرصيد المتاح من الهدية صفر', $u->email, $p, '/ar/account'];
+        $rows[] = ['10', 'افتح الرابط وسجّل الدخول: الهدية انتهت (قيد expire مسجّل)، والرصيد الظاهر 5,000 هو رصيد التسجيل العادي فقط' . $fresh, $u->email, $p, $page('/ar/account')];
 
-        $rows[] = ['11', 'افتح أكثر من 10 روابط خاطئة خلال ساعة: رفض مؤقت', '-', '-', rtrim((string) config('rowad.site_url'), '/') . '/ar/early?code=WRONGCODE1'];
+        $rows[] = ['11', 'غيّر آخر حرف في الرابط وافتحه أكثر من 30 مرة خلال ساعة: «محاولات كثيرة» (الحد على موقع التجربة 30، وعلى الموقع الحقيقي 10)', '-', '-', rtrim((string) config('rowad.site_url'), '/') . '/ar/early?code=WRONGCODE1'];
 
         $file = storage_path('app/rowad_demo_accounts.csv');
         $w = fopen($file, 'w');

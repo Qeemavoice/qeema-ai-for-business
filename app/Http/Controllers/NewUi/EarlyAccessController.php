@@ -24,7 +24,8 @@ class EarlyAccessController extends Controller
         $fromUrl = RowadService::normalizeCode($request->query('code'));
         if ($fromUrl !== '') {
             $request->session()->put('rowad_code', $fromUrl);
-            Cookie::queue(Cookie::make(RowadService::COOKIE, $fromUrl, 60 * 24 * 14, '/', null, $request->isSecure(), true, false, 'Lax'));
+            // short-lived (and cleared at sign-out) so a later sign-in by someone else on the same device cannot take it
+            Cookie::queue(Cookie::make(RowadService::COOKIE, $fromUrl, RowadService::COOKIE_MINUTES, '/', null, $request->isSecure(), true, false, 'Lax'));
             $utm = array_filter($request->only(['utm_source', 'utm_medium', 'utm_campaign']));
             return redirect('/ar/early' . ($utm ? '?' . http_build_query($utm) : ''));
         }
@@ -55,7 +56,8 @@ class EarlyAccessController extends Controller
             if (in_array($r, ['redeemed', 'already'], true)) return $this->forget(redirect('/ar/early/welcome'), $request);
             return $this->page($request, $r === 'error' ? 'error' : $r);
         }
-        return $this->page($request, 'login', 200, ['invitedName' => (string) $invite->name]);
+        return $this->page($request, 'login', 200, ['invitedName' => (string) $invite->name, 'invitedEmail' => (string) $invite->email,
+            'accountExists' => $invite->email ? (bool) Accounts::findByEmail($invite->email) : null]);
     }
 
     public function welcome(Request $request)

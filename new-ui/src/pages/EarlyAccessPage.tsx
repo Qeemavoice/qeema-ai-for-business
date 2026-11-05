@@ -5,7 +5,7 @@ import { useSeo } from '../seo/useSeo';
 import { api } from '../lib/api';
 
 /** Verdict written by the server on /ar/early (App\Http\Controllers\NewUi\EarlyAccessController) */
-interface EarlyBoot { state: string; whatsapp?: string; publicLaunchAt?: string; freeChars?: number; invitedName?: string }
+interface EarlyBoot { state: string; whatsapp?: string; publicLaunchAt?: string; freeChars?: number; invitedName?: string; invitedEmail?: string; accountExists?: boolean }
 const boot = (): EarlyBoot => ((window as any).__QV_EARLY as EarlyBoot) || { state: 'invalid' };
 
 const Shell: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
@@ -22,7 +22,7 @@ const launchDay = (iso?: string) =>
   new Date(iso || '2026-11-27T00:00:00+02:00').toLocaleDateString('ar', { day: 'numeric', month: 'long', timeZone: 'Africa/Cairo', numberingSystem: 'latn' } as Intl.DateTimeFormatOptions);
 
 /** /ar/early: the «روّاد قيمة» invite link */
-export const EarlyAccessPage: React.FC<{ isLoggedIn: boolean; onOpenLogin: () => void; onOpenSignup: () => void; onActivated?: () => void }> = ({
+export const EarlyAccessPage: React.FC<{ isLoggedIn: boolean; onOpenLogin: (email?: string) => void; onOpenSignup: (email?: string) => void; onActivated?: () => void }> = ({
   isLoggedIn, onOpenLogin, onOpenSignup, onActivated
 }) => {
   useSeo({ path: '/ar/early', title: 'دعوة روّاد قيمة | قيمة فويس', h1: 'دعوة روّاد قيمة', description: 'فعّل دعوتك للوصول المبكر إلى رصيد واستوديو TTS في قيمة فويس.', noindex: true });
@@ -51,15 +51,20 @@ export const EarlyAccessPage: React.FC<{ isLoggedIn: boolean; onOpenLogin: () =>
     return <Shell icon={<Loader2 className="w-7 h-7 animate-spin" />} title="جارٍ تفعيل دعوتك..."><p className="text-sm text-slate-500">لحظات من فضلك.</p></Shell>;
   }
   if (state === 'login') {
+    // no account yet for the invited address → «إنشاء حساب» first, with the address filled in
+    const newAccount = Boolean(b.invitedEmail) && b.accountExists === false;
+    const signup = <button key="s" onClick={() => onOpenSignup(b.invitedEmail)} className={`px-6 py-3 rounded-xl text-sm font-bold cursor-pointer ${newAccount ? 'bg-brand hover:bg-brand-orange text-white' : 'border border-slate-200 hover:bg-slate-50 text-slate-800'}`}>إنشاء حساب جديد</button>;
+    const login = <button key="l" onClick={() => onOpenLogin(b.invitedEmail)} className={`px-6 py-3 rounded-xl text-sm font-bold cursor-pointer ${newAccount ? 'border border-slate-200 hover:bg-slate-50 text-slate-800' : 'bg-brand-ink hover:bg-brand-ink/90 text-white'}`}>تسجيل الدخول</button>;
     return (
       <Shell icon={<Award className="w-7 h-7" />} title={b.invitedName ? `أهلاً ${b.invitedName}، دعوتك جاهزة` : 'دعوتك إلى روّاد قيمة جاهزة'}>
-        <p className="text-sm text-slate-600 leading-relaxed">
-          سجّل دخولك أو أنشئ حسابك لتفعيل دعوتك: وصول مبكر لاستوديو TTS والرصيد والباقات، و{(b.freeChars || 5000).toLocaleString('en')} حرف هدية، وسعر روّاد قيمة.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <button onClick={onOpenLogin} className="px-6 py-3 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-sm font-bold cursor-pointer">تسجيل الدخول</button>
-          <button onClick={onOpenSignup} className="px-6 py-3 rounded-xl bg-brand hover:bg-brand-orange text-white text-sm font-bold cursor-pointer">إنشاء حساب جديد</button>
-        </div>
+        <p className="text-sm text-slate-700 font-bold">{newAccount ? 'أنشئ حسابك لتفعيل دعوتك:' : 'سجّل دخولك أو أنشئ حسابك لتفعيل دعوتك:'}</p>
+        <ul className="text-sm text-slate-600 leading-relaxed space-y-1.5 text-right max-w-sm mx-auto list-disc pr-5">
+          <li>وصول مبكر لاستوديو TTS والرصيد والباقات</li>
+          <li>{(b.freeChars || 5000).toLocaleString('en')} حرف هدية</li>
+          <li>سعر روّاد قيمة</li>
+        </ul>
+        {newAccount && <p className="text-xs text-slate-500">ليس لهذا البريد حساب بعد: <span className="font-bold text-slate-700" dir="ltr">{b.invitedEmail}</span></p>}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">{newAccount ? [signup, login] : [login, signup]}</div>
         <p className="text-[11px] text-slate-400">ستُفعَّل الدعوة تلقائياً بعد الدخول.</p>
       </Shell>
     );
