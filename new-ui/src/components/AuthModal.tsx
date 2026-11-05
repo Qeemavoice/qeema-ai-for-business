@@ -45,6 +45,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // our own checks with a clear message (the browser's validation bubble is easy to miss, Safari especially)
+    const problem = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? 'اكتب بريداً إلكترونياً صحيحاً'
+      : !password ? 'اكتب كلمة المرور'
+      : mode === 'signup' && !name.trim() ? 'اكتب الاسم الكامل'
+      : mode === 'signup' && password.length < 8 ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
+      : '';
+    if (problem) { setMessage({ type: 'error', text: problem }); return; }
     setLoading(true);
     setMessage(null);
     try {
@@ -165,7 +172,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {/* Auth Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
           {mode === 'signup' && (
             <>
               {/* اختيار نوع الحساب: معلق صوتي، عميل */}
@@ -282,9 +289,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                aria-describedby={mode === 'signup' ? 'qv-password-hint' : undefined}
                 className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
               />
             </div>
+            {mode === 'signup' && (
+              <p id="qv-password-hint" className={`mt-1 text-[11px] ${password && password.length < 8 ? 'text-rose-600' : 'text-slate-500'}`}>
+                8 أحرف على الأقل{password ? ` (${password.length}/8)` : ''}
+              </p>
+            )}
           </div>
 
           {mode === 'login' && (

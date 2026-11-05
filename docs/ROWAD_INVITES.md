@@ -58,5 +58,4 @@ Test environments: `php artisan rowad:seed-demo` → `storage/app/rowad_demo_acc
 
 ## Still to settle (config only)
 - `rowad_discount_pct`, `rowad_topup_bonus_pct`, `rowad_price_months` (⚠️ temporary values)
-- `whatsapp_support` (the support WhatsApp number shown on «الدعوة مستخدمة»)
 - `white_friday.discount_pct` if White Friday lowers prices

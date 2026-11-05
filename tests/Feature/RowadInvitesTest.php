@@ -235,6 +235,21 @@ class RowadInvitesTest extends TestCase
         $this->get('/ar/early?code=WRONGCODE12')->assertStatus(302);
     }
 
+    /** a staff session of the old back office never takes a client's invite (found on the test site) */
+    public function test_admin_session_does_not_take_the_invite()
+    {
+        $admin = $this->client('staff@example.test');
+        $admin->forceFill(['user_type_id' => 1])->save();
+        $inv = $this->invite(['email' => 'client@example.test']);
+
+        $this->actingAs($admin, 'web')->withSession(['rowad_code' => $inv->code])->get('/ar/early')->assertOk()->assertSee('"state":"login"', false);
+        $this->api($admin)->postJson('/api/v1/early/redeem', ['code' => $inv->code])->assertStatus(403)->assertJsonPath('status', 'staff');
+        $this->assertNotSame(Invite::REDEEMED, $inv->fresh()->status);
+
+        $client = $this->client('client@example.test');
+        $this->api($client)->postJson('/api/v1/early/redeem', ['code' => $inv->code])->assertOk()->assertJsonPath('status', 'redeemed');
+    }
+
     /** SEO: invite pages are noindex and never in the sitemap */
     public function test_invite_pages_are_not_indexed()
     {

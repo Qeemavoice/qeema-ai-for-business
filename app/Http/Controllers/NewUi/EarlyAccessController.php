@@ -34,7 +34,10 @@ class EarlyAccessController extends Controller
         $invite = Invite::where('code', $code)->first();
         if (!$invite) return $this->forget($this->page($request, 'invalid'), $request);
 
-        $webUser = Auth::guard('web')->user();   // signed in on the old site (session)
+        // A client signed in on the old site (session). Staff sessions of the old back office never count:
+        // an admin browsing the link must not take the client's invite.
+        $webUser = Auth::guard('web')->user();
+        if ($webUser && (Accounts::isAdmin($webUser) || !in_array((int) $webUser->user_type_id, [\App\Models\UserType::CLIENT, \App\Models\UserType::CLIENT_ADN_VOICE_ACTOR], true))) $webUser = null;
         if ($invite->status === Invite::REDEEMED) {
             if ($webUser && (int) $invite->redeemed_by_user_id === (int) $webUser->id) return redirect('/ar/early/welcome');
             if ($webUser) return $this->forget($this->page($request, 'used'), $request);
@@ -92,8 +95,8 @@ class EarlyAccessController extends Controller
         $invite = $code !== '' ? Invite::where('code', $code)->first() : null;
         if (!$invite) return response()->json(['status' => 'invalid', 'error' => 'رابط الدعوة غير صالح'], 404);
         $status = RowadService::redeem($user, $invite)['status'];
-        if ($status !== 'error') Cookie::queue(Cookie::forget(RowadService::COOKIE));
-        $http = ['redeemed' => 200, 'already' => 200, 'used' => 409, 'expired' => 410, 'invalid' => 404][$status] ?? 500;
+        if (!in_array($status, ['error', 'staff'], true)) Cookie::queue(Cookie::forget(RowadService::COOKIE));
+        $http = ['redeemed' => 200, 'already' => 200, 'used' => 409, 'expired' => 410, 'invalid' => 404, 'staff' => 403][$status] ?? 500;
         return response()->json(['status' => $status] + $this->statusPayload($user->fresh()), $http);
     }
 

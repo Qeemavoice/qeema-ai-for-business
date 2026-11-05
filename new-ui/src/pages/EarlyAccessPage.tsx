@@ -80,7 +80,14 @@ export const EarlyAccessPage: React.FC<{ isLoggedIn: boolean; onOpenLogin: () =>
       </Shell>
     );
   }
-  if (state === 'rate_limited') {
+  if (state === 'staff') {
+    return (
+      <Shell icon={<UserCheck className="w-7 h-7" />} title="أنت مسجّل بحساب الإدارة">
+        <p className="text-sm text-slate-600">دعوات روّاد قيمة لحسابات العملاء فقط، ولم تُستخدم هذه الدعوة. سجّل الخروج ثم افتح الرابط وادخل بحساب العميل.</p>
+      </Shell>
+    );
+  }
+    if (state === 'rate_limited') {
     return <Shell icon={<ShieldAlert className="w-7 h-7" />} title="محاولات كثيرة"><p className="text-sm text-slate-600">حاول مرة أخرى بعد ساعة.</p></Shell>;
   }
   if (state === 'error') {

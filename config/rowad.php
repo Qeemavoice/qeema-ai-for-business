@@ -31,5 +31,5 @@ return [
 
     'redeem_rate_limit'      => (int) env('ROWAD_REDEEM_RATE_LIMIT', 10), // attempts per hour per IP on /ar/early
     'site_url'               => env('ROWAD_SITE_URL', 'https://qeemavoice.com'),
-    'whatsapp_support'       => env('ROWAD_WHATSAPP', 'https://wa.me/966500000000'), // ⚠️ the support WhatsApp number
+    'whatsapp_support'       => env('ROWAD_WHATSAPP', 'https://wa.me/96893822649'), // support WhatsApp (+968 9382 2649)
 ];

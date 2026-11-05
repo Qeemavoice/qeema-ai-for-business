@@ -82,6 +82,8 @@ class RowadService
      */
     public static function redeem(User $user, Invite $invite): array
     {
+        // invites are for clients: a staff account (admin) never takes one, the invite stays usable
+        if (Accounts::isAdmin($user)) return ['status' => 'staff'];
         try {
             return DB::transaction(function () use ($user, $invite) {
                 $inv = Invite::whereKey($invite->id)->lockForUpdate()->first();
