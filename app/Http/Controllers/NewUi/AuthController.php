@@ -7,6 +7,10 @@ use App\Models\User;
 use App\Models\UserType;
 use App\Services\NewUi\Accounts;
 use App\Services\NewUi\Store;
+use App\Listeners\RedeemRowadInvite;
+use App\Services\RowadService;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -26,6 +30,7 @@ class AuthController extends Controller
         return response()->json([
             'user' => Accounts::publicUser($user), 'company' => $ctx['company'],
             'balanceCredits' => $ctx['balance'], 'availableCompanies' => $available,
+            'features' => RowadService::featuresFor($user),
         ]);
     }
 
@@ -42,7 +47,8 @@ class AuthController extends Controller
         $user = Accounts::createAccount($name, $email, $password, $type);
         $company = trim((string) $r->input('company', ''));
         if ($company) Accounts::saveAccount($user, ['industry' => 'Corporate Business']);
-        return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user)]);
+        event(new Registered($user));   // «روّاد قيمة»: activates an invite opened before signing up
+        return $this->signedIn($user);
     }
 
     public function login(Request $r)
@@ -52,16 +58,22 @@ class AuthController extends Controller
             return response()->json(['error' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة'], 401);
         }
         if ((int) $user->status_id === \App\Models\UserStatus::BLOCKED) return response()->json(['error' => 'هذا الحساب موقوف'], 403);
-        return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user)]);
+        event(new Login('new-ui', $user, false));
+        return $this->signedIn($user);
     }
 
     public function google(Request $r)
     {
         $g = Accounts::googleProfile((string) $r->input('accessToken', ''));
         if (!$g) return response()->json(['error' => 'تعذر التحقق من حساب Google'], 401);
-        $user = Accounts::findByEmail($g['email'])
-            ?: Accounts::createAccount($g['name'] ?? explode('@', $g['email'])[0], $g['email'], null, $r->input('accountType') === 'talent' ? 'talent' : 'client');
-        return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user)]);
+        $user = Accounts::findByEmail($g['email']);
+        if ($user) {
+            event(new Login('new-ui', $user, false));
+        } else {
+            $user = Accounts::createAccount($g['name'] ?? explode('@', $g['email'])[0], $g['email'], null, $r->input('accountType') === 'talent' ? 'talent' : 'client');
+            event(new Registered($user));
+        }
+        return $this->signedIn($user);
     }
 
     /** Invited narrator finishing the claim link: creates (or links) the talent account for that narrator */
@@ -103,6 +115,16 @@ class AuthController extends Controller
         Accounts::linkNarrator($user, $narrator['id']);
         NarratorController::activateClaimed($narrator['id'], $token);
         return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user)]);
+    }
+
+    /** Token answer of every sign-in; rowadInvite = result of the invite activated by this sign-in, if any */
+    private function signedIn(User $user)
+    {
+        $user->refresh();
+        $invite = RedeemRowadInvite::$lastStatus;
+        RedeemRowadInvite::$lastStatus = null;
+        return response()->json(['token' => Accounts::issueToken($user), 'user' => Accounts::publicUser($user),
+            'features' => RowadService::featuresFor($user), 'rowadInvite' => $invite]);
     }
 
     public function logout(Request $r)

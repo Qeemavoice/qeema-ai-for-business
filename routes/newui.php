@@ -31,6 +31,10 @@ Route::get('/ar/services/{slug}', function ($slug) {
     return $slug === 'dubbing' ? app(\App\Http\Controllers\NewUi\SpaController::class)(request()) : redirect('/ar/voice-models/' . $slug, 301);
 });
 
+// «روّاد قيمة» invite links (noindex, not in the sitemap)
+Route::get('/ar/early', 'EarlyAccessController@show')->middleware('throttle:rowad');
+Route::get('/ar/early/welcome', 'EarlyAccessController@welcome');
+
 // Pages of the new site (the React router renders them)
 $spa = [
     '/', '/ar', '/ar/voices', '/ar/voice-models', '/ar/voice-models/{slug}', '/ar/text-to-speech', '/ar/pricing',
@@ -39,7 +43,7 @@ $spa = [
     '/ar/p/about-us', '/ar/p/terms-of-use', '/ar/p/privacy-policy', '/ar/p/revisions-policy',
     '/ar/saudi-voice-over', '/ar/emirati-voice-over', '/ar/egyptian-voice-over', '/ar/generate', '/ar/chatbot',
     '/ar/account', '/ar/admin', '/ar/talent-dashboard', '/ar/talent-profile', '/ar/talent-earnings', '/ar/talent-samples',
-    '/ar/talent-voices', '/ar/talent-settings', '/ar/claim', '/claim/{token}',
+    '/ar/talent-voices', '/ar/talent-settings', '/ar/claim', '/claim/{token}', '/ar/waitlist',
     '/narrator/dashboard', '/narrator/profile', '/narrator/earnings', '/narrator/settings',
 ];
 foreach ($spa as $path) {

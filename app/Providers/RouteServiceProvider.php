@@ -68,7 +68,8 @@ class RouteServiceProvider extends ServiceProvider
     private function mapNewUiRoutes()
     {
         Route::prefix('api/v1')
-            ->middleware(['throttle:600,1', \Illuminate\Routing\Middleware\SubstituteBindings::class])
+            // AddQueuedCookiesToResponse: lets the Rowad listener clear the qv_rowad_code cookie after a token sign-in
+            ->middleware(['throttle:600,1', \Illuminate\Routing\Middleware\SubstituteBindings::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class])
             ->namespace($this->namespace . '\\NewUi')
             ->group(base_path('routes/newui_api.php'));
 
@@ -136,6 +137,16 @@ class RouteServiceProvider extends ServiceProvider
     {
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+        });
+
+        // «روّاد قيمة»: invite links (/ar/early and the redeem API), per IP per hour (config/rowad.php)
+        RateLimiter::for('rowad', function (Request $request) {
+            // only attempts that carry a code count (the redirect to the clean /ar/early does not)
+            if ($request->isMethod('GET') && !$request->filled('code')) return Limit::none();
+            return Limit::perHour((int) config('rowad.redeem_rate_limit', 10))->by('rowad|' . $request->ip())
+                ->response(fn () => $request->expectsJson()
+                    ? response()->json(['error' => 'محاولات كثيرة، حاول بعد ساعة'], 429)
+                    : app(\App\Http\Controllers\NewUi\EarlyAccessController::class)->page($request, 'rate_limited', 429));
         });
     }
 }

@@ -22,6 +22,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('holdPayment:release');
+        // «روّاد قيمة»: lapsed TTS credits + expiry reminders (needs the `schedule:run` cron on the server)
+        $schedule->job(new \App\Jobs\ExpireTtsCredits)->dailyAt('03:00')->timezone(config('rowad.timezone', 'Africa/Cairo'));
         // $schedule->command('inspire')->hourly();
        // $schedule->command('websockets:clean')->weekly();
 

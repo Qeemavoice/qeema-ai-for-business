@@ -9,6 +9,7 @@ use App\Services\NewUi\Mailer;
 use App\Services\NewUi\Plans;
 use App\Services\NewUi\Store;
 use App\Services\NewUi\Tts;
+use App\Services\RowadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -45,8 +46,9 @@ class ClientController extends Controller
         $required = Tts::estimateCredits($text);
         $balance = $ctx['balance'];
         if ($balance < $required) {
-            return response()->json(['error' => "رصيد الشركة غير كافٍ. يتطلب هذا النص {$required} نقطة، ورصيدك الحالي هو {$balance} نقطة.",
-                'requiredCredits' => $required, 'currentBalance' => $balance, 'suggestedAction' => 'topup_credits'], 402);
+            return response()->json(['error' => "رصيدك لا يكفي. يتطلب هذا النص {$required} حرف، ورصيدك الحالي {$balance} حرف.",
+                'requiredCredits' => $required, 'currentBalance' => $balance, 'suggestedAction' => 'topup_credits',
+                'rowadPriceActive' => RowadService::rowadPriceActive($cu)], 402);
         }
         $s = (array) $r->input('settings', []);
         $settings = ['speed' => (float) ($s['speed'] ?? 1) ?: 1.0, 'stability' => (float) ($s['stability'] ?? 0.7) ?: 0.7, 'style' => (float) ($s['style'] ?? 0.5) ?: 0.5,
@@ -60,7 +62,7 @@ class ClientController extends Controller
         $id = 'gen-' . Str::uuid();
         VoicesController::storeAudio($id, $synth['audio'], $synth['mime']);
         if (!Accounts::deductCredits($cu->id, $ctx['user']->id, $required, $id, "توليد صوتي: {$voice->name} ({$chars} حرف)")) {
-            return response()->json(['error' => 'رصيد الشركة غير كافٍ'], 402);
+            return response()->json(['error' => 'رصيدك لا يكفي', 'suggestedAction' => 'topup_credits', 'rowadPriceActive' => RowadService::rowadPriceActive($cu)], 402);
         }
         DB::table('qv_generations')->insert([
             'id' => $id, 'user_id' => $cu->id, 'actor_user_id' => $ctx['user']->id, 'voice_id' => $voice->id, 'voice_name' => $voice->name, 'voice_type' => 'ai',
@@ -124,11 +126,17 @@ class ClientController extends Controller
         if (!$plan || !$plan['priceUsd'] || !$plan['monthlyCredits']) return response()->json(['error' => 'الباقة المختارة غير متاحة'], 400);
         $method = (string) $r->input('paymentMethod', 'card');
         Accounts::saveAccount($ctx['companyUser'], ['planId' => $plan['id']]);
+        // Rowad top-up gift or White Friday price, never both (RowadService::topupPrice); applies to this top-up only
+        $q = RowadService::topupPrice($ctx['companyUser'], (float) $plan['priceUsd'], (int) $plan['monthlyCredits']);
+        $gift = $q['bonusChars'] ? ' + هدية روّاد قيمة ' . number_format($q['bonusChars']) . ' حرف' : '';
         // ponytail: no payment gateway yet, credits are added on request; connect Stripe here before launch
-        $new = Accounts::addCredits($ctx['companyUser']->id, $ctx['user']->id, $plan['monthlyCredits'], 'purchase',
-            "شحن رصيد: باقة {$plan['nameAr']} ({$plan['priceUsd']} USD عبر {$method})", 'pay-' . round(microtime(true) * 1000));
-        return response()->json(['success' => true, 'addedCredits' => $plan['monthlyCredits'], 'newBalanceCredits' => $new,
-            'message' => 'تم إضافة ' . number_format($plan['monthlyCredits']) . ' نقطة إلى محفظة الشركة بنجاح.']);
+        $new = Accounts::addCredits($ctx['companyUser']->id, $ctx['user']->id, $q['chars'], 'purchase',
+            "شحن رصيد: باقة {$plan['nameAr']} ({$q['price']} USD عبر {$method}){$gift}", 'pay-' . round(microtime(true) * 1000),
+            ['source' => 'topup', 'meta' => ['kind' => 'topup', 'planId' => $plan['id'], 'priceUsd' => $q['price'], 'listPriceUsd' => $q['listPrice'],
+                'offer' => $q['offer'], 'bonusChars' => $q['bonusChars']]]);
+        return response()->json(['success' => true, 'addedCredits' => $q['chars'], 'bonusCredits' => $q['bonusChars'], 'priceUsd' => $q['price'],
+            'offer' => $q['offer'], 'newBalanceCredits' => $new,
+            'message' => 'تم إضافة ' . number_format($q['chars']) . ' حرف إلى رصيدك بنجاح.']);
     }
 
     public function billing(Request $r)
@@ -139,7 +147,7 @@ class ClientController extends Controller
         foreach (Accounts::transactions($ctx['companyUser']->id) as $tx) {
             if ($tx['delta'] <= 0) continue;
             $invoices[] = ['id' => 'INV-' . strtoupper(substr($tx['id'], 0, 8)), 'date' => $tx['createdAt'], 'description' => $tx['description'],
-                'creditsAdded' => $tx['delta'], 'amountUsd' => $tx['reason'] === 'signup_bonus' ? 0 : ($plan['priceUsd'] ?? 0), 'status' => 'paid', 'downloadUrl' => '#'];
+                'creditsAdded' => $tx['delta'], 'amountUsd' => $tx['meta']['priceUsd'] ?? ($tx['reason'] === 'purchase' ? ($plan['priceUsd'] ?? 0) : 0), 'status' => 'paid', 'downloadUrl' => '#'];
         }
         return response()->json(['company' => $ctx['company'], 'currentPlan' => $plan, 'availablePlans' => Plans::all(), 'balanceCredits' => $ctx['balance'], 'invoices' => $invoices]);
     }
@@ -150,11 +158,22 @@ class ClientController extends Controller
         $plan = Plans::find((string) $r->input('planId', ''));
         if (!$plan) return response()->json(['error' => 'الخطة غير متوفرة'], 404);
         if (!empty($plan['isCustom'])) return response()->json(['error' => 'باقة الشركات بتسعير مخصص، تواصل مع فريق المبيعات لتفعيلها'], 400);
-        Accounts::saveAccount($ctx['companyUser'], ['planId' => $plan['id']]);
+        $cu = $ctx['companyUser'];
+        Accounts::saveAccount($cu, ['planId' => $plan['id']]);
+        // Rowad price (locked until rowad_price_until, used again on every renewal) or White Friday, the larger only
+        $q = RowadService::subscriptionPrice($cu, $plan);
+        if ($q['lock']) {
+            DB::table('qv_client_accounts')->where('user_id', $cu->id)->update(['locked_plan_id' => $q['lock']['plan_id'],
+                'locked_price' => $q['lock']['price'], 'locked_until' => $q['lock']['until'], 'updated_at' => now()]);
+        }
         $new = $plan['monthlyCredits'] > 0
-            ? Accounts::addCredits($ctx['companyUser']->id, $ctx['user']->id, $plan['monthlyCredits'], 'purchase', "تجديد/ترقية الاشتراك إلى {$plan['nameAr']} (+" . number_format($plan['monthlyCredits']) . ' حرف)')
+            ? Accounts::addCredits($cu->id, $ctx['user']->id, $plan['monthlyCredits'], 'purchase',
+                "تجديد/ترقية الاشتراك إلى {$plan['nameAr']} (+" . number_format($plan['monthlyCredits']) . " حرف، {$q['price']} USD)", null,
+                ['source' => 'plan', 'meta' => ['kind' => 'subscription', 'planId' => $plan['id'], 'priceUsd' => $q['price'], 'listPriceUsd' => $q['listPrice'],
+                    'offer' => $q['offer'], 'discountPct' => $q['discountPct']]])
             : $ctx['balance'];
-        return response()->json(['success' => true, 'company' => Accounts::company($ctx['companyUser']), 'currentPlan' => $plan, 'newBalanceCredits' => $new, 'message' => "تم الترقية بنجاح إلى {$plan['nameAr']}"]);
+        return response()->json(['success' => true, 'company' => Accounts::company($cu), 'currentPlan' => $plan, 'priceUsd' => $q['price'], 'offer' => $q['offer'],
+            'newBalanceCredits' => $new, 'message' => "تم الترقية بنجاح إلى {$plan['nameAr']}"]);
     }
 
     public function usage(Request $r)

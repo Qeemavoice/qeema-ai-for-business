@@ -643,3 +643,11 @@ if (!function_exists('arrow_down_url_sidebar')) {
 
 
 
+
+if (!function_exists('canUseNewFeatures')) {
+    /** «روّاد قيمة» gate: credits, plans, top-up and TTS (config/rowad.php). Opens for everyone at public_launch_at. */
+    function canUseNewFeatures($user = null): bool
+    {
+        return \App\Services\RowadService::canUseNewFeatures($user);
+    }
+}

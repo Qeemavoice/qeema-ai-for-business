@@ -316,4 +316,90 @@ class AdminController extends Controller
         Store::audit('system', 'admin', 'REVIEW_' . strtoupper($status) . ': ' . $bookingId);
         return response()->json(['success' => true, 'review' => $review]);
     }
+
+    // ---------- «روّاد قيمة» invites ----------
+    private function inviteRow(\App\Models\Invite $i): array
+    {
+        $tz = config('rowad.timezone');
+        $iso = fn ($d) => $d ? $d->copy()->timezone($tz)->toIso8601String() : null;
+        return ['id' => $i->id, 'code' => $i->code, 'name' => $i->name, 'email' => $i->email, 'phone' => $i->phone, 'clientId' => $i->client_id,
+            'status' => $i->status !== \App\Models\Invite::REDEEMED && $i->isExpired() ? \App\Models\Invite::EXPIRED : $i->status,
+            'emailMismatch' => (bool) $i->email_mismatch, 'sentAt' => $iso($i->sent_at), 'openedAt' => $iso($i->opened_at),
+            'redeemedAt' => $iso($i->redeemed_at), 'redeemedBy' => $i->redeemedBy ? ['id' => $i->redeemedBy->id, 'email' => $i->redeemedBy->email] : null,
+            'expiresAt' => $iso($i->expires_at), 'emailLink' => \App\Services\RowadService::link($i->code, 'email'),
+            'whatsappLink' => \App\Services\RowadService::link($i->code, 'whatsapp')];
+    }
+
+    /** GET admin/rowad/invites?status=&q= : the list + the campaign figures */
+    public function rowadInvites(Request $r)
+    {
+        $q = \App\Models\Invite::with('redeemedBy')->orderByDesc('id');
+        $status = (string) $r->query('status', '');
+        if ($status === 'expired') $q->where(fn ($w) => $w->where('status', 'expired')->orWhere(fn ($x) => $x->where('status', '!=', 'redeemed')->where('expires_at', '<=', now())));
+        elseif ($status !== '') $q->where('status', $status)->where(fn ($w) => $w->where('status', 'redeemed')->orWhere('expires_at', '>', now()));
+        if ($s = trim((string) $r->query('q', ''))) {
+            $q->where(fn ($w) => $w->where('email', 'like', '%' . $s . '%')->orWhere('code', strtoupper($s))->orWhere('name', 'like', '%' . $s . '%'));
+        }
+        $invites = $q->get()->map(fn ($i) => $this->inviteRow($i))->all();
+
+        $all = \App\Models\Invite::query();
+        $grants = DB::table('qv_credit_transactions')->where('source', 'early_access')->where('type', 'grant')->get(['id', 'delta', 'remaining']);
+        $expired = $grants->isEmpty() ? 0 : (int) DB::table('qv_credit_transactions')->where('type', 'expire')->whereIn('reference_id', $grants->pluck('id'))->sum(DB::raw('-delta'));
+        $members = User::whereNotNull('rowad_badge_at')->pluck('id');
+        $purchases = 0; $value = 0.0;
+        foreach (DB::table('qv_credit_transactions')->whereIn('user_id', $members)->where('reason', 'purchase')->whereNotNull('meta')->get(['meta']) as $p) {
+            $m = json_decode($p->meta, true) ?: [];
+            if (in_array($m['offer'] ?? null, ['rowad', 'rowad_locked'], true)) { $purchases++; $value += (float) ($m['priceUsd'] ?? 0); }
+        }
+        return response()->json(['invites' => $invites, 'stats' => [
+            'total' => (clone $all)->count(),
+            'sent' => (clone $all)->where(fn ($w) => $w->whereNotNull('sent_at')->orWhereIn('status', ['sent', 'opened', 'redeemed']))->count(),
+            'opened' => (clone $all)->where(fn ($w) => $w->whereNotNull('opened_at')->orWhere('status', 'redeemed'))->count(),
+            'redeemed' => (clone $all)->where('status', 'redeemed')->count(),
+            'emailMismatch' => (clone $all)->where('email_mismatch', true)->count(),
+            'freeCharsGranted' => (int) $grants->sum('delta'),
+            'freeCharsUsed' => (int) ($grants->sum('delta') - $grants->sum('remaining') - $expired),
+            'rowadPurchases' => $purchases, 'rowadPurchasesUsd' => round($value, 2),
+        ]]);
+    }
+
+    public function rowadResend(string $id)
+    {
+        $i = \App\Models\Invite::find($id);
+        if (!$i) return response()->json(['error' => 'الدعوة غير موجودة'], 404);
+        if (!$i->email) return response()->json(['error' => 'لا يوجد بريد لهذه الدعوة، أرسل رابط واتساب'], 400);
+        if (!$i->isValid()) return response()->json(['error' => 'الدعوة مستخدمة أو منتهية'], 400);
+        if (!\App\Console\Commands\RowadSendInvites::sendOne($i)) return response()->json(['error' => 'تعذّر إرسال البريد، تحقق من إعدادات البريد'], 502);
+        Store::audit('system', 'admin', 'ROWAD_RESEND: ' . $i->id);
+        return response()->json(['success' => true, 'invite' => $this->inviteRow($i->fresh('redeemedBy'))]);
+    }
+
+    /** body: expiresAt (date / date-time, Africa/Cairo) */
+    public function rowadExtend(Request $r, string $id)
+    {
+        $i = \App\Models\Invite::find($id);
+        if (!$i) return response()->json(['error' => 'الدعوة غير موجودة'], 404);
+        if ($i->status === \App\Models\Invite::REDEEMED) return response()->json(['error' => 'الدعوة مفعّلة مسبقاً'], 400);
+        try {
+            $raw = (string) $r->input('expiresAt', '');
+            $at = \Carbon\Carbon::parse($raw, config('rowad.timezone'));
+            if (strlen($raw) <= 10) $at = $at->endOfDay();
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'تاريخ غير صالح'], 400);
+        }
+        if ($at->isPast()) return response()->json(['error' => 'اختر تاريخاً في المستقبل'], 400);
+        $i->update(['expires_at' => $at, 'status' => $i->status === \App\Models\Invite::EXPIRED ? ($i->opened_at ? 'opened' : ($i->sent_at ? 'sent' : 'created')) : $i->status]);
+        Store::audit('system', 'admin', 'ROWAD_EXTEND: ' . $i->id, ['expiresAt' => $at->toIso8601String()]);
+        return response()->json(['success' => true, 'invite' => $this->inviteRow($i->fresh('redeemedBy'))]);
+    }
+
+    public function rowadCancel(string $id)
+    {
+        $i = \App\Models\Invite::find($id);
+        if (!$i) return response()->json(['error' => 'الدعوة غير موجودة'], 404);
+        if ($i->status === \App\Models\Invite::REDEEMED) return response()->json(['error' => 'لا يمكن إلغاء دعوة مفعّلة'], 400);
+        $i->update(['status' => \App\Models\Invite::EXPIRED, 'expires_at' => now()]);
+        Store::audit('system', 'admin', 'ROWAD_CANCEL: ' . $i->id);
+        return response()->json(['success' => true, 'invite' => $this->inviteRow($i->fresh('redeemedBy'))]);
+    }
 }

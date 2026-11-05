@@ -40,6 +40,10 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        // «روّاد قيمة» (config/rowad.php)
+        'early_access' => 'boolean',
+        'rowad_badge_at' => 'datetime',
+        'rowad_price_until' => 'datetime',
     ];
 
 

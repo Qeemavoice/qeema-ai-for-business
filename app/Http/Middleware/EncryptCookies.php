@@ -12,6 +12,7 @@ class EncryptCookies extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        // «روّاد قيمة» invite code: read by the token API (/api/v1/auth/*), which does not decrypt cookies. HttpOnly.
+        'qv_rowad_code',
     ];
 }

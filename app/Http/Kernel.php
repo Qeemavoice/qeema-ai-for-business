@@ -106,6 +106,7 @@ class Kernel extends HttpKernel
         // New React UI API (Bearer tokens)
         'qv.user' => \App\Http\Middleware\NewUi\RequireUser::class,
         'qv.admin' => \App\Http\Middleware\NewUi\RequireAdmin::class,
+        'qv.features' => \App\Http\Middleware\NewUi\RequireNewFeatures::class,
 
         'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,

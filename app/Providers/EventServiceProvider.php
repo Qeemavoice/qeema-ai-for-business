@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Listeners\RedeemRowadInvite;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -17,6 +19,11 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+            RedeemRowadInvite::class,
+        ],
+        // «روّاد قيمة»: the invite opened before signing in is activated right after
+        Login::class => [
+            RedeemRowadInvite::class,
         ],
     ];
 

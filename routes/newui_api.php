@@ -47,20 +47,29 @@ Route::get('voices', 'VoicesController@index');
 Route::get('voices/{id}/preview', 'VoicesController@preview');
 Route::get('voices/{id}/file', 'VoicesController@file');
 Route::get('voices/{id}', 'VoicesController@show');
-Route::post('tts/trial', 'VoicesController@trial');
+Route::post('tts/trial', 'VoicesController@trial')->middleware('qv.features');
 Route::get('storage/audio/{id}', 'VoicesController@audio');
+
+// ---- «روّاد قيمة» invites ----
+Route::middleware('qv.user')->group(function () {
+    Route::post('early/redeem', 'EarlyAccessController@redeem')->middleware('throttle:rowad');
+    Route::get('early/status', 'EarlyAccessController@status');
+});
 
 // ---- signed-in clients ----
 Route::middleware('qv.user')->group(function () {
-    Route::post('generations', 'ClientController@generate');
-    Route::get('generations', 'ClientController@generations');
-    Route::get('generations/{id}', 'ClientController@generation');
-    Route::delete('generations/{id}', 'ClientController@deleteGeneration');
-    Route::get('credits', 'ClientController@credits');
-    Route::post('credits/topup', 'ClientController@topup');
-    Route::get('usage', 'ClientController@usage');
-    Route::get('billing', 'ClientController@billing');
-    Route::post('billing/change-plan', 'ClientController@changePlan');
+    // credits, plans, top-up and TTS: Rowad members now, everyone from config('rowad.public_launch_at')
+    Route::middleware('qv.features')->group(function () {
+        Route::post('generations', 'ClientController@generate');
+        Route::get('generations', 'ClientController@generations');
+        Route::get('generations/{id}', 'ClientController@generation');
+        Route::delete('generations/{id}', 'ClientController@deleteGeneration');
+        Route::get('credits', 'ClientController@credits');
+        Route::post('credits/topup', 'ClientController@topup');
+        Route::get('usage', 'ClientController@usage');
+        Route::get('billing', 'ClientController@billing');
+        Route::post('billing/change-plan', 'ClientController@changePlan');
+    });
     Route::get('client/bookings', 'ClientController@bookings');
     Route::post('client/bookings/{id}/review', 'ClientController@review');
     Route::post('client/feedback', 'ClientController@feedback');
@@ -122,4 +131,9 @@ Route::prefix('admin')->middleware('qv.admin')->group(function () {
     Route::post('collections/{name}', 'CollectionsController@store');
     Route::put('collections/{name}/{id}', 'CollectionsController@update');
     Route::delete('collections/{name}/{id}', 'CollectionsController@destroy');
+    // «روّاد قيمة» invites
+    Route::get('rowad/invites', 'AdminController@rowadInvites');
+    Route::post('rowad/invites/{id}/resend', 'AdminController@rowadResend');
+    Route::post('rowad/invites/{id}/extend', 'AdminController@rowadExtend');
+    Route::post('rowad/invites/{id}/cancel', 'AdminController@rowadCancel');
 });

@@ -22,20 +22,22 @@ use Laravel\Sanctum\PersonalAccessToken;
 class Accounts
 {
     public const TOKEN_DAYS = 30;
-    private static $current = false;
 
     // ---------- current user ----------
+    /** The token's user, looked up once per request (cached on the request itself, so separate requests never share it) */
     public static function currentUser(?Request $request = null): ?User
     {
-        if (self::$current !== false) return self::$current;
         $request = $request ?: request();
+        if ($request->attributes->has('qv_user')) return $request->attributes->get('qv_user');
+        $user = null;
         $plain = $request->bearerToken();
-        if (!$plain) return self::$current = null;
-        $token = PersonalAccessToken::findToken($plain);
-        if (!$token || $token->name !== 'new-ui') return self::$current = null;
-        if ($token->created_at && $token->created_at->lt(now()->subDays(self::TOKEN_DAYS))) { $token->delete(); return self::$current = null; }
-        $user = $token->tokenable;
-        return self::$current = ($user instanceof User ? $user : null);
+        $token = $plain ? PersonalAccessToken::findToken($plain) : null;
+        if ($token && $token->name === 'new-ui') {
+            if ($token->created_at && $token->created_at->lt(now()->subDays(self::TOKEN_DAYS))) $token->delete();
+            elseif ($token->tokenable instanceof User) $user = $token->tokenable;
+        }
+        $request->attributes->set('qv_user', $user);
+        return $user;
     }
 
     public static function issueToken(User $user): string
@@ -215,36 +217,92 @@ class Accounts
     }
 
     // ---------- credits ledger ----------
+    // The balance is never stored: it is the sum of the entries (grants +, spends/expiries −) minus the unspent part of
+    // grants whose expiry passed but that the daily ExpireTtsCredits job has not closed yet.
     public static function balance(int $userId): int
     {
-        $last = DB::table('qv_credit_transactions')->where('user_id', $userId)->orderByDesc('created_at')->orderByDesc('id')->value('balance_after');
-        return (int) ($last ?? 0);
+        $sum = (int) DB::table('qv_credit_transactions')->where('user_id', $userId)->sum('delta');
+        $lapsed = (int) DB::table('qv_credit_transactions')->where('user_id', $userId)
+            ->whereNotNull('expires_at')->where('expires_at', '<=', now())->where('remaining', '>', 0)->sum('remaining');
+        return max(0, $sum - $lapsed);
     }
 
-    public static function addCredits(int $userId, ?int $actorId, int $amount, string $reason, string $description, ?string $referenceId = null): int
+    /**
+     * Adds credits. $opts: expiresAt (Carbon, the batch then expires and is spent first), idempotencyKey (a second call
+     * with the same key adds nothing and returns the current balance), source, type, meta (array stored as JSON).
+     */
+    public static function addCredits(int $userId, ?int $actorId, int $amount, string $reason, string $description, ?string $referenceId = null, array $opts = []): int
     {
-        return DB::transaction(function () use ($userId, $actorId, $amount, $reason, $description, $referenceId) {
+        return DB::transaction(function () use ($userId, $actorId, $amount, $reason, $description, $referenceId, $opts) {
+            self::lockLedger($userId);
+            $key = $opts['idempotencyKey'] ?? null;
+            if ($key && DB::table('qv_credit_transactions')->where('idempotency_key', $key)->exists()) return self::balance($userId);
             $new = self::balance($userId) + $amount;
             DB::table('qv_credit_transactions')->insert([
                 'id' => (string) Str::uuid(), 'user_id' => $userId, 'actor_user_id' => $actorId, 'delta' => $amount, 'balance_after' => $new,
                 'reason' => $reason, 'reference_id' => $referenceId, 'description' => $description, 'created_at' => now(),
+                'type' => $opts['type'] ?? ($amount >= 0 ? 'grant' : 'adjust'), 'source' => $opts['source'] ?? $reason,
+                'expires_at' => $opts['expiresAt'] ?? null, 'remaining' => !empty($opts['expiresAt']) ? $amount : null,
+                'idempotency_key' => $key, 'meta' => isset($opts['meta']) ? json_encode($opts['meta'], JSON_UNESCAPED_UNICODE) : null,
             ]);
             Store::audit('c' . $userId, (string) ($actorId ?? 'system'), "GRANT_CREDITS: +{$amount}", ['reason' => $reason, 'newBalance' => $new]);
             return $new;
         });
     }
 
+    /** Spends credits: first from the expiring batches (soonest expiry first), then from the credits that never expire. */
     public static function deductCredits(int $userId, ?int $actorId, int $amount, string $referenceId, string $description): bool
     {
         return DB::transaction(function () use ($userId, $actorId, $amount, $referenceId, $description) {
+            self::lockLedger($userId);
             $cur = self::balance($userId);
             if ($cur < $amount) return false;
+            $left = $amount;
+            $batches = DB::table('qv_credit_transactions')->where('user_id', $userId)->whereNotNull('expires_at')
+                ->where('expires_at', '>', now())->where('remaining', '>', 0)->orderBy('expires_at')->lockForUpdate()->get(['id', 'remaining']);
+            foreach ($batches as $b) {
+                if ($left <= 0) break;
+                $take = min($left, (int) $b->remaining);
+                DB::table('qv_credit_transactions')->where('id', $b->id)->update(['remaining' => (int) $b->remaining - $take]);
+                $left -= $take;
+            }
             DB::table('qv_credit_transactions')->insert([
                 'id' => (string) Str::uuid(), 'user_id' => $userId, 'actor_user_id' => $actorId, 'delta' => -$amount, 'balance_after' => $cur - $amount,
                 'reason' => 'generation', 'reference_id' => $referenceId, 'description' => $description, 'created_at' => now(),
+                'type' => 'spend', 'source' => 'tts',
+                'meta' => json_encode(['fromExpiring' => $amount - $left]),
             ]);
             return true;
         });
+    }
+
+    /** Closes the expired part of every lapsed batch with an «expire» entry (daily job). Returns the number of entries written. */
+    public static function expireCredits(): int
+    {
+        $n = 0;
+        $ids = DB::table('qv_credit_transactions')->whereNotNull('expires_at')->where('expires_at', '<=', now())->where('remaining', '>', 0)->pluck('id');
+        foreach ($ids as $id) {
+            DB::transaction(function () use ($id, &$n) {
+                $b = DB::table('qv_credit_transactions')->where('id', $id)->lockForUpdate()->first();
+                if (!$b || (int) $b->remaining <= 0) return;
+                self::lockLedger((int) $b->user_id);
+                DB::table('qv_credit_transactions')->where('id', $id)->update(['remaining' => 0]);
+                $after = self::balance((int) $b->user_id) - (int) $b->remaining;   // the batch no longer counts as lapsed, so subtract it once
+                DB::table('qv_credit_transactions')->insert([
+                    'id' => (string) Str::uuid(), 'user_id' => $b->user_id, 'actor_user_id' => null, 'delta' => -(int) $b->remaining,
+                    'balance_after' => max(0, $after), 'reason' => 'expire', 'reference_id' => $b->id, 'type' => 'expire', 'source' => $b->source,
+                    'description' => 'انتهاء صلاحية رصيد (' . number_format((int) $b->remaining) . ' حرف)', 'created_at' => now(),
+                ]);
+                $n++;
+            });
+        }
+        return $n;
+    }
+
+    /** One writer per account at a time: serialises balance checks and writes on the client's account row. */
+    private static function lockLedger(int $userId): void
+    {
+        DB::table('users')->where('id', $userId)->lockForUpdate()->value('id');
     }
 
     public static function transactions(int $userId): array
@@ -253,6 +311,8 @@ class Accounts
             'id' => $t->id, 'companyId' => 'c' . $t->user_id, 'userId' => (string) $t->actor_user_id, 'delta' => (int) $t->delta,
             'balanceAfter' => (int) $t->balance_after, 'reason' => $t->reason, 'referenceId' => $t->reference_id,
             'description' => $t->description, 'createdAt' => Store::iso(Store::created($t, 'created_at')),
+            'type' => $t->type ?? null, 'expiresAt' => !empty($t->expires_at) ? Store::iso($t->expires_at) : null,
+            'meta' => !empty($t->meta) ? (json_decode($t->meta, true) ?: null) : null,
         ])->all();
     }
 
