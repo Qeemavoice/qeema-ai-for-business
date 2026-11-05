@@ -107,6 +107,7 @@ Route::post('assistant/chat', 'AssistantController@chat');
 Route::prefix('admin')->middleware('qv.admin')->group(function () {
     Route::get('overview', 'AdminController@overview');
     Route::get('bookings', 'AdminController@bookings');
+    Route::get('bookings/{id}', 'AdminController@bookingDetail');
     Route::post('bookings/{id}/status', 'AdminController@bookingStatus');
     Route::get('payouts', 'AdminController@payouts');
     Route::post('payouts/{talentId}/process', 'AdminController@processPayout');

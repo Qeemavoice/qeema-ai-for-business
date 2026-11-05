@@ -61,6 +61,7 @@ import { AdminPageEditor } from './admin/AdminPageEditor';
 import { AdminGuidesView } from './admin/AdminGuidesView';
 import { AdminReviewsView } from './admin/AdminReviewsView';
 import { AdminRowadView } from './admin/AdminRowadView';
+import { AdminBookingDetail } from './admin/AdminBookingDetail';
 import { AdminJobsView } from './admin/AdminJobsView';
 import { AdminVoicesView } from './admin/AdminVoicesView';
 import { AdminSettingsView, type SettingsSection } from './admin/AdminSettingsView';
@@ -119,6 +120,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   // Script Preview Modal
   const [selectedBookingForScript, setSelectedBookingForScript] = useState<HumanBooking | null>(null);
+  // the booking page (replaces the list while open)
+  const [openBookingId, setOpenBookingId] = useState<string | null>(null);
+  useEffect(() => { setOpenBookingId(null); }, [activeTab]);
 
   // Deliver Booking Modal
   const [deliveringBooking, setDeliveringBooking] = useState<HumanBooking | null>(null);
@@ -849,7 +853,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* ========================================================= */}
       {/* TAB 2: STUDIO BOOKINGS PIPELINE */}
       {/* ========================================================= */}
-      {activeTab === 'bookings' && (
+      {activeTab === 'bookings' && openBookingId && (
+        <AdminBookingDetail bookingId={openBookingId} onBack={() => setOpenBookingId(null)} onChanged={() => { loadAdminData(); }} />
+      )}
+      {activeTab === 'bookings' && !openBookingId && (
         <div className="space-y-6">
           {/* Controls Bar */}
           <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -940,7 +947,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                     return (
                       <tr key={b.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{b.id}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                          <button onClick={() => setOpenBookingId(b.id)} className="hover:text-brand-text hover:underline cursor-pointer" title="فتح صفحة الحجز">{b.id}</button>
+                        </td>
                         <td className="py-3.5 px-4 font-bold text-slate-800">
                           <span className="block">{b.companyName}</span>
                           {(b as any).repeatCustomer && (
@@ -988,9 +997,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           <div className="flex items-center justify-center gap-1.5">
                             {/* View Script */}
                             <button
-                              onClick={() => setSelectedBookingForScript(b)}
+                              onClick={() => setOpenBookingId(b.id)}
                               className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
-                              title="عرض الاسكريبت والملاحظات"
+                              title="صفحة الحجز: كل التفاصيل"
                             >
                               <Eye className="w-3.5 h-3.5" />
                             </button>

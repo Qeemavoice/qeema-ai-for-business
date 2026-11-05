@@ -109,6 +109,13 @@ class AdminController extends Controller
         ]]);
     }
 
+    /** GET admin/bookings/{id}: the booking page (order, client, narrator, script, lines, payments, messages, ratings) */
+    public function bookingDetail(string $id)
+    {
+        $d = \App\Services\NewUi\BookingDetail::find($id);
+        return $d ? response()->json(['booking' => $d]) : response()->json(['error' => 'طلب الحجز غير موجود'], 404);
+    }
+
     public function bookingStatus(Request $r, string $id)
     {
         $status = (string) $r->input('status', '');
