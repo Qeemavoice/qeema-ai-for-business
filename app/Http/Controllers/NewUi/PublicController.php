@@ -69,7 +69,7 @@ class PublicController extends Controller
 
     public function articles()
     {
-        $items = Article::where('status', ArticleStatus::PUBLISHED)->latest()->get()->map(fn ($a) => self::articleItem($a))
+        $items = Article::where('status', ArticleStatus::PUBLISHED)->whereNotIn('id', array_keys(config('seo.duplicate_article_redirects', [])))->latest()->get()->map(fn ($a) => self::articleItem($a))
             ->filter(fn ($i) => $i['title'] !== '' && trim(strip_tags($i['content'])) !== '')->values()->all();
         return response()->json(['items' => $items]);
     }

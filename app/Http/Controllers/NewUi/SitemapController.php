@@ -40,7 +40,7 @@ class SitemapController extends Controller
         foreach ($seo['blogPosts'] ?? [] as $post) $add('/ar/blogs/details/' . $post['slug'], 0.6, 'monthly', self::day($post['dateModified'] ?? null));
 
         // Blog articles of the dashboard (old `articles` table): same slug form the old site used (id-title)
-        foreach (Article::where('status', ArticleStatus::PUBLISHED)->orderByDesc('id')->get() as $a) {
+        foreach (Article::where('status', ArticleStatus::PUBLISHED)->whereNotIn('id', array_keys(config('seo.duplicate_article_redirects', [])))->orderByDesc('id')->get() as $a) {
             $add('/ar/blogs/details/' . PublicController::articleSlug($a), 0.6, 'monthly', Store::day(Store::created($a)));
         }
         // Success stories (dashboard copy, built-in list as fallback)

@@ -2,35 +2,21 @@
 
 return [
     /*
-    |--------------------------------------------------------------------------
-    | Exact duplicate article redirects
-    |--------------------------------------------------------------------------
-    |
-    | These article IDs were verified against production content. Each key is
-    | an exact-content duplicate and redirects permanently to the canonical
-    | article ID. Data is kept intact; only public indexing is consolidated.
-    |
+    | Duplicate blog articles: same title and (almost) the same text.
+    | The copy with the most views is the original; every other copy redirects to it permanently (301)
+    | and is left out of the blog list and the sitemap. Data is kept intact.
+    | Built from the articles table on 2026-11-06 (same ids on production).
     */
     'duplicate_article_redirects' => [
-        31 => 29,
-        72 => 71,
-        92 => 91,
-        93 => 91,
-        94 => 91,
-        99 => 98,
-        100 => 98,
-        101 => 98,
-        124 => 123,
-        125 => 123,
-        126 => 123,
-        132 => 131,
-        133 => 131,
-        134 => 131,
-        137 => 136,
-        138 => 136,
-        139 => 136,
-        140 => 136,
-        165 => 164,
-        166 => 164,
+        30 => 29,   31 => 29,                                  // 0 views -> 74
+        37 => 42,                                              // 26 -> 2,705
+        71 => 72,                                              // 0 -> 4,307
+        91 => 92,   93 => 92,   94 => 92,                      // 20-29 -> 7,208
+        95 => 85,                                              // 0 -> 3,218
+        98 => 101,  99 => 101,  100 => 101,                    // 0 -> 3,989
+        124 => 123, 125 => 123, 126 => 123,                    // 7-10 -> 4,484
+        132 => 131, 133 => 131, 134 => 131,                    // 3-6 -> 4,931
+        136 => 140, 137 => 140, 138 => 140, 139 => 140,        // 0 -> 7,287
+        164 => 166, 165 => 166,                                // 0 -> 4,166
     ],
 ];

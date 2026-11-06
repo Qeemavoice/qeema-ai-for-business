@@ -35,10 +35,18 @@ Route::get('/ar/services/{slug}', function ($slug) {
 Route::get('/ar/early', 'EarlyAccessController@show')->middleware('throttle:rowad');
 Route::get('/ar/early/welcome', 'EarlyAccessController@welcome');
 
+// Blog article: a duplicate copy goes to its original (config/seo.php), the rest is the React page
+Route::get('/ar/blogs/details/{slug}', function ($slug) {
+    $to = config('seo.duplicate_article_redirects')[(int) $slug] ?? null;
+    $a = $to ? \App\Models\Article::find($to) : null;
+    return $a ? redirect('/ar/blogs/details/' . \App\Http\Controllers\NewUi\PublicController::articleSlug($a), 301)
+        : app(\App\Http\Controllers\NewUi\SpaController::class)(request());
+})->where('slug', '.+');
+
 // Pages of the new site (the React router renders them)
 $spa = [
     '/', '/ar', '/ar/voices', '/ar/voice-models', '/ar/voice-models/{slug}', '/ar/text-to-speech', '/ar/pricing',
-    '/ar/our-works', '/ar/blogs', '/ar/blogs/details/{slug}', '/ar/guides', '/ar/guides/{slug}', '/ar/jobs',
+    '/ar/our-works', '/ar/blogs', '/ar/guides', '/ar/guides/{slug}', '/ar/jobs',
     '/ar/categories', '/ar/booking-steps', '/ar/booking/{slug}', '/ar/faqs', '/ar/contact-us',
     '/ar/p/about-us', '/ar/p/terms-of-use', '/ar/p/privacy-policy', '/ar/p/revisions-policy',
     '/ar/saudi-voice-over', '/ar/emirati-voice-over', '/ar/egyptian-voice-over', '/ar/generate', '/ar/chatbot',
