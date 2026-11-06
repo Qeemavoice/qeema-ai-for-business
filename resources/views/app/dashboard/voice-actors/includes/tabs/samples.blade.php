@@ -1,0 +1,155 @@
+<div class="tab-pane fade sonds" id="samples" role="tabpanel" aria-labelledby="samples-tab">
+    <voice-actor-samples-index :user="{{isset($user) ? json_encode($user) : 'null'}}" inline-template>
+        <div>
+            <h5 style="color: #fea107;font-weight: bold;">يمكنك إضافة حتى 3 عينات صوتية</h5>
+            <div class="card card-main">
+                <div class="card-header" style="display: flex;justify-content: space-between;">
+                    <h4> عيناتي </h4>
+                    <button @click="showFormStoreSampleModal" class="btn btn-sm btn-warning btnAddSample" title=" إضافة عينة"><i class="fa fa-plus"></i></button>
+                </div>
+                <div v-loading="form.loadingDisplay" class="card-body table-responsive">
+                        <div class="row">
+                            <div v-if="data.length>0" v-for="voice in data" class="col-sm-12 col-md-6 col-lg-6">
+                                <div class="sound-details" style="height: auto;">
+                                    <div class="">
+{{--                                        <a href="javaScript:;" @click="editSample(voice.id)" class="addToFavorite">--}}
+{{--                                            <i class="fa fa-edit"></i>--}}
+{{--                                        </a>--}}
+
+{{--                                        <a href="javaScript:;" class="showSingle" @click="playOrStopAudio(voice.id)">--}}
+{{--                                            <i class="fas fa-play" :id="'audio_controller_icon_'+voice.id"></i>--}}
+{{--                                        </a>--}}
+                                        <div class="targetDiv">
+                                            <audio controlslist="nodownload" controls="true" :src="voice.audio_file_url" :id="'voice_audio_'+voice.id" class="ppbutton fa fa-play audio-class"></audio>
+                                        </div>
+                                    </div>
+                                    <div class="soundName">
+                                        <div class="row">
+                                            <div class="col-8"><span class="name">@{{ voice.title }}</span></div>
+                                            <div class="col-4" style="text-align: left;"><span class="price">@{{ voice.show_total_price }}/ دقيقة</span></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="soundStatics">
+                                        <div class="row">
+                                            <div class="col-8"><span class="orders">@{{voice.number_of_orders}}  طلب</span></div>
+                                            <div class="col-4 ta-l">
+                                                <span class="likes">@{{voice.number_of_likes}}</span>
+                                                <a href="javascript:;">
+                                                    <span class="like-icon"><i class="fas fa-heart black-color"></i></span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="soundType">
+                                        <div class="row">
+                                            <div class="col-8 ta-r">
+                                                <span class="sType">
+                                                    @{{voice.language}},
+                                                    @{{voice.dialect}},
+                                                    @{{voice.category }}
+                                                </span>
+                                            </div>
+                                            <div class="col-4 ta-l">
+                                                <span class="likes">@{{voice.number_of_listened}}</span>
+                                                <span class="listen-icon"><i class="fas fa-headphones-alt"></i></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr>
+                                    <a href="javaScript:;" @click="deleteRow(voice.id,voice.title)" class="delete-icon">
+                                        <i class="fa fa-trash" style="color:red;"></i>
+                                    </a>
+
+                                </div>
+                            </div>
+                            <div v-else class="col-md-12 mt-4">
+                                <div class="alert alert-warning">لا توجد نتائج</div>
+                            </div>
+                        </div>
+                        <div class="load-more" v-if="data.length<page.totalItems" style="margin-left: 50%;margin-right: 47%;">
+                            <button type="button" @click="getMore" :disabled="form.disabledButton" class="save-clients-working">تحميل المزيد</button>
+                        </div>
+                </div>
+            </div>
+            <div class="modal fade in" id="modal_store_sample" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content" v-loading="form.editLoadingDisplay">
+                        <form class="sample_form" id="sample_form" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="_token" value="3GpXsoUg2kaQr555pFynX5r0aws6BbXs459Q4DJJ">
+                            <div class="modal-header">
+                                <h6 class="modal-title" style="display:inline-block" id="exampleModalLabel">
+                                    <template v-if="id">تعديل</template>
+                                    <template v-else>إضافة</template>
+                                    عينة
+                                </h6>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="margin-left: 0px;"><span aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group m-form__group row">
+                                    <div class="col-md-6 ">
+                                        <label for="">عنوان العينة</label>
+                                        <input class="form-control name" type="text" v-model="title" placeholder="عنوان العينة">
+                                        <span v-if="form.validation&&form.validation.title" class="error-block">@{{ form.validation.title[0] }}</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="">التصنيف الصوتي</label>
+                                        <select class="category_id form-control" v-model="category" id="category_id" name="category_id">
+                                            <option value="">---</option>
+                                            @foreach($categories as $category)
+                                            <option value="{{$category->id}}">{{$category->name}}</option>
+                                            @endforeach
+                                        </select>
+                                        <span v-if="form.validation&&form.validation.category" class="error-block">@{{ form.validation.category[0] }}</span>
+                                    </div>
+                                </div>
+                                <div class="form-group m-form__group row">
+                                    <div class="col-md-6">
+                                        <label for="">اللغة</label>
+                                        <select class="language form-control" @change="getDialectsByLanguage" v-model="language" id="language" name="language">
+                                            <option value="">---</option>
+                                            @foreach($languages as $lang)
+                                            <option value="{{$lang->id}}">{{$lang->name}}</option>
+                                            @endforeach
+                                        </select>
+                                        <span v-if="form.validation&&form.validation.language" class="error-block">@{{ form.validation.language[0] }}</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="">اللهجة </label>
+                                        <select class="accent form-control" v-model="dialect" id="dialect" name="accent">
+                                            <option value="">---</option>
+                                            <option v-for="(dialect,index) in dialects" :value="dialect.id">@{{ dialect.name }}</option>
+                                        </select>
+                                        <span v-if="form.validation&&form.validation.dialect" class="error-block">@{{ form.validation.dialect[0] }}</span>
+                                    </div>
+                                </div>
+                                <div class="form-group m-form__group row">
+                                    <div class="col-md-6 ">
+                                        <label for="">سعر الدقيقة</label>
+                                        <input class="form-control min_price" type="text" v-model="price_per_minute" placeholder="سعر الدقيقة">
+                                        <span v-if="form.validation&&form.validation.price_per_minute" class="error-block">@{{ form.validation.price_per_minute[0] }}</span>
+                                    </div>
+                                    <div class="col-md-6 ">
+                                    <upload-file :_file.sync="audio_file"
+                                                 placeholder="{{trans_admin('audio_file')}}"
+                                                 :dir="'{{\App\Models\Voice::DIR_VOICES_UPLOADS}}'"
+                                                 id='audio_file'
+                                                 :file_type="'audio'"
+                                                 div-id='div-audio-file'>
+                                    </upload-file>
+                                    <span v-if="form.validation&&form.validation.audio_file" class="error-block">@{{ form.validation.audio_file[0] }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" @click="save" :disabled="form.disabledButton" class="btn btn-primary btn_save_page" style="margin-left:0.25rem;"> حفظ</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" style="margin-left: 0.25rem;"> اخفاء</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </voice-actor-samples-index>
+</div>

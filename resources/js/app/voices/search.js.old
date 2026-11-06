@@ -1,0 +1,94 @@
+Vue.component('voices-search', {
+    data() {
+        return {
+            route: 'voices',
+            data: [],
+            filter: {
+                searchText: '',
+                language: '0',
+                type: '0',
+                dialect: '0',
+                categories: [],
+            },
+            orderBy: {
+                column: 'most_requested',
+                direction: 'desc',
+            },
+        }
+    },
+    props: {
+        category: null,
+    },
+    mounted() {
+        if (this.category) {
+            let id = getIdBySlug(this.category);
+            this.checkedCategoryField(id);
+            this.fetchData(this.route);
+        } else {
+            this.fetchData(this.route);
+        }
+    },
+    methods: {
+        search() {
+            this.fetchData(this.route);
+        },
+        checkedCategoryField(id) {
+            if ($("#category_" + id).hasClass("td-checked")) {
+                $('#category_' + id).removeClass('td-checked');
+                this.filter.categories.splice(this.filter.categories.indexOf(id), 1)
+            } else {
+                $('#category_' + id).addClass('td-checked');
+                this.filter.categories.push(id);
+            }
+        },
+        getMore() {
+            if (this.data.length < this.page.totalItems) {
+                this.page.currentPage++;
+                this.fetchDataMore();
+            }
+        },
+        async fetchDataMore() {
+            this.form.loadingDisplay = true;
+            await axios.get(this.$base_url + "/" + this.route + '/data', {
+                params: {
+                    page: this.page.currentPage,
+                    filter: this.filter,
+                    limit: this.limit,
+                    orderBy: this.orderBy,
+                }
+            }).then(response => {
+                this.form.loadingDisplay = false;
+                if (this.page.currentPage === 1) {
+                    this.page.totalItems = response.data.meta.total;
+                    this.data = response.data.data.data;
+                } else {
+                    this.data = [].concat(this.data, response.data.data.data);
+                }
+            }).catch(error => {
+                this.form.loadingDisplay = false;
+            });
+        },
+        async loadMore() {
+            this.form.loadingDisplay = true;
+            await axios.get(this.$base_url + "/" + this.route + '/do/load-more', {
+                params: {
+                    page: this.page.currentPage,
+                    filter: this.filter,
+                    limit: this.limit,
+                    orderBy: this.orderBy,
+                }
+            }).then(response => {
+                this.form.loadingDisplay = false;
+                if (this.page.currentPage === 1) {
+                    this.page.totalItems = response.data.meta.total;
+                    this.data = response.data.data.data;
+                } else {
+                    this.data = [].concat(this.data, response.data.data.data);
+                }
+            }).catch(error => {
+                this.form.loadingDisplay = false;
+            });
+        },
+    }
+});
+

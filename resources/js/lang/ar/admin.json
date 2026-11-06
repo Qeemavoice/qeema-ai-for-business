@@ -1,0 +1,19 @@
+{
+    "art_you_delete": "هل أنت متأكد من حذف {name} ؟",
+    "are_you_sure_about_this_procedure": "هل أنت متأكد من هذا الأجراء ؟",
+    "you_wont_be_able_to_revert_this": "لن تكون قادرا على التراجع!",
+    "yes": "نعم",
+    "no": "لا",
+    "yes_delete_it": "نعم ، تأكيد الحذف!",
+    "yes_accept": "نعم ، تأكيد الموافقة",
+    "yes_reject": "نعم ، تأكيد الرفض",
+    "are_you_accept": "هل أنت متأكد من قبول طلب الإلغاء للحجز  {name}",
+    "are_you_reject": "هل أنت متأكد من رفض طلب الإلغاء للحجز  {name}",
+    "art_you_close": "هل انت متأكد من اغلاق الصفحة؟",
+    "cancel": "إلغاء",
+    "maintenance_mode": "وضع الصيانة",
+    "yes_definitely": "نعم ، بكل تأكيد",
+    "you_will_lose_the_data_on_the_form_not_save": "ستفقد البيانات التي على الفورم إذا لم تقم بحفظها",
+    "you_can_edit_the_status_at_any_time": "يمكنك تعديل الحالة بأي وقت",
+    "upload": "رفع"
+}

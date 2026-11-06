@@ -1,0 +1,963 @@
+/***********************************mobile*******************************/
+@media (min-width: 300px) and (max-width: 766.5px){
+
+    /***********Navbar*********/
+    .navbar {
+        padding: 5px 20px;
+    }
+    .navbar .navbar-nav{
+        text-align: right;
+        margin-left: 0;
+        margin-right: 0;
+        margin-top: 10px;
+        padding-right: 15px;
+        z-index: 100000;
+    }
+    .navbar-expand-lg .navbar-nav .nav-link{
+        font-size: 12px;
+    }
+    .navbar-expand-lg .form-inline{
+        /* display: none;*/
+        padding-right: 15px;
+    }
+    .navbar-collapse{
+        background: #fff !important;
+        box-shadow: rgb(0 0 0 / 3%) 0px 3px 6px 3px;
+        z-index: 10000 !important;
+        /* margin-bottom: 37px; */
+        position: absolute;
+        width: 100%;
+        top: 57px;
+        right: 0;
+    }
+    .navbar-expand-lg .form-inline .nav-icon{
+        display: none;
+    }
+
+    /****************Hero Section**********************/
+    .box-video{
+        margin: 27px auto 20px auto;
+    }
+    .hero-section {
+        margin-top:60px;
+        z-index: 0;
+    }
+    .hero-section .hero-title h1{
+        font-size: 45px;
+    }
+    .hero-section .hero-title p{
+        font-size: 20px;
+    }
+    .hero-section .hero-title a{
+        padding: 12px;
+        font-size: 15px;
+    }
+    .booking-steps, .sounds-step, .soundss, .our-works, .our-clients, .Success-Partners {
+        padding-top:60px;
+    }
+    .booking-steps .title, .sounds-step .title, .soundss .title, .our-works .title, .our-clients .title, .Success-Partners .title{
+        font-size: 22px;
+    }
+    .booking-steps p, .sounds-step p, .soundss p, .our-works p, .our-clients p, .Success-Partners p{
+        font-size: 17px;
+    }
+    .inner .inner-content span.text{
+        width: 100%;
+    }
+    section {
+        padding: 1em !important;
+    }
+
+    .contact-form .formContact{
+        width: 90%;
+    }
+    .footer .single-col .contact-list .social-link {
+        text-align: center;
+        width: 100%;
+        /* margin: 0 auto; */
+        padding-left: 0 !important;
+        /* direction: ltr; */
+        margin-left: 27px;
+    }
+
+    .footer .single-col .contact-list{
+        text-align: right;
+    }
+    .footer .single-col .pages{
+        padding-right: 0;
+    }
+    .our-clients .ourClients .item{
+        /*  margin-left: 0 !important;*/
+    }
+    .owl-theme .owl-nav{
+        display: none;
+    }
+    /*----------------------------------------------------------------------------------
+    --------------------------CONTACT US PAGE START------------------------------------------*/
+    .contact-us-page .main-contact-form .orange-bg{
+        position: relative;
+        right: 0;
+        margin-top: 30px;
+        padding: 30px 15px 68px 15px;
+    }
+    .main-contact-form .Contact button{
+        width: 40%;
+    }
+    .contact-us-page .main-contact-form .white-bg{
+        padding: 30px 15px 68px 15px;
+    }
+    .contact-us-page .main-contact-form{
+        padding: 20px 10px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list li i{
+        margin-left: 10px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list li span {
+        font-size: 18px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list{
+        margin-bottom: 60px;
+    }
+
+    /*----------------------------------------------------------------------------------
+    --------------------------CONTACT US PAGE END------------------------------------------*/
+    /*----------------------------------------------------------------------------------
+    --------------------------SOUND PAGE START------------------------------------------*/
+    .page-header .search-area .select-area{
+        margin-bottom: 10px;
+    }
+    .page-header .search-area .btn-group{
+        margin-left: 10px;
+        margin-bottom: 10px;
+    }
+    .page-header .search-area .btn-group .form-control{
+        padding:4px;
+
+    }
+    .page-header .search-area .search-btn{
+        width: 100px;
+
+    }
+    .page-header .search-area{
+        height: 620px;
+    }
+    .soundss#sound {
+        padding-top: 535px;
+    }
+
+    .sound-type table td {
+        line-height: 4px;
+        padding: 5px;
+        display: inline-block;
+        border: 1px solid #2F4858;
+        border-radius: 5px;
+        padding: 5px 0px;
+        width: 100px;
+        font-size: 18px;
+        margin-left: 7px;
+        /* width: 100%; */
+        height: 40px;
+        margin-bottom: 10px;
+    }
+    /*----------------------------------------------------------------------------------
+    --------------------------Bloge PAGE START------------------------------------------*/
+    .blog-page .last-news .single-col .name,
+    .blog-page .main-blog .blog-deatails{
+        font-size: 16px;
+    }
+    .main-blog .blog-bg{
+        height: 290px;
+    }
+    .blog-page .hero-section{
+        margin-top: 60px;
+    }
+    .last-news .join-us {
+        text-align: left;
+    }
+    .last-news .join-us .person-link{
+        width:30%;
+    }
+    /*----------------------------------------------------------------------------------
+    --------------------------Booking-module PAGE START------------------------------------------*/
+
+    .booking-form .sound-details{
+        margin-top: 30px;
+    }
+    .Success-Partners .card{
+        margin-bottom: 2px;
+        height: auto;
+    }
+    .footer .single-col .footer-logo{
+        text-align: right;
+        margin:0 0 20px 0;
+    }
+    .sonds .sound-details,
+    .our-works .video-item{
+        margin-bottom: 10px;
+    }
+    .our-works .video-item{
+        height: 203px;
+    }
+    .sonds .sound-details{
+    height: auto;
+    }
+    .blog-page .sub-page-title h2{
+        font-size: 25px;
+    }
+    .blog-page .sub-page-title p{
+        font-size: 20px;
+    }
+    .navbar .navbar-brand {
+        width: 54px;
+        height: 38px;
+    }
+    .blog-page .blog-share .social-link{
+        padding-right: 0;
+    }
+    .blog-page .last-news{
+        margin-top: 0;
+        margin-bottom: 30px;
+    }
+    .last-news .join-us .person{
+        margin-top: -34px;
+    }
+    .congratulation .congratulation-box .col-md-8, .congratulation .congratulation-box .col-lg-7 {
+        margin: 0px auto !important;
+        margin-bottom: 30px !important;
+    }
+    .congratulation .congratulation-box .final-box p{
+        width: 90%;
+        font-size:18px;
+    }
+    .congratulation .congratulation-box .final-box a.book{
+        padding: 10px 30px;
+        font-size: 14px;
+    }
+    .congratulation .congratulation-box .final-box ul{
+        padding-right: 0;
+    }
+    .congratulation .congratulation-box .final-box ul li{
+        width: 25px;
+        height: 25px;
+        line-height: 21px;
+        margin-left: 10px;
+    }
+    .congratulation .congratulation-box .final-box ul li a {
+        font-size: 13px;
+
+    }
+    .contact-us-page .main-contact-form .orange-bg h4{
+        margin-bottom: 50px;
+    }
+    .contact-us-page .main-contact-form .white-bg h4{
+        font-size: 24px;
+    }
+    .sonds .listen-more, .our-works .listen-more,
+    .Clients .owl-theme .owl-dots{
+        margin-top: 30px;
+    }
+    .contact-form{
+        margin-bottom: 0;
+        margin-top: 30px;
+    }
+    .blog-page .last-news .single-col{
+        margin-top: 15px;
+    }
+
+}
+
+
+/**********************************************ibad********************************/
+@media(min-width:768px) and (max-width:1024px){
+    .navbar {
+        padding: 5px 20px;
+    }
+    .navbar .navbar-nav{
+        text-align: right;
+        margin-left: 0;
+        margin-right: 0;
+        margin-top: 10px;
+        padding-right: 15px;
+        z-index: 100000;
+    }
+    .navbar-expand-lg .navbar-nav .nav-link{
+        font-size: 12px;
+    }
+    .navbar-expand-lg .form-inline{
+        /* display: none;*/
+        padding-right: 15px;
+    }
+    .navbar-collapse{
+        background: #fff !important;
+        box-shadow: rgb(0 0 0 / 3%) 0px 3px 6px 3px;
+        z-index: 10000 !important;
+        /* margin-bottom: 37px; */
+        position: absolute;
+        width: 100%;
+        top: 57px;
+        right: 0;
+    }
+    .navbar-expand-lg .form-inline .nav-icon{
+        display: none;
+    }
+    /************************Hero Section***********************/
+    .hero-section .hero-title {
+        padding-top: 0;
+    }
+    .hero-section .hero-title h1{
+        font-size: 40px;
+    }
+    .hero-section .hero-title p{
+        font-size: 18px;
+    }
+    /*********************************************************/
+    .recorder{
+        width: 89%;
+        background-repeat: repeat-x;
+    }
+    .sonds .sound-details{
+        height: 400px;
+        margin-bottom: 10px;
+    }
+    .sonds .sound-details .soundName .price{
+        font-size: 14px;
+    }
+    .sonds .sound-details .soundType .likes{
+        font-size: 12px;
+    }
+    .recorder .ppbutton{
+        width: 100%;
+    }
+    .congratulation .congratulation-box .col-md-8, .congratulation .congratulation-box .col-lg-7 {
+        margin: 0px auto !important;
+        margin-bottom: 0px !important;
+
+    }
+    /******************************************/
+    .our-clients .owl-nav.disabled {
+        display: none;
+    }
+    .container-fluid.mycontiner{
+        margin-top: 92px;
+    }
+    .contact-form .formContact{
+        width: 75%;
+    }
+    .Success-Partners .card .card-text{
+        font-size: 12px;
+    }
+    .footer .single-col .contact-list li{
+        font-size: 12px;
+    }
+    .footer .single-col .pages li{
+        font-size: 14px;
+    }
+    .footer .single-col .contact-list .social-link li{
+        margin-left: 2px;
+    }
+
+
+    /*----------------------------------------------------------------------------------
+--------------------------CONTACT US PAGE START------------------------------------------*/
+    .contact-us-page .main-contact-form .orange-bg{
+        position: relative;
+        right: 0;
+        margin-top: 30px;
+        padding: 30px 15px 68px 15px;
+    }
+    .main-contact-form .Contact button{
+        width: 40%;
+    }
+    .contact-us-page .main-contact-form .white-bg{
+        padding: 30px 15px 68px 15px;
+    }
+    .contact-us-page .main-contact-form{
+        padding: 20px 10px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list li i{
+        margin-left: 10px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list li span {
+        font-size: 20px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list{
+        margin-bottom: 90px;
+    }
+
+    /*----------------------------------------------------------------------------------
+    --------------------------CONTACT US PAGE END------------------------------------------*/
+    /*----------------------------------------------------------------------------------
+    --------------------------SOUND PAGE START------------------------------------------*/
+    .sooo.container-fluid.mycontiner {
+        margin-top: 37px;
+    }
+    .sound-type table td{
+        margin-bottom: 15px;
+    }
+
+    /*----------------------------------------------------------------------------------
+    --------------------------Booking-module PAGE START------------------------------------------*/
+
+    .booking-form .sound-details{
+        margin-top: 15px;
+    }
+    .footer .single-col .footer-logo{
+        text-align: right;
+        margin:0 0 20px 0;
+    }
+    .page-header .search-area{
+        height: 230px;
+    }
+    .congratulation .congratulation-box .final-box p{
+        width: 80%;
+    }
+    .recorder .ppbutton{
+        bottom: -59%;
+        right: 0%;
+        text-align: right;
+    }
+    .booking-form .sound-details .soundName .col-4,
+    .booking-form .sound-details .soundStatics .col-4,
+    .booking-form .sound-details .price.total-price .col-4{
+        text-align: left;
+    }
+    section{
+        padding: 0.8em;
+    }
+    .pie-chart{
+        width: 175px;
+        height: 175px;
+    }
+    .inner{
+        width: 150px;
+        height: 150px;
+    }
+    .inner .inner-content p.num{
+        margin-bottom: 0px;
+    }
+    .inner .inner-content .icon{
+        width: 50px;
+        height: 50px;
+    }
+    .inner .inner-content span.text {
+        font-size: 13px;
+    }
+    .hero-section {
+        margin-top: 77px;
+    }
+    .blog-page .last-news{
+        margin-top: 66px;
+    }
+    .last-news .join-us .person-link{
+        width: 31%;
+    }
+    .blog-page .last-news .single-col .name{
+        font-size: 25px;
+    }
+
+}
+
+/*--------------------------------ibadpro--------------------------------------------*/
+@media(min-width:1024px) and (max-width:1300px){
+
+    /***************Nav********************************/
+    .navbar-expand-lg .navbar-nav .nav-link {
+        padding-left: 20px;
+        font-size: 14px;
+    }
+    .page-header .search-area{
+        height: 210px;
+    }
+    .navbar .navbar-nav {
+        margin-left: 8%;
+        margin-right: 7%;
+    }
+    /*****************Nav******************************/
+    .sooo.container-fluid.mycontiner {
+        margin-top: 37px;
+    }
+    .sound-type table td{
+        margin-bottom: 10px;
+    }
+    .sonds .sound-details{
+        height: 406px;
+    }
+    .soundss#sound{
+        padding-bottom: 33px;
+    }
+    .sonds .sound-details .soundName .name{
+        font-size: 16px;
+    }
+    .sonds .sound-details .soundName .price {
+        font-size: 12px;
+    }
+
+    .sonds .sound-details .soundType .likes {
+        font-size: 9px;
+        color: #2F4858;
+    }
+    .recorder .showSingle {
+        background: #FEA107;
+        color: #fff;
+        width: 40px;
+        height: 40px;
+        text-align: center;
+        line-height: 40px;
+        position: absolute;
+        top: 29%;
+        right: 44%;
+        border-radius: 50%;
+    }
+    .recorder .showSingle i{
+        display: inline-block;
+        text-align: center;
+        line-height: 40px;
+    }
+
+
+}
+/**************************************MAx screen***************************************/
+/************************LARG SECREEN***************************************************/
+@media(min-width: 1400px) {
+    .container {
+        width: 1370px !important;
+        min-width: 1370px !important;
+    }
+}
+@media(min-width: 1600px) {
+
+.booking-steps, .sounds-step, .soundss, .our-works, .our-clients, .Success-Partners {
+    padding-top: 85px !important;;
+    padding-bottom: 85px !important;;
+}
+.sounds-step .mySounds .item h4 {
+    width: 180px !important;
+
+}
+
+    .container {
+        width: 1570px !important;
+        min-width: 1570px !important;
+    }
+    .navbar .navbar-nav{
+       margin-left: 14%;
+    margin-right: 13%;
+    }
+    .pie-chart{
+        width: 340px;
+        height: 340px;
+    }
+    .inner{
+        width: 300px;
+        height: 300px;
+    }
+    .inner .inner-content p.num{
+        font-size: 30px;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    }
+    .inner .inner-content .icon{
+        width: 80px;
+        height: 75px;
+        margin-bottom: 35px;
+    }
+    .inner .inner-content .icon img{
+        width: 100%;
+        height: auto;
+    }
+    .inner .inner-content span.text {
+        font-size: 22px;
+        width: 92%;
+    }
+    .sounds-step .mySounds .item .icon-item{
+        width: 270px !important;
+        height: 270px !important;
+        margin: 0 auto;
+        line-height: 300px;
+        text-align: center;
+    }
+    .sounds-step .mySounds .item i{
+        font-size: 90px;
+    }
+    .sounds-step .mySounds .item h4{
+        font-size: 26px;
+        text-align: center;
+    }
+    .recorder .showSingle{
+        width: 55px;
+        height: 55px;
+        line-height: 62px;
+    }
+    .recorder .showSingle i{
+        font-size: 22px;
+    }
+    .recorder{
+        width: 82%;
+        background-repeat: repeat-x;
+    }
+    .recorder .ppbutton{
+        width: 100%;
+    }
+    .hero-section {
+        margin-top: 165px;
+    }
+    .page-main-title{
+        font-size: 22px;
+    }
+    .blog-page .sub-page-title p{
+        font-weight: 600;
+    }
+    .blog-page .main-blog .blog-deatails{
+        font-size: 20px;
+        line-height: 40px;
+    }
+    .blog-page .blog-share h6{
+        font-size: 22px;
+        margin-bottom: 15px;
+    }
+    .blog-page .blog-share .social-link li{
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
+        font-size: 18px;
+    }
+    .blog-page .last-news h5 {
+        font-size: 30px;
+        font-weight: 600;
+    }
+    .blog-page .last-news .single-col .name{
+        font-size: 25px;
+    }
+    .blog-page .last-news .single-col .date, .blog-page .last-news .single-col .read-no{
+        font-size: 18px;
+    }
+    .contact-us-page .main-contact-form .orange-bg{
+        right: 7%;
+    }
+    .contact-us-page .main-contact-form .white-bg h4{
+        font-size: 35px;
+        margin-bottom: 15px;
+    }
+    .contact-us-page .main-contact-form .white-bg span{
+        font-size: 20px;
+        font-weight: 600;
+    }
+    .main-contact-form .Contact button{
+        width: 25%;
+        font-size: 25px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .social-link li{
+        width: 35px;
+        height: 35px;
+        line-height: 35px;
+        font-size: 18px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list li span {
+        font-size: 25px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list li i{
+        font-size: 30px;
+    }
+    .contact-us-page .main-contact-form .orange-bg h4{
+        font-size: 35px;
+    }
+}
+@media(min-width:1600px) and (max-width:1900px){
+    .sound-type table td {
+        margin-bottom: 10px;
+    }
+}
+/*****************************************1900px******************************/
+@media(min-width: 1900px) {
+    .sound-type table td {
+        margin-bottom: 10px;
+    }
+    .container {
+        width: 1870px;
+        min-width: 1700px !important;
+        padding: 0 50px;
+    }
+    .navbar .navbar-nav{
+        /*margin-left: 32%;*/
+    }
+    .navbar-expand-lg .navbar-nav .nav-link{
+        font-size: 24px;
+    }
+    .navbar .navbar-brand{
+        width:140px;
+        height: 80px;
+    }
+    .navbar-expand-lg .form-inline span.phone-No{
+        font-size: 18px;
+    }
+    .hero-section{
+        margin-top: 165px;
+    }
+    .hero-section .hero-title h1{
+        font-size: 65px;
+    }
+    .hero-section .hero-title p{
+        font-size: 27px;
+        font-weight: 600;
+        margin-bottom: 25px;
+    }
+    .hero-section .hero-title a{
+        padding: 19px;
+        font-size: 20px;
+        font-weight: 600;
+    }
+    .pie-chart{
+        width: 340px;
+        height: 340px;
+    }
+    .inner{
+        width: 300px;
+        height: 300px;
+    }
+    .inner .inner-content p.num{
+        font-size: 30px;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    }
+    .inner .inner-content .icon{
+        width: 80px;
+        height: 75px;
+        margin-bottom: 35px;
+    }
+    .inner .inner-content .icon img{
+        width: 100%;
+        height: auto;
+    }
+    .inner .inner-content span.text {
+        font-size: 22px;
+        width: 92%;
+    }
+    .booking-steps .title, .sounds-step .title,
+    .soundss .title, .our-works .title,
+    .our-clients .title,
+    .Success-Partners .title{
+        font-size: 35px;
+        margin-bottom: 15px;
+
+    }
+    .booking-steps p, .sounds-step p,
+    .soundss p, .our-works p, .our-clients p,
+    .Success-Partners p{
+        font-size: 25px;
+        font-weight: 600;
+    }
+    .sounds-step .mySounds .item .icon-item{
+        width: 270px !important;
+        height: 270px !important;
+        margin: 0 auto;
+        line-height: 300px;
+        text-align: center;
+    margin-bottom: 30px;
+
+    }
+    .sounds-step .mySounds .item i{
+        font-size: 90px;
+    }
+    .sounds-step .mySounds .item h4{
+        font-size: 26px;
+        text-align: center;
+    }
+    .recorder .showSingle{
+        width: 55px;
+        height: 55px;
+        line-height: 62px;
+    }
+    .recorder .showSingle i{
+        font-size: 22px;
+    }
+    .recorder{
+        width: 82%;
+        background-repeat: repeat-x;
+    }
+    .recorder .ppbutton{
+        width: 100%;
+    }
+    .sonds .sound-details .soundName .name{
+        font-size: 20px;
+    }
+    .sonds .sound-details .soundName .price,
+    .sonds .sound-details .soundStatics .likes{
+        font-size: 20px;
+    }
+    .sonds .sound-details .soundStatics .code, .sonds .sound-details .soundStatics .orders{
+        font-size: 20px;
+    }
+    .sonds .sound-details .soundType .sType, .sonds .sound-details .soundType .likes{
+        font-size: 20px;
+    }
+    .sonds .sound-details{
+        height: 460px;
+    }
+    .sonds .sound-details .reserve a{
+        margin-top: 30px;
+        font-size: 25px;
+        border-radius: 10px;
+
+    }
+    .sonds .listen-more a, .our-works .listen-more a{
+        font-size: 24px;
+    }
+    .our-clients .ourClients .item{
+        width: 163px;
+        height: 163px;
+        line-height: 163px;
+        margin: 0 auto;
+    }
+    .card img{
+        width: 90px;
+        height: 90px;
+    }
+    .Success-Partners .card .card-title h5{
+        font-size: 30px;
+    }
+    .Success-Partners .card .card-text{
+        font-size: 18px;
+        line-height: 29px;
+    }
+    .Success-Partners .card{
+        margin-bottom: 25px;
+    }
+    .footer .foot-foot{
+        font-size: 22px;
+    }
+    .footer .single-col .page-links{
+        margin-bottom: 20px;
+    }
+    .footer .single-col .input-group{
+        margin-top: 40px;
+    }
+    .footer .single-col .contact-list li{
+        font-size: 22px;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    .footer .single-col .footer-logo{
+        width: 170px;
+        height: 80px;
+        margin: 0px auto 25px;
+    }
+    .footer .single-col .footer-logo img {
+        width: 100%;
+        height: 100%;
+    }
+    .footer .single-col .pages li{
+        font-weight: 600;
+    }
+    .footer .single-col .contact-list .social-link li{
+        width: 34.13px;
+        height: 34.13px;
+        line-height: 30px;
+    }
+    .contact-form .formContact button{
+        font-size: 24px;
+    }
+    .contact-form .formContact label{
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+    /*********************************SUB PAGES**************************/
+    .page-main-title{
+        font-size: 22px;
+    }
+    .blog-page .sub-page-title p{
+        font-weight: 600;
+    }
+    .blog-page .main-blog .blog-deatails{
+        font-size: 20px;
+        line-height: 40px;
+    }
+    .blog-page .blog-share h6{
+        font-size: 22px;
+        margin-bottom: 15px;
+    }
+    .blog-page .blog-share .social-link li{
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
+        font-size: 18px;
+    }
+    .blog-page .last-news h5 {
+        font-size: 30px;
+        font-weight: 600;
+    }
+    .blog-page .last-news .single-col .name{
+        font-size: 25px;
+    }
+    .blog-page .last-news .single-col .date, .blog-page .last-news .single-col .read-no{
+        font-size: 18px;
+    }
+    .congratulation .congratulation-box .final-box{
+        margin-top: 100px;
+    }
+    .congratulation .congratulation-box .final-box h5{
+        font-size: 35px;
+    }
+    .congratulation .congratulation-box .final-box p{
+        width: 85%;
+        margin: 23px auto;
+        font-size: 28px;
+        font-weight: 600;
+    }
+    .congratulation .congratulation-box .final-box a.book{
+        font-size: 24px;
+        letter-spacing: 2px;
+    }
+    .congratulation .congratulation-box .final-box ul li{
+        width: 35px;
+        height: 35px;
+        line-height: 31px;
+    }
+    .contact-us-page .main-contact-form .orange-bg{
+        right: 10%;
+    }
+    .contact-us-page .main-contact-form .white-bg h4{
+        font-size: 35px;
+        margin-bottom: 15px;
+    }
+    .contact-us-page .main-contact-form .white-bg span{
+        font-size: 20px;
+        font-weight: 600;
+    }
+    .main-contact-form .Contact button{
+        width: 25%;
+        font-size: 25px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .social-link li{
+        width: 35px;
+        height: 35px;
+        line-height: 35px;
+        font-size: 18px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list li span {
+        font-size: 25px;
+    }
+    .contact-us-page .main-contact-form .orange-bg .contact-info-list li i{
+        font-size: 30px;
+    }
+    .contact-us-page .main-contact-form .orange-bg h4{
+        font-size: 35px;
+    }
+
+    /**************************/
+    .page-header{
+        width: 100%;
+    }
+    .contact-form{
+        padding-top: 25px;
+    }
+    .footer .single-col .contact-list .social-link li{
+        margin-left: 15px;
+    }
+    .our-clients .ourClients .item{
+        padding: 3px;
+    }
+    .our-clients .ourClients .item img{
+        width:100%;
+        margin-top: 5px;
+    }
+}
