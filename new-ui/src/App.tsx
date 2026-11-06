@@ -90,7 +90,8 @@ function AppLayout({
   const location = useLocation();
   const path = location.pathname;
 
-  const isWorkspaceDashboard = path === '/ar/dashboard' || 
+  // dashboards have their own top bar (avatar + account menu), so the site header would show the account twice
+  const isWorkspaceDashboard = path === '/ar/dashboard' || path === '/ar/account' || path.startsWith('/ar/account/') ||
     path.startsWith('/ar/talent-');
 
   return (

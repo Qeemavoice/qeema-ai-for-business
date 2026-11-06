@@ -344,26 +344,21 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="relative">
                 <button
                   onClick={() => setShowCompanyMenu(!showCompanyMenu)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-right cursor-pointer"
+                  aria-label={currentUser?.name || 'حسابي'}
+                  title={currentUser?.name || 'حسابي'}
+                  className="relative block rounded-full ring-2 ring-slate-200 hover:ring-brand transition-all cursor-pointer"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-orange-100 text-brand-text font-black text-xs flex items-center justify-center">
-                    {currentUser?.name?.charAt(0) || 'ق'}
-                  </div>
-                  <div className="hidden sm:flex flex-col">
-                    <span className="text-xs font-bold text-slate-900 max-w-[120px] truncate">
-                      {currentUser?.name || 'المستخدم'}
-                    </span>
-                    <span className="text-[9px] text-slate-500">
-                      {currentCompany?.name.split('|')[0] || 'حساب المؤسسة'}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  {currentUser?.avatar
+                    ? <img src={currentUser.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    : <span className="w-10 h-10 rounded-full bg-orange-100 text-brand-text font-black text-sm flex items-center justify-center">{currentUser?.name?.charAt(0) || 'ق'}</span>}
+                  <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" />
                 </button>
 
                 {showCompanyMenu && (
                   <div className="absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
                     <div className="px-3 py-2 border-b border-slate-100 text-xs text-slate-400 font-semibold space-y-1.5">
-                      <div>الملف الشخصي والحساب</div>
+                      <div className="text-sm font-bold text-slate-900 truncate">{currentUser?.name || 'حسابي'}</div>
+                      <div className="truncate" dir="ltr">{currentUser?.email}</div>
                       <RowadBadge />
                     </div>
 
