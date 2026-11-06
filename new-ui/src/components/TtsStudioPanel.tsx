@@ -53,6 +53,8 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   };
   const [emotion, setEmotion] = useState('none');
   const [speed, setSpeed] = useState(1);
+  // 0 = lively and varied, 1 = steady and even (Munsit «stability»)
+  const [stability, setStability] = useState(0.5);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<Generation | null>(null);
@@ -81,7 +83,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
     if (!voice) return;
     setBusy(true); setError(''); setNotice('');
     try {
-      const res = await api.createGeneration({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, speed } });
+      const res = await api.createGeneration({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, speed, stability } });
       setResult(res.generation);
       setNotice(res.message || 'تم توليد الصوت بنجاح.');
       onGenerated?.(res.newBalanceCredits);
@@ -183,7 +185,12 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               <span className="flex items-center justify-between text-sm font-bold text-slate-900">السرعة <span className="font-mono text-xs text-slate-500">×{speed.toFixed(2)}</span></span>
               <input type="range" min={0.7} max={1.2} step={0.05} value={speed} onChange={e => setSpeed(Number(e.target.value))} className="w-full accent-brand" />
             </label>
-            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">المشاعر تعمل مع أصوات منصّت؛ السرعة تعمل مع كل الأصوات.</p>}
+            <label className="space-y-1.5">
+              <span className="flex items-center justify-between text-sm font-bold text-slate-900">ثبات الأداء <span className="font-mono text-xs text-slate-500">{stability.toFixed(2)}</span></span>
+              <input type="range" min={0} max={1} step={0.05} value={stability} onChange={e => setStability(Number(e.target.value))} className="w-full accent-brand" aria-label="ثبات الأداء" />
+              <span className="flex justify-between text-[11px] text-slate-500"><span>متنوّع</span><span>ثابت</span></span>
+            </label>
+            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">المشاعر تعمل مع أصوات منصّت؛ السرعة والثبات تعمل مع كل الأصوات.</p>}
           </div>
 
           <button

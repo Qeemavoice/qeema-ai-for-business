@@ -35,12 +35,13 @@ class MunsitStudioTest extends TestCase
 
         $before = Accounts::balance($u->id);
         $res = $api->postJson('/api/v1/generations', ['voiceId' => 'munsit:v-1', 'text' => 'مرحبا بكم',
-            'settings' => ['emotion' => 'excited', 'dialect' => 'fusha', 'diacritize' => false, 'speed' => 3]])->assertOk();
+            'settings' => ['emotion' => 'excited', 'dialect' => 'fusha', 'speed' => 3, 'stability' => 0]])->assertOk();
         $this->assertSame('munsit', $res->json('generation.provider'));
         $this->assertSame('excited', $res->json('generation.settings.emotion'));
         $this->assertEquals(1.2, $res->json('generation.settings.speed'));      // clamped to Munsit's range
         $this->assertSame($before - mb_strlen('مرحبا بكم'), $res->json('newBalanceCredits'));
-        Http::assertSent(fn ($req) => str_contains($req->url(), 'text-to-speech') && $req['dialect'] === 'fusha' && str_starts_with($req['text'], '[excited]'));
+        Http::assertSent(fn ($req) => str_contains($req->url(), 'text-to-speech') && $req['dialect'] === 'fusha' && str_starts_with($req['text'], '[excited]')
+            && (float) $req['stability'] === 0.0);   // «ثبات الأداء» at «متنوّع» reaches Munsit as 0, not the default
 
         // the generated file answers byte ranges (Safari and iOS need 206 to play it)
         $audio = $res->json('generation.audioUrl');

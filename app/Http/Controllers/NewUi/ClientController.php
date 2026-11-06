@@ -58,6 +58,8 @@ class ClientController extends Controller
             'emotion' => in_array($s['emotion'] ?? '', ['happy', 'excited', 'calm', 'serious', 'sad', 'fearful', 'angry'], true) ? $s['emotion'] : 'none',
             'dialect' => in_array($s['dialect'] ?? '', ['emirati', 'fusha'], true) ? $s['dialect'] : 'auto'];
         $settings['speed'] = max(0.7, min(1.2, $settings['speed']));
+        // «ثبات الأداء» 0..1: 0 is a real choice (lively), so it is not replaced by the default
+        $settings['stability'] = is_numeric($s['stability'] ?? null) ? max(0.0, min(1.0, (float) $s['stability'])) : 0.5;
         try {
             $synth = Tts::synthesize($text, (array) $voice, $settings);
         } catch (\Throwable $e) {
