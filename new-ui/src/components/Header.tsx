@@ -16,7 +16,9 @@ import {
   Mail,
   HelpCircle,
   Users,
-  Volume2
+  Volume2,
+  LayoutDashboard,
+  ShieldCheck
 } from 'lucide-react';
 import { Company, User } from '../types';
 import { WhiteFridayBar } from './WhiteFridayBar';
@@ -49,6 +51,13 @@ export const Header: React.FC<HeaderProps> = ({
   const currentPath = location.pathname;
 
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
+  // the signed-in user's own pages, by account type (admins see both)
+  const accountLinks = [
+    currentUser?.accountType === 'talent'
+      ? { to: '/ar/talent-dashboard', label: 'لوحة المعلق الصوتي', icon: Mic2 }
+      : { to: '/ar/account', label: 'حسابي', icon: LayoutDashboard },
+    ...(currentUser?.isPlatformAdmin ? [{ to: '/ar/admin', label: 'لوحة الإدارة', icon: ShieldCheck }] : []),
+  ];
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Dropdown states for Desktop
@@ -360,6 +369,13 @@ export const Header: React.FC<HeaderProps> = ({
 
                     
                     <div className="p-2 border-b border-slate-100 space-y-1">
+                      {accountLinks.map(l => (
+                        <Link key={l.to} to={l.to} onClick={() => setShowCompanyMenu(false)}
+                          className="w-full flex items-center gap-2 py-2 px-3 text-xs font-bold text-slate-800 hover:bg-orange-50 rounded-xl transition-all text-right">
+                          <l.icon className="w-4 h-4 text-brand-text" />
+                          <span>{l.label}</span>
+                        </Link>
+                      ))}
                       <Link
                         to="/ar/text-to-speech"
                         onClick={() => setShowCompanyMenu(false)}
@@ -553,6 +569,14 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
             ) : (
+              <>
+              {accountLinks.map(l => (
+                <Link key={l.to} to={l.to} onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-xs font-bold hover:bg-slate-50 transition-colors">
+                  <l.icon className="w-4 h-4 text-brand-text" />
+                  <span>{l.label}</span>
+                </Link>
+              ))}
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
@@ -562,6 +586,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 تسجيل الخروج (تصفح كزائر)
               </button>
+              </>
             )}
           </div>
         </div>
