@@ -39,7 +39,8 @@ class ClientController extends Controller
         $chars = mb_strlen($text);
         if ($chars < 2) return response()->json(['error' => 'النص قصير جداً. يرجى إدخال كلمتين على الأقل.'], 400);
         if ($chars > 5000) return response()->json(['error' => 'الحد الأقصى للتوليد في المرة الواحدة هو 5,000 حرف.'], 400);
-        $voice = VoicesController::voiceRow((string) $r->input('voiceId', ''));
+        $voiceId = (string) $r->input('voiceId', '');
+        $voice = str_starts_with($voiceId, 'munsit:') ? Tts::munsitVoiceRow($voiceId) : VoicesController::voiceRow($voiceId);
         if (!$voice) return response()->json(['error' => 'الصوت المحدد غير موجود'], 404);
         if (!$voice->is_active) return response()->json(['error' => 'هذا الصوت غير متاح حالياً'], 400);
 
@@ -52,7 +53,12 @@ class ClientController extends Controller
         }
         $s = (array) $r->input('settings', []);
         $settings = ['speed' => (float) ($s['speed'] ?? 1) ?: 1.0, 'stability' => (float) ($s['stability'] ?? 0.7) ?: 0.7, 'style' => (float) ($s['style'] ?? 0.5) ?: 0.5,
-            'pitch' => (float) ($s['pitch'] ?? 0), 'format' => ($s['format'] ?? '') === 'wav' ? 'wav' : 'mp3'];
+            'pitch' => (float) ($s['pitch'] ?? 0), 'format' => ($s['format'] ?? '') === 'wav' ? 'wav' : 'mp3',
+            // Munsit controls (ignored by the other engines)
+            'emotion' => in_array($s['emotion'] ?? '', ['happy', 'excited', 'calm', 'serious', 'sad', 'fearful', 'angry'], true) ? $s['emotion'] : 'none',
+            'dialect' => in_array($s['dialect'] ?? '', ['emirati', 'fusha'], true) ? $s['dialect'] : 'auto',
+            'diacritize' => (bool) ($s['diacritize'] ?? false)];
+        $settings['speed'] = max(0.7, min(1.2, $settings['speed']));
         try {
             $synth = Tts::synthesize($text, (array) $voice, $settings);
         } catch (\Throwable $e) {

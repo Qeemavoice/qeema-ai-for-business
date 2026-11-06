@@ -44,6 +44,7 @@ Route::post('newsletter', 'PublicController@newsletter');
 
 // ---- TTS voices, previews, trial, stored audio ----
 Route::get('voices', 'VoicesController@index');
+Route::get('tts/munsit-voices', 'VoicesController@munsitVoices');
 Route::get('voices/{id}/preview', 'VoicesController@preview');
 Route::get('voices/{id}/file', 'VoicesController@file');
 Route::get('voices/{id}', 'VoicesController@show');

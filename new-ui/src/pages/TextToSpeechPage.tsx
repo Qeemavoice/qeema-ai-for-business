@@ -16,7 +16,7 @@ import {
 import { useSeo } from '../seo/useSeo';
 import { STATIC_SEO_ROUTES } from '../seo/seoConfig';
 import { Breadcrumbs } from '../components/Breadcrumbs';
-import { TextToSpeechPlayground } from '../components/TextToSpeechPlayground';
+import { TtsStudioPanel } from '../components/TtsStudioPanel';
 import { TextToSpeechVisitorLanding } from '../components/TextToSpeechVisitorLanding';
 import { VoiceStyleShowcase } from '../components/VoiceStyleShowcase';
 import { useRowad } from '../lib/rowad';
@@ -74,7 +74,7 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
       {/* Main Content Area */}
       {activeTab === 'playground' ? (
         <section className="py-8">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             {/* The Restored Interactive Text-to-Speech Playground Console */}
             <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-7">
@@ -91,7 +91,7 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
                 </div>
               </div>
 
-              <TextToSpeechPlayground voices={voices} onGenerated={onGenerated} onExploreVoices={() => navigate('/ar/voices')} />
+              <TtsStudioPanel voices={voices} onGenerated={onGenerated} />
             </div>
 
             <VoiceStyleShowcase id="tts-voice-samples" title="تجارب صوتية حقيقية" subtitle="اختر أسلوب الأداء، ثم استمع للصوت" />

@@ -47,6 +47,13 @@ class VoicesController extends Controller
         return DB::table('qv_tts_voices')->where('id', $id)->first();
     }
 
+    /** Munsit voices for the studio (empty when Munsit is not set up) */
+    public function munsitVoices()
+    {
+        $voices = \App\Services\NewUi\Tts::munsitVoices();
+        return response()->json(['configured' => (bool) $voices, 'total' => count($voices), 'voices' => $voices])->header('Cache-Control', 'public, max-age=300');
+    }
+
     public function index(Request $r)
     {
         $q = DB::table('qv_tts_voices')->where('is_active', 1);

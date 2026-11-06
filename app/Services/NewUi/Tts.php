@@ -38,6 +38,42 @@ class Tts
         return self::acoustic($text, $voice['gender'] ?? 'male', $settings);
     }
 
+    /** Munsit is usable: key set and not switched off in the old dashboard «مزوّدو تحويل النص إلى صوت» */
+    public static function munsitEnabled(): bool
+    {
+        if (!app(\App\Services\MunsitTts::class)->isConfigured()) return false;
+        $saved = json_decode((string) \App\Models\Setting::where('key', 'new-ui-tts-providers')->value('value'), true);
+        return !is_array($saved['enabled'] ?? null) || in_array('munsit', $saved['enabled'], true);
+    }
+
+    /** Munsit catalogue for the studio: ids are prefixed «munsit:» so they never clash with qv_tts_voices */
+    public static function munsitVoices(): array
+    {
+        if (!self::munsitEnabled()) return [];
+        try {
+            return array_map(fn ($v) => [
+                'id' => 'munsit:' . $v['id'], 'name' => $v['name'], 'provider' => 'munsit', 'gender' => $v['gender'],
+                'dialect' => $v['dialect'], 'dialects' => $v['dialects'], 'description' => $v['description'], 'style' => $v['style'],
+                'previewUrl' => $v['previewUrl'],
+            ], app(\App\Services\MunsitTts::class)->voices());
+        } catch (\Throwable $e) {
+            report($e);
+            return [];
+        }
+    }
+
+    /** A «munsit:<id>» studio voice as a qv_tts_voices-like row (no narrator) */
+    public static function munsitVoiceRow(string $id): ?object
+    {
+        foreach (self::munsitVoices() as $v) {
+            if ($v['id'] === $id) {
+                return (object) ['id' => $v['id'], 'name' => $v['name'], 'provider' => 'munsit', 'provider_voice_id' => substr($v['id'], 7),
+                    'gender' => $v['gender'], 'dialect' => $v['dialect'], 'is_active' => 1, 'narrator_id' => null];
+            }
+        }
+        return null;
+    }
+
     /** منصّت (Munsit), the other developer's Arabic engine; key in MUNSIT_API_KEY */
     private static function munsit(string $voiceId, string $text, array $settings): ?array
     {
