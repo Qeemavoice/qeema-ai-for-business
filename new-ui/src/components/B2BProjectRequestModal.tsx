@@ -65,10 +65,10 @@ export const B2BProjectRequestModal: React.FC<B2BProjectRequestModalProps> = ({
   const durationMinutes = charCount === 0 ? 0 : Math.ceil(charCount / CHARS_PER_MINUTE);
   const finalCostUsd = durationMinutes * PRICE_PER_MINUTE_USD;
 
-  if (!isOpen) return null;
-
   const [sendError, setSendError] = useState('');
   const [sending, setSending] = useState(false);
+
+  if (!isOpen) return null;
   // Saved in the admin dashboard «الرسائل البريدية» as «طلب مشروع صوتي»
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
