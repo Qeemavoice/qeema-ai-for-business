@@ -117,7 +117,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
         </div>
         <h4 className="text-xl font-bold text-slate-900">تم استلام طلب الحجز بنجاح!</h4>
         <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-          سيقوم فريق إدارة الجودة في منصة قيمة بمراجعة السيناريو وتأكيد التسجيل بجودة 48kHz WAV Broadcast Standard خلال أقل من ساعتين.
+          شكراً لثقتك بقيمة فويس! استلمنا طلبك وسيتواصل معك فريقنا قريباً لتأكيد التفاصيل، ونضمن لك تسجيلاً احترافياً بجودة عالية يليق بمشروعك.
         </p>
         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 max-w-xs mx-auto text-xs space-y-1.5 text-right">
           <div className="flex justify-between"><span className="text-slate-500">مدة العمل:</span><strong>{durationMinutes} دقيقة</strong></div>
