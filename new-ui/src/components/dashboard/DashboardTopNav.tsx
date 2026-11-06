@@ -333,7 +333,7 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
                   <button
                     onClick={() => {
                       setIsProfileMenuOpen(false);
-                      if (onNavigate) onNavigate('usage');
+                      onNavigateTab('usage');
                     }}
                     className="w-full px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center justify-between text-right"
                   >

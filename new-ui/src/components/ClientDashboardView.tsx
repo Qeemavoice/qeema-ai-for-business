@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { UsageView } from './UsageView';
 import { 
   Plus, 
   X, 
@@ -42,6 +43,7 @@ interface ClientDashboardViewProps {
   onOpenLogin: () => void;
   onOpenSignup: () => void;
   onOpenAssistant?: () => void;
+  onGenerated?: (newBalanceCredits: number) => void;
 }
 
 export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
@@ -57,7 +59,8 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
   onOpenDemo,
   onOpenLogin,
   onOpenSignup,
-  onOpenAssistant
+  onOpenAssistant,
+  onGenerated
 }) => {
   // Navigation State inside ElevenLabs-style Workspace
   const [activeNav, setActiveNav] = useState<DashboardNavKey>('home');
@@ -268,6 +271,8 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
               onNavigateTab={(tab) => goNav(tab)}
               onQuickGenerate={handleQuickGenerateFromHome}
               onOpenStudioPreset={handleOpenStudioPreset}
+              canUseStudio={canUseNew}
+              onGenerated={onGenerated}
             />
           )}
 
@@ -400,6 +405,8 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
               </div>
             </div>
           )}
+
+          {activeNav === 'usage' && <UsageView />}
 
           {activeNav === 'billing' && (
             <BillingTab

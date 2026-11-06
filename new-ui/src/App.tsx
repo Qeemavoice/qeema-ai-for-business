@@ -349,6 +349,7 @@ export default function App() {
                 onSwitchCompany={handleSwitchCompany}
                 onNavigate={() => {}}
                 onOpenTopUp={() => setIsTopUpOpen(true)}
+                onGenerated={setBalanceCredits}
                 onOpenDemo={() => setIsDemoOpen(true)}
                 onOpenLogin={() => setAuthModalMode('login')}
                 onOpenSignup={() => setAuthModalMode('signup')}

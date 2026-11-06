@@ -23,6 +23,7 @@ import {
 import { Voice, Generation } from '../../types';
 import { GlassyVoiceOrb } from '../GlassyVoiceOrb';
 import { DashboardNavKey } from './DashboardSidebar';
+import { TtsStudioPanel } from '../TtsStudioPanel';
 import { useNavigate } from 'react-router-dom';
 import { useVoiceTemplates, openTemplateLink } from '../../lib/voiceTemplates';
 
@@ -34,6 +35,8 @@ interface HomeSubViewProps {
   onNavigateTab: (tab: DashboardNavKey) => void;
   onQuickGenerate: (text: string, voiceId: string) => void;
   onOpenStudioPreset?: (text: string, voiceId?: string) => void;
+  canUseStudio?: boolean;
+  onGenerated?: (newBalanceCredits: number) => void;
 }
 
 export const HomeSubView: React.FC<HomeSubViewProps> = ({
@@ -43,7 +46,9 @@ export const HomeSubView: React.FC<HomeSubViewProps> = ({
   onTogglePlay,
   onNavigateTab,
   onQuickGenerate,
-  onOpenStudioPreset
+  onOpenStudioPreset,
+  canUseStudio,
+  onGenerated
 }) => {
   const navigate = useNavigate();
   const templates = useVoiceTemplates();
@@ -74,7 +79,8 @@ export const HomeSubView: React.FC<HomeSubViewProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in" style={{ direction: 'rtl' }}>
-      {/* 1. ElevenLabs-Style Quick Prompt Generator Card */}
+      {/* 1. The same studio as the TTS page (/ar/text-to-speech); without studio access the old quick box opens the studio tab */}
+      {canUseStudio ? <TtsStudioPanel voices={voices} onGenerated={onGenerated} /> : (
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-4 space-y-4">
         {/* Top Tools Tabs */}
         <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs font-bold text-slate-600 border-b border-slate-100">
@@ -180,6 +186,7 @@ export const HomeSubView: React.FC<HomeSubViewProps> = ({
           </button>
         </div>
       </div>
+      )}
 
       {/* 3. Templates Section */}
       <div className="space-y-4">

@@ -39,7 +39,8 @@ export type DashboardNavKey =
   | 'human-bookings' 
   | 'compliance' 
   | 'team' 
-  | 'billing';
+  | 'billing'
+  | 'usage';
 
 interface DashboardSidebarProps {
   activeNav: DashboardNavKey;
