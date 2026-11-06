@@ -139,12 +139,12 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
             </button>
             {voice?.description && <p className="mt-1.5 px-1 text-[11px] text-slate-500 leading-relaxed line-clamp-2" dir="auto">{voice.description}</p>}
             {pickerOpen && (
-              <div className="absolute z-30 inset-x-0 top-[calc(100%+6px)] rounded-2xl border border-slate-200 bg-white shadow-xl p-2 space-y-2">
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-2 space-y-2">
                 <select value={dialectFilter} onChange={e => setDialectFilter(e.target.value)} className={select} aria-label="تصفية حسب اللهجة المسجلة للصوت">
                   <option value="all">كل اللهجات</option>
                   {dialects.map(d => <option key={d} value={d}>{ar(d)}</option>)}
                 </select>
-                <div className="max-h-80 overflow-y-auto space-y-1.5">
+                <div className="max-h-72 overflow-y-auto overscroll-contain space-y-1.5">
             {shown.map(v => (
               <div
                 key={v.id}
