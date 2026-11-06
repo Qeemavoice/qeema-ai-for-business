@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TTS_FAQS } from '../data/ttsFaqs';
-import { VoiceStyleShowcase } from './VoiceStyleShowcase';
 import { Link } from 'react-router-dom';
 import { useVoiceTemplates } from '../lib/voiceTemplates';
 import { 
@@ -425,12 +424,6 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
-      {/* Real voice samples by performance style */}
-      <div className="px-4 sm:px-6 lg:px-8 py-14 border-b border-slate-100">
-        <div className="max-w-5xl mx-auto">
-          <VoiceStyleShowcase id="tts-voice-samples" title="تجارب صوتية حقيقية" subtitle="اختر أسلوب الأداء، ثم استمع للصوت" />
-        </div>
-      </div>
 
       {/* 2. EMOTIONALLY & CONTEXTUALLY AWARE SECTION (Image 2 - Middle) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white">
