@@ -137,8 +137,11 @@ class VoicesController extends Controller
         $text = trim((string) $r->input('text', ''));
         if (mb_strlen($text) < 2) return response()->json(['error' => 'يرجى إدخال النص المطلوب تحويله إلى صوت'], 400);
         if (mb_strlen($text) > self::TRIAL_MAX_CHARS) return response()->json(['error' => 'التجربة المجانية حتى ' . self::TRIAL_MAX_CHARS . ' حرفاً.'], 400);
-        $voice = DB::table('qv_tts_voices')->where('is_active', 1)->where('id', (string) $r->input('voiceId', ''))->first()
+        $vid = (string) $r->input('voiceId', '');
+        $voice = (str_starts_with($vid, 'munsit:') ? \App\Services\NewUi\Tts::munsitVoiceRow($vid) : null)
+            ?: DB::table('qv_tts_voices')->where('is_active', 1)->where('id', $vid)->first()
             ?: DB::table('qv_tts_voices')->where('is_active', 1)->orderByDesc('is_featured')->first();
+        if (!$voice && ($m = \App\Services\NewUi\Tts::munsitVoices())) $voice = \App\Services\NewUi\Tts::munsitVoiceRow($m[0]['id']);
         if (!$voice) return response()->json(['error' => 'لا توجد أصوات متاحة حالياً'], 503);
         try {
             $synth = Tts::synthesize($text, (array) $voice, ['speed' => 1, 'stability' => 0.7, 'style' => 0.5, 'pitch' => 0]);

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Pause, Volume2, Download, RefreshCw, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import type { Generation, Voice } from '../types';
 import { api } from '../lib/api';
+import { arLabel, useMunsitVoices } from '../lib/studioVoices';
 
 /**
  * Signed-in TTS studio: our voices plus the Munsit catalogue (the other developer's work),
@@ -11,25 +12,13 @@ import { api } from '../lib/api';
  */
 interface StudioVoice { id: string; name: string; dialect: string; gender: string; style: string; description: string; previewUrl: string; munsit: boolean }
 
-const AR: Record<string, string> = {
-  emirati: 'إماراتي', najdi: 'نجدي', kuwaiti: 'كويتي', american: 'أمريكي', fusha: 'فصحى', hijazi: 'حجازي', omani: 'عماني',
-  british: 'بريطاني', indian: 'هندي', australian: 'أسترالي', ireland: 'أيرلندي', irish: 'أيرلندي', bahraini: 'بحريني', qatari: 'قطري',
-  saudi: 'سعودي', egyptian: 'مصري', levantine: 'شامي', syrian: 'سوري', lebanese: 'لبناني', jordanian: 'أردني', iraqi: 'عراقي', moroccan: 'مغربي',
-  conversational: 'محادثة', narration: 'سرد', educational: 'تعليمي', documentary: 'وثائقي', news: 'أخبار', broadcast: 'إذاعي',
-  social_media: 'سوشال ميديا', advertising: 'إعلاني', commercial: 'تجاري', storytelling: 'قصصي', audiobook: 'كتب صوتية', corporate: 'شركات',
-};
-const ar = (s: string) => s.split(/[،,]\s*/).filter(Boolean).map(w => AR[w.trim().toLowerCase()] || w.trim()).join('، ');
+const ar = arLabel;
 
 const EMOTIONS = [['none', 'النبرة الطبيعية'], ['happy', 'سعيد'], ['excited', 'حماسي'], ['calm', 'هادئ'], ['serious', 'جاد'], ['sad', 'حزين'], ['fearful', 'خائف'], ['angry', 'غاضب']];
 const STEERING = [['auto', 'تلقائي حسب النص والصوت'], ['emirati', 'إماراتي'], ['fusha', 'فصحى']];
 
 export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void }> = ({ voices, onGenerated }) => {
-  const [munsit, setMunsit] = useState<StudioVoice[]>([]);
-  useEffect(() => {
-    fetch('/api/v1/tts/munsit-voices').then(r => (r.ok ? r.json() : null)).then(d => d?.voices && setMunsit(d.voices.map((v: any) => ({
-      id: v.id, name: v.name, dialect: v.dialect || '', gender: v.gender, style: v.style || '', description: v.description || '', previewUrl: v.previewUrl || '', munsit: true,
-    })))).catch(() => {});
-  }, []);
+  const munsit: StudioVoice[] = useMunsitVoices().map(v => ({ ...v, munsit: true }));
   const all: StudioVoice[] = useMemo(() => [
     ...voices.filter(v => v.type === 'ai' && v.isActive !== false).map(v => ({
       id: v.id, name: v.name.replace(/\s*AI\b/g, '').trim(), dialect: v.dialectLabel || '', gender: v.gender, style: v.styleLabel || '',

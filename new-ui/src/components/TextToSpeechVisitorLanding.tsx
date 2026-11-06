@@ -35,7 +35,7 @@ import {
   Quote
 } from 'lucide-react';
 import { GlassyVoiceOrb } from './GlassyVoiceOrb';
-import { AI_VOICES_CATALOG } from '../data/aiVoicesCatalog';
+import { arLabel, useMunsitVoices } from '../lib/studioVoices';
 import { PLANS, SIGNUP_BONUS_CREDITS } from '../../shared/plans';
 
 interface TextToSpeechVisitorLandingProps {
@@ -77,14 +77,15 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
   ];
 
   // Voices list for console
-  // Studio voices from the dashboard; the built-in catalog shows only until the server answers.
+  // Studio voices from the dashboard, else the Munsit catalogue
   const [serverVoices, setServerVoices] = useState<{ id: string; name: string; flag: string; dialectLabel: string; previewUrl: string }[] | null>(null);
   useEffect(() => {
     fetch('/api/v1/voices?type=ai').then(r => (r.ok ? r.json() : null)).then(d => {
       if (d?.voices?.length) setServerVoices(d.voices.map((v: any) => ({ id: v.id, name: v.name, flag: v.flag || '', dialectLabel: v.dialectLabel || '', previewUrl: `/api/v1/voices/${v.id}/preview` })));
     }).catch(() => {});
   }, []);
-  const previewVoices = serverVoices || AI_VOICES_CATALOG;
+  const munsit = useMunsitVoices();
+  const previewVoices = serverVoices || munsit.slice(0, 12).map(v => ({ id: v.id, name: v.name, flag: '', dialectLabel: arLabel(v.dialect), previewUrl: v.previewUrl }));
 
   const handleTogglePlayVoice = (voiceId: string, previewUrl: string) => {
     if (playingVoiceId === voiceId) {
