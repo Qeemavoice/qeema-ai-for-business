@@ -18,6 +18,7 @@ import { STATIC_SEO_ROUTES } from '../seo/seoConfig';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { TextToSpeechPlayground } from '../components/TextToSpeechPlayground';
 import { TextToSpeechVisitorLanding } from '../components/TextToSpeechVisitorLanding';
+import { VoiceStyleShowcase } from '../components/VoiceStyleShowcase';
 
 interface TextToSpeechPageProps {
   isLoggedIn: boolean;
@@ -87,6 +88,8 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
 
               <TextToSpeechPlayground voices={voices} onGenerated={onGenerated} onExploreVoices={() => navigate('/ar/voices')} />
             </div>
+
+            <VoiceStyleShowcase id="tts-voice-samples" title="تجارب صوتية حقيقية" subtitle="اختر أسلوب الأداء، ثم استمع للصوت" />
 
             {/* SEO Key Value Props Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4">

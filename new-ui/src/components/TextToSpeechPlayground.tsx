@@ -366,7 +366,7 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
           {/* ========================================================================= */}
           {/* LEFT PANEL: VOICES LIST (Right in RTL, or LTR aligned with screenshot)    */}
           {/* ========================================================================= */}
-          <div className="md:col-span-5 p-5 sm:p-6 border-b md:border-b-0 md:border-l border-slate-100 flex flex-col justify-between bg-slate-50/40">
+          <div className="order-2 md:col-span-5 p-5 sm:p-6 border-t md:border-t-0 md:border-r border-slate-100 flex flex-col justify-between bg-slate-50/40">
             
             {/* Voices List */}
             <div className="space-y-1.5">
@@ -485,13 +485,15 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
           {/* ========================================================================= */}
           {/* RIGHT PANEL: TEXT AREA & CONTROLS (Left in RTL)                           */}
           {/* ========================================================================= */}
-          <div className="md:col-span-7 p-6 sm:p-7 flex flex-col justify-between bg-white relative">
+          <div className="order-1 md:col-span-7 p-6 sm:p-7 flex flex-col justify-between bg-white relative">
             
             {/* Textarea Input Area */}
             <div className="flex-1 flex flex-col">
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !isGenerating) { e.preventDefault(); handleTogglePlay(); } }}
+                aria-label="النص المراد تحويله إلى صوت"
                 placeholder="اكتب نصك هنا لتجربة الصوت العربي فوراً"
                 rows={5}
                 className="w-full h-full min-h-[190px] text-slate-800 text-base sm:text-lg leading-relaxed resize-none border-none focus:outline-none focus:ring-0 bg-transparent placeholder:text-slate-300 placeholder:font-light"
@@ -504,7 +506,7 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span>الصوت المختار: <strong className="text-slate-700 font-semibold">{selectedVoice.name}</strong> ({selectedVoice.dialect})</span>
                 </div>
-                <span className="text-[11px]">{text.length} حرف</span>
+                <span className="text-[11px]">{text.length} حرف<span className="hidden sm:inline text-slate-300"> · Ctrl + Enter للتوليد</span></span>
               </div>
             </div>
 

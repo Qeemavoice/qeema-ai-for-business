@@ -1,3 +1,4 @@
+import { TTS_FAQS } from '../data/ttsFaqs';
 export interface BreadcrumbItem {
   name: string;
   item: string;
@@ -136,6 +137,8 @@ export const STATIC_SEO_ROUTES: Record<string, SeoConfigItem> = {
     ogType: 'website',
     jsonLdType: 'Service',
     serviceType: 'Arabic Text to Speech (Licensed AI Voice)',
+    keywords: 'تحويل النص إلى صوت, تحويل النص لصوت عربي, text to speech عربي, قارئ نصوص عربي, صوت ذكاء اصطناعي عربي, تعليق صوتي بالذكاء الاصطناعي, لهجة سعودية, لهجة مصرية, لهجة خليجية',
+    faqs: TTS_FAQS.map(f => ({ question: f.q, answer: f.a })),
     breadcrumbs: [
       { name: 'الرئيسية', item: '/ar' },
       { name: 'تحويل النص إلى صوت', item: '/ar/text-to-speech' }

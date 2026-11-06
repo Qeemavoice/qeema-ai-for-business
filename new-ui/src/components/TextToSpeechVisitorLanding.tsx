@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { TTS_FAQS } from '../data/ttsFaqs';
+import { VoiceStyleShowcase } from './VoiceStyleShowcase';
 import { Link } from 'react-router-dom';
 import { useVoiceTemplates } from '../lib/voiceTemplates';
 import { 
@@ -245,32 +247,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
   // Cards come from «نماذج الإنتاج الصوتي» (managed from the dashboard), each linking to its model page
   const voiceCategoryCards = useVoiceTemplates().slice(0, 6);
 
-  const faqs = [
-    {
-      q: 'كم عدد الأصوات المتاحة في استوديو التوليد؟',
-      a: 'توفر المنصة أصوات ذكاء اصطناعي عربية مبنية من أصوات معلقين بشريين حقيقيين، مقسمة حسب اللهجات (سعودي، مصري، شامي، خليجي، مغاربي، وفصحى)، إضافة إلى الإنجليزية الأمريكية والبريطانية والفرنسية، وتتوسع المكتبة باستمرار.'
-    },
-    {
-      q: 'ما هي حدود الباقة المجانية؟ وكم عدد الأحرف التي أحصل عليها؟',
-      a: 'تمنحك الباقة المجانية 5,000 حرف رصيداً ترحيبياً عند التسجيل (كل حرف = 1 نقطة)، وهو ما يعادل نحو 5 دقائق من التوليد الصوتي، لتجربة الأصوات المختلفة دون الحاجة لإدخال أي بطاقة ائتمانية.'
-    },
-    {
-      q: 'هل يمكنني استخدام الصوت المولد في الأغراض التجارية والإعلانات؟',
-      a: 'نعم! تمنحك جميع الباقات المدفوعة (مبتدئ، صانع محتوى، وباقات الشركات) ترخيصاً تجارياً شاملاً، يتيح لك نشر الصوتيات على يوتيوب، تيك توك، الإعلانات التلفزيونية، البودكاست، والكتب الصوتية المعروضة للبيع.'
-    },
-    {
-      q: 'هل تدعم المنصة التشكيل التلقائي للنصوص العربية لتجنب الأخطاء اللغوية؟',
-      a: 'نعم، تم تزويد محركنا الصوتي بمصحح سياقي ذكي يفهم علامات الإعراب وتشكيل الكلمات المعقدة تلقائياً وفق سياق الجملة، كما يمكنك أيضاً إدخال النص مشكولاً يدوياً لضمان نطق الحركات بدقة متناهية بنسبة 100%.'
-    },
-    {
-      q: 'ما هي صيغ الملفات الصوتية التي يمكنني تحميلها؟',
-      a: 'يمكنك تصدير الملفات بصيغة MP3 عالية النقاء، أو بصيغة WAV نقية غير مضغوطة بتردد استوديو 48kHz في الباقات المدفوعة للمشاريع الاحترافية والمونتاج.'
-    },
-    {
-      q: 'كيف تضمن منصة قيمة فويس أمان وخصوصية البيانات الصوتية؟',
-      a: 'نلتزم بأعلى معايير الأمان؛ تشفير تام للبيانات أثناء النقل والتخزين، ولا تُستخدم نصوصك أو تسجيلاتك لتدريب أي نماذج.'
-    }
-  ];
+  const faqs = TTS_FAQS;
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-orange-500 selection:text-white" dir="rtl">
       
@@ -446,6 +423,13 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
           </div>
         </div>
       </section>
+
+      {/* Real voice samples by performance style */}
+      <div className="px-4 sm:px-6 lg:px-8 py-14 border-b border-slate-100">
+        <div className="max-w-5xl mx-auto">
+          <VoiceStyleShowcase id="tts-voice-samples" title="تجارب صوتية حقيقية" subtitle="اختر أسلوب الأداء، ثم استمع للصوت" />
+        </div>
+      </div>
 
       {/* 2. EMOTIONALLY & CONTEXTUALLY AWARE SECTION (Image 2 - Middle) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white">
