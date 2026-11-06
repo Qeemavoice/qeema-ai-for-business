@@ -5,10 +5,11 @@ return [
     | Duplicate blog articles: same title and (almost) the same text.
     | The copy with the most views is the original; every other copy redirects to it permanently (301)
     | and is left out of the blog list and the sitemap. Data is kept intact.
-    | Built from the articles table on 2026-11-06 (same ids on production).
+    | Built from the articles table on 2026-11-06 (same ids on production). These copies were already
+    | deleted in the old dashboard (deleted_at); the Article model ignores that column, so they are listed here.
     */
     'duplicate_article_redirects' => [
-        30 => 29,   31 => 29,                                  // 0 views -> 74
+        29 => 32,   30 => 32,   31 => 32,                      // deleted in 2022 -> the live rewrite (2,511)
         37 => 42,                                              // 26 -> 2,705
         71 => 72,                                              // 0 -> 4,307
         91 => 92,   93 => 92,   94 => 92,                      // 20-29 -> 7,208
