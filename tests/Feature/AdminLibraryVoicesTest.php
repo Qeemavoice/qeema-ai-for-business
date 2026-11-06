@@ -32,6 +32,15 @@ class AdminLibraryVoicesTest extends TestCase
         $api->putJson('/api/v1/admin/collections/humanVoices/501', ['sampleName' => 'إعلان هادئ', 'narratorPriceUsd' => 45, 'gender' => 'female'])->assertOk()
             ->assertJsonPath('item.sampleName', 'إعلان هادئ')->assertJsonPath('item.narratorPriceUsd', 45)->assertJsonPath('item.gender', 'female');
 
+        // categories go to voice_categories (several per voice), and the library shows all of them
+        DB::table('categories')->insert([['id' => 7, 'name' => json_encode(['ar' => 'إعلانات', 'en' => 'إعلانات'])], ['id' => 8, 'name' => json_encode(['ar' => 'وثائقي', 'en' => 'وثائقي'])]]);
+        $api->putJson('/api/v1/admin/collections/humanVoices/501', ['categories' => ['غير موجود']])->assertStatus(400);
+        $api->putJson('/api/v1/admin/collections/humanVoices/501', ['categories' => ['إعلانات', 'وثائقي']])->assertOk()
+            ->assertJsonPath('item.categories', ['إعلانات', 'وثائقي']);
+        $this->assertSame([7, 8], DB::table('voice_categories')->where('voice_id', 501)->orderBy('category_id')->pluck('category_id')->map(fn ($x) => (int) $x)->all());
+        $public = collect($this->getJson('/api/v1/human-voices')->json('items'))->firstWhere('id', '501');
+        $this->assertSame(['إعلانات', 'وثائقي'], $public['categories']);
+
         $api->deleteJson('/api/v1/admin/collections/humanVoices/501')->assertOk();
         $this->assertSame(1, (int) DB::table('voices')->where('id', 501)->value('voice_status_id'));   // hidden (draft), not erased
         $this->assertSame('hidden', collect($api->getJson('/api/v1/admin/collections/humanVoices')->json('items'))->firstWhere('id', '501')['status']);

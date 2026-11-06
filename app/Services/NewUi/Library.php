@@ -38,8 +38,11 @@ class Library
     {
         $actor = $v->voiceOver;
         $dialect = $v->dialect;
-        $catRel = $v->category;
-        $category = $catRel && $catRel->category ? self::tr($catRel->category, 'name') : '';
+        // every category of the voice (voice_categories), not only the first
+        $catRels = $v->categories->filter(fn ($c) => $c->category);
+        $cats = $catRels->map(fn ($c) => self::tr($c->category, 'name'))->filter()->unique()->values()->all();
+        $category = $cats[0] ?? '';
+        $catRel = $catRels->first();
         $title = self::tr($v, 'title');
         $narratorPrice = (float) $v->price_per_minute;
         $gender = (int) $v->voice_type_id === VoiceType::VOICE_TYPE_WOMEN ? 'female' : 'male';
@@ -61,7 +64,7 @@ class Library
             'license' => 'ترخيص تجاري شامل', 'licenseTooltip' => '',
             'usageCount' => (string) ((int) $v->number_of_listened),
             'bookingsCount' => (int) $v->number_of_orders,
-            'category' => $category, 'categories' => $category ? [$category] : [], 'tags' => $category ? [$category] : [], 'categoryKey' => 'custom',
+            'category' => $category, 'categories' => $cats, 'tags' => $cats, 'categoryKey' => 'custom',
             'glassGradient' => 'radial-gradient(circle at 30% 30%, #FFA513 0%, #7c2d12 60%, #1c1917 100%)',
             'previewUrl' => (string) $v->audio_file_url,
             'isVerified' => true, 'isHuman' => true, 'status' => 'active',
@@ -99,7 +102,7 @@ class Library
         if (self::$cache !== null) return self::$cache;
         $pct = Plans::commissionPercent();
         $out = [];
-        foreach (Voice::with(['voiceOver', 'dialect', 'language', 'category.category'])->where('voice_status_id', VoiceStatus::ACCEPTED)->orderByDesc('number_of_orders')->get() as $v) {
+        foreach (Voice::with(['voiceOver', 'dialect', 'language', 'categories.category'])->where('voice_status_id', VoiceStatus::ACCEPTED)->orderByDesc('number_of_orders')->get() as $v) {
             $out[] = self::fromVoice($v, $pct);
         }
         $st = \App\Http\Controllers\NewUi\NarratorController::state();

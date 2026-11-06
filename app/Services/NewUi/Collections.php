@@ -84,7 +84,7 @@ class Collections
         $pct = Plans::commissionPercent();
         $out = array_map(fn ($v) => self::voiceAdminItem($v, 'active'), Library::all());
         // hidden ones (taken out of the library from here) stay listed so they can be shown again
-        foreach (\App\Models\Voice::with(['voiceOver', 'dialect', 'language', 'category.category'])->where('voice_status_id', \App\Models\VoiceStatus::DRAFT)
+        foreach (\App\Models\Voice::with(['voiceOver', 'dialect', 'language', 'categories.category'])->where('voice_status_id', \App\Models\VoiceStatus::DRAFT)
             ->whereNotNull('voiceover_id')->latest('id')->get() as $v) {
             $out[] = self::voiceAdminItem(Library::fromVoice($v, $pct), 'hidden');
         }
@@ -122,10 +122,16 @@ class Collections
         if (!empty($d['previewUrl']) && str_starts_with((string) $d['previewUrl'], 'data:')) {
             $v->audio_file = self::upload((string) $d['previewUrl'], \App\Models\Voice::DIR_VOICES_UPLOADS, $v->audio_file);
         }
+        if (array_key_exists('categories', $d) && is_array($d['categories'])) {
+            $byName = Category::all()->keyBy(fn ($c) => PublicController::tr($c, 'name'));
+            $ids = collect($d['categories'])->map(fn ($n) => optional($byName->get(trim((string) $n)))->id)->filter()->unique()->values()->all();
+            if (!$ids) return ['error' => 'اختر تصنيفاً واحداً على الأقل من التصنيفات الموجودة'];
+            \App\Models\VoiceCategory::sync($ids, $v->id);   // the old site's own helper: replaces the voice's rows in voice_categories
+        }
         if (array_key_exists('status', $d)) $v->voice_status_id = $d['status'] === 'hidden' ? \App\Models\VoiceStatus::DRAFT : \App\Models\VoiceStatus::ACCEPTED;
         $v->save();
         Library::forget();
-        $v = $v->fresh(['voiceOver', 'dialect', 'language', 'category.category']);
+        $v = $v->fresh(['voiceOver', 'dialect', 'language', 'categories.category']);
         return self::voiceAdminItem(Library::fromVoice($v, Plans::commissionPercent()), (int) $v->voice_status_id === \App\Models\VoiceStatus::ACCEPTED ? 'active' : 'hidden');
     }
 
