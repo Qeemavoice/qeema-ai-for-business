@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Play, Pause, Volume2, Download, RefreshCw, Loader2 } from 'lucide-react';
+import { Play, Pause, Volume2, Download, RefreshCw, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { Generation, Voice } from '../types';
 import { api } from '../lib/api';
 
@@ -52,6 +52,9 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<Generation | null>(null);
+  const [notice, setNotice] = useState('');
+  // ElevenLabs answers MP3; Munsit and the internal engine answer WAV
+  const format = result?.provider === 'elevenlabs' ? 'MP3' : 'WAV';
   const [history, setHistory] = useState<Generation[]>([]);
   const loadHistory = () => api.getGenerations().then(d => setHistory(d.generations.slice(0, 6))).catch(() => {});
   useEffect(() => { loadHistory(); }, []);
@@ -72,10 +75,11 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
     const t = text.trim();
     if (!t) { setError('اكتب النص المراد تحويله إلى صوت أولاً.'); return; }
     if (!voice) return;
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setNotice('');
     try {
       const res = await api.createGeneration({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, diacritize, speed } });
       setResult(res.generation);
+      setNotice(res.message || 'تم توليد الصوت بنجاح.');
       onGenerated?.(res.newBalanceCredits);
       loadHistory();
     } catch (e: any) {
@@ -145,25 +149,43 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
             {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5" />}
             {busy ? 'جارٍ التوليد...' : 'توليد الصوت'}
           </button>
-          {error && <p className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{error}</p>}
-
-          {result && (
-            <div className="rounded-2xl bg-slate-950 text-white p-5 space-y-4">
+          {/* Audio preview: always visible, like the other developer's studio */}
+          <div className="rounded-3xl bg-slate-950 text-white overflow-hidden">
+            <div className="p-5 space-y-3 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="w-11 h-11 rounded-2xl bg-brand flex items-center justify-center"><Volume2 className="w-5 h-5" /></span>
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300">{format} بجودة كاملة</span>
+              </div>
               <div>
-                <h3 className="font-bold">المعاينة الصوتية</h3>
+                <h3 className="font-bold text-lg">المعاينة الصوتية</h3>
                 <p className="text-xs text-slate-400 mt-1">استمع للنتيجة ونزّل الملف أو أعد التوليد بالإعدادات نفسها.</p>
               </div>
-              <audio key={result.id} src={result.audioUrl} controls autoPlay className="w-full" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <a href={result.audioUrl} download={`qeema-voice-${result.id}`} className="flex items-center justify-center gap-2 rounded-xl bg-white text-slate-950 py-2.5 text-sm font-bold">
-                  <Download className="w-4 h-4" /> تنزيل الملف
-                </a>
-                <button type="button" onClick={generate} disabled={busy} className="flex items-center justify-center gap-2 rounded-xl border border-slate-600 py-2.5 text-sm font-bold disabled:opacity-60">
-                  <RefreshCw className="w-4 h-4" /> توليد نسخة جديدة
-                </button>
-              </div>
             </div>
-          )}
+            <div className="p-5 space-y-3">
+              {result ? (
+                <audio key={result.id} src={result.audioUrl} controls autoPlay className="w-full" />
+              ) : (
+                <p className="rounded-xl bg-white/5 px-4 py-3 text-xs text-slate-400 text-center">اكتب النص واختر الصوت ثم اضغط «توليد الصوت» لتظهر المعاينة هنا.</p>
+              )}
+              <a
+                href={result?.audioUrl || undefined}
+                download={result ? `qeema-voice-${result.id}.${format.toLowerCase()}` : undefined}
+                aria-disabled={!result}
+                className={`flex items-center justify-center gap-2 rounded-2xl bg-white text-slate-950 py-3 text-sm font-bold ${result ? '' : 'opacity-40 pointer-events-none'}`}
+              >
+                <Download className="w-4 h-4" /> تنزيل {format}
+              </a>
+              <button type="button" onClick={generate} disabled={busy || !result} className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-600 py-3 text-sm font-bold disabled:opacity-40">
+                <RefreshCw className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} /> توليد نسخة جديدة
+              </button>
+              {(error || notice) && (
+                <p className={`flex items-center gap-2 rounded-xl px-4 py-3 text-xs ${error ? 'bg-red-500/10 text-red-300' : 'bg-emerald-400/10 text-emerald-300'}`} role="status">
+                  {error ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                  {error || notice}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Voices: left */}
