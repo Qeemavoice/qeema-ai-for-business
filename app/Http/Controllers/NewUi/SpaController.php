@@ -68,7 +68,7 @@ class SpaController extends Controller
     private function injectConfig(string $html): string
     {
         $cfg = [
-            'googleClientId' => (string) config('services.google.client_id', ''),
+            'googleClientId' => \App\Services\NewUi\Store::googleClientId(),
             'apiBase' => '',
         ];
         $json = json_encode($cfg, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);

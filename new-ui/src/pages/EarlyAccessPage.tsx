@@ -159,3 +159,51 @@ export const WaitlistPage: React.FC = () => {
     </Shell>
   );
 };
+
+/** /ar/reset-password?token=…&email=… : the link from «نسيت كلمة المرور؟»; sets a new password and signs in */
+export const ResetPasswordPage: React.FC<{ onSignedIn: (user: any) => void }> = ({ onSignedIn }) => {
+  useSeo({ path: '/ar/reset-password', title: 'تعيين كلمة مرور جديدة | قيمة فويس', h1: 'تعيين كلمة مرور جديدة', description: 'اختر كلمة مرور جديدة لحسابك في قيمة فويس.', noindex: true });
+  const q = new URLSearchParams(window.location.search);
+  const token = q.get('token') || '';
+  const email = q.get('email') || '';
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 8) return setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+    if (password !== confirm) return setError('كلمتا المرور غير متطابقتين');
+    setBusy(true); setError('');
+    try {
+      const { user } = await api.resetPassword(email, token, password);
+      onSignedIn(user);
+    } catch (err: any) {
+      setError(err.message || 'تعذر تعيين كلمة المرور');
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!token || !email) {
+    return (
+      <Shell icon={<Link2Off className="w-7 h-7" />} title="رابط غير صالح">
+        <p className="text-sm text-slate-600 leading-relaxed">هذا الرابط ناقص. افتح الرابط من رسالة البريد كما هو، أو اطلب رابطاً جديداً من «نسيت كلمة المرور؟» في نافذة تسجيل الدخول.</p>
+      </Shell>
+    );
+  }
+  return (
+    <Shell icon={<UserCheck className="w-7 h-7" />} title="تعيين كلمة مرور جديدة">
+      <p className="text-sm text-slate-600 leading-relaxed">لحساب <strong dir="ltr">{email}</strong>. بعد الحفظ تدخل حسابك مباشرة.</p>
+      <form onSubmit={submit} noValidate className="space-y-3 text-right">
+        <input type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="كلمة المرور الجديدة (8 أحرف على الأقل)"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:border-brand" />
+        <input type="password" autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="أعد كتابة كلمة المرور"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:border-brand" />
+        {error && <p className="text-xs text-rose-600">{error}</p>}
+        <button disabled={busy} className="w-full px-6 py-3 rounded-xl bg-brand hover:bg-brand-orange disabled:opacity-60 text-white text-sm font-bold cursor-pointer flex items-center justify-center gap-2">
+          {busy && <Loader2 className="w-4 h-4 animate-spin" />} حفظ كلمة المرور والدخول
+        </button>
+      </form>
+    </Shell>
+  );
+};

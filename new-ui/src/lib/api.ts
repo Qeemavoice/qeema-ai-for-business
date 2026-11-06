@@ -114,6 +114,15 @@ export const api = {
   signup: (data: { name: string; email: string; password: string; company?: string; accountType: 'client' | 'talent' }) => authCall('signup', data),
   login: (email: string, password: string) => authCall('login', { email, password }),
   loginWithGoogle: (accessToken: string, accountType: 'client' | 'talent') => authCall('google', { accessToken, accountType }),
+  /** «نسيت كلمة المرور؟»: emails a link to /ar/reset-password; returns the message to show */
+  async forgotPassword(email: string): Promise<string> {
+    const res = await fetch('/api/v1/auth/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر إرسال الرابط الآن');
+    return data.message;
+  },
+  /** New password from the emailed link; signs the user in */
+  resetPassword: (email: string, token: string, password: string) => authCall('reset', { email, token, password }),
   async logout() {
     await fetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => {});
     setToken('');

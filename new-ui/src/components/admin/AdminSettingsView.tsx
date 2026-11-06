@@ -3,10 +3,10 @@ import { RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { api } from '../../lib/api';
 import { setCommissionPercent } from '../../../shared/pricing';
 
-export type SettingsSection = 'currency' | 'commission' | 'policies' | 'payments' | 'smtp' | 'tts' | 'maintenance';
+export type SettingsSection = 'currency' | 'commission' | 'policies' | 'payments' | 'smtp' | 'login' | 'tts' | 'maintenance';
 
 const TITLES: Record<SettingsSection, string> = {
-  currency: 'العملات', commission: 'العمولات', policies: 'السياسات', payments: 'طرق الدفع', smtp: 'إعدادات SMTP', tts: 'مزوّدو تحويل النص إلى صوت', maintenance: 'إعدادات الصيانة'
+  currency: 'العملات', commission: 'العمولات', policies: 'السياسات', payments: 'طرق الدفع', smtp: 'إعدادات SMTP', login: 'تسجيل الدخول عبر Google', tts: 'مزوّدو تحويل النص إلى صوت', maintenance: 'إعدادات الصيانة'
 };
 const CURRENCIES = [
   { code: 'USD', label: 'دولار أمريكي' }, { code: 'SAR', label: 'ريال سعودي' }, { code: 'AED', label: 'درهم إماراتي' },
@@ -61,7 +61,7 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
 
   if (!draft) return <div className="p-10 text-center"><RefreshCw className="w-5 h-5 animate-spin inline text-slate-400" /></div>;
   const set = (k: string, v: any) => setDraft((d: any) => ({ ...d, [k]: v }));
-  const setInt = (group: 'stripe' | 'smtp' | 'elevenlabs' | 'munsit', k: string, v: any) => setDraft((d: any) => ({ ...d, integrations: { ...d.integrations, [group]: { ...d.integrations[group], [k]: v } } }));
+  const setInt = (group: 'stripe' | 'smtp' | 'elevenlabs' | 'munsit' | 'google', k: string, v: any) => setDraft((d: any) => ({ ...d, integrations: { ...d.integrations, [group]: { ...d.integrations[group], [k]: v } } }));
   const stripe = draft.integrations.stripe;
   const smtp = draft.integrations.smtp;
 
@@ -73,6 +73,7 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
         section === 'currency' ? { settings: { defaultCurrency: draft.defaultCurrency, creditRatePer10kCharsUsd: draft.creditRatePer10kCharsUsd } }
         : section === 'commission' ? { settings: { platformCommissionPercent: draft.platformCommissionPercent, stripeFeePercent: draft.stripeFeePercent } }
         : section === 'maintenance' ? { settings: { maintenanceMode: draft.maintenanceMode } }
+        : section === 'login' ? { integrations: { google: draft.integrations.google } }
         : section === 'policies' ? { settings: { paymentHoldDaysVoiceActor: draft.paymentHoldDaysVoiceActor } }
         : section === 'tts' ? { settings: { ttsEnabled: draft.ttsEnabled }, integrations: { elevenlabs: draft.integrations.elevenlabs, munsit: draft.integrations.munsit } }
         : { integrations: { [section === 'payments' ? 'stripe' : 'smtp']: section === 'payments' ? stripe : smtp } };
@@ -147,6 +148,19 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
                 </Field>
               </div>
             </>
+          )}
+
+          {section === 'login' && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Google Client ID" hint="من Google Cloud Console ← APIs & Services ← Credentials (OAuth 2.0 Client ID من نوع Web application). ليس مفتاحاً سرياً." full>
+                <input dir="ltr" autoComplete="off" spellCheck={false} value={draft.integrations.google?.clientId || ''} onChange={e => setInt('google', 'clientId', e.target.value.trim())}
+                  placeholder="xxxxxxxx.apps.googleusercontent.com" className={`${input} font-mono text-left`} />
+              </Field>
+              <div className="sm:col-span-2 rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600 leading-relaxed">
+                في نفس صفحة الـ Client ID عند Google أضف عناوين الموقع إلى <strong dir="ltr">Authorized JavaScript origins</strong>:
+                <span dir="ltr" className="block font-mono mt-1">https://qeemavoice.com<br />https://test.qeemavoice.com</span>
+              </div>
+            </div>
           )}
 
           {section === 'policies' && (

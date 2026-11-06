@@ -140,6 +140,10 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         // «روّاد قيمة»: invite links (/ar/early and the redeem API), per IP per hour (config/rowad.php)
+        // «نسيت كلمة المرور؟» / new password: its own counter per IP (plain throttle:x,y shares one counter with the API's 600/min)
+        RateLimiter::for('password', fn (Request $request) => Limit::perMinute(10)->by('password|' . $request->ip())
+            ->response(fn () => response()->json(['error' => 'محاولات كثيرة، حاول بعد دقيقة'], 429)));
+
         RateLimiter::for('rowad', function (Request $request) {
             // only attempts that carry a code count (the redirect to the clean /ar/early does not)
             if ($request->isMethod('GET') && !$request->filled('code')) return Limit::none();

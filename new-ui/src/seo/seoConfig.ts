@@ -144,6 +144,13 @@ export const STATIC_SEO_ROUTES: Record<string, SeoConfigItem> = {
       { name: 'تحويل النص إلى صوت', item: '/ar/text-to-speech' }
     ]
   },
+  '/ar/reset-password': {
+    path: '/ar/reset-password',
+    title: 'تعيين كلمة مرور جديدة | قيمة فويس',
+    h1: 'تعيين كلمة مرور جديدة',
+    description: 'اختر كلمة مرور جديدة لحسابك في قيمة فويس.',
+    noindex: true
+  },
   // «روّاد قيمة»: never indexed (and not in the sitemap)
   '/ar/waitlist': {
     path: '/ar/waitlist',

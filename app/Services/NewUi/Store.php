@@ -64,6 +64,7 @@ class Store
                 'username' => '', 'password' => '', 'encryption' => 'SSL'],
             'elevenlabs' => ['apiKey' => '', 'agentId' => ''],
             'munsit' => ['apiKey' => ''],
+            'google' => ['clientId' => ''],   // public OAuth client id (not a secret) for «تسجيل الدخول عبر Google»
         ];
     }
 
@@ -99,6 +100,17 @@ class Store
         } catch (\Throwable $e) {
             return '';
         }
+    }
+
+    /** Google OAuth client id: the admin dashboard first, then GOOGLE_CLIENT_ID */
+    public static function googleClientId(): string
+    {
+        try {
+            $id = trim((string) (self::integrations()['google']['clientId'] ?? ''));
+        } catch (\Throwable $e) {
+            $id = '';
+        }
+        return $id !== '' ? $id : trim((string) config('services.google.client_id', ''));
     }
 
     public static function saveIntegrations(array $i): void

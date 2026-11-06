@@ -55,9 +55,43 @@ class AuthController extends Controller
     {
         $user = Accounts::findByEmail((string) $r->input('email', ''));
         if (!$user || !Hash::check((string) $r->input('password', ''), $user->password)) {
-            return response()->json(['error' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة'], 401);
+            return response()->json(['error' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة. إذا كنت تدخل عادةً عبر Google أو نسيت كلمة المرور، اضغط «نسيت كلمة المرور؟».'], 401);
         }
         if ((int) $user->status_id === \App\Models\UserStatus::BLOCKED) return response()->json(['error' => 'هذا الحساب موقوف'], 403);
+        event(new Login('new-ui', $user, false));
+        return $this->signedIn($user);
+    }
+
+    /** «نسيت كلمة المرور؟»: emails a link to /ar/reset-password (Laravel reset token, valid 60 minutes). Same answer whether or not the email exists. */
+    public function forgot(Request $r)
+    {
+        $email = trim((string) $r->input('email', ''));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return response()->json(['error' => 'اكتب بريداً إلكترونياً صحيحاً'], 400);
+        $user = Accounts::findByEmail($email);
+        if ($user && (int) $user->status_id !== \App\Models\UserStatus::BLOCKED) {
+            $token = \Illuminate\Support\Facades\Password::broker()->createToken($user);
+            $site = rtrim((string) (config('rowad.site_url') ?: config('app.url')), '/');
+            $link = $site . '/ar/reset-password?' . http_build_query(['token' => $token, 'email' => $user->email]);
+            \App\Services\NewUi\Mailer::trySend($user->email, 'تعيين كلمة مرور جديدة لحسابك في قيمة فويس',
+                "مرحباً،\n\nوصلنا طلب لتعيين كلمة مرور جديدة لحسابك في قيمة فويس.\nاضغط الرابط التالي واختر كلمة المرور الجديدة (صالح لمدة ساعة):\n\n{$link}\n\nإذا لم تطلب ذلك فتجاهل هذه الرسالة، ولن يتغير شيء في حسابك.\n\nفريق قيمة فويس");
+        }
+        return response()->json(['success' => true, 'message' => 'إذا كان هذا البريد مسجلاً لدينا فستصلك خلال دقائق رسالة فيها رابط لتعيين كلمة مرور جديدة.']);
+    }
+
+    /** New password from the emailed link; signs the user in */
+    public function reset(Request $r)
+    {
+        $user = Accounts::findByEmail((string) $r->input('email', ''));
+        $token = (string) $r->input('token', '');
+        $password = (string) $r->input('password', '');
+        if (mb_strlen($password) < 8) return response()->json(['error' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'], 400);
+        $broker = \Illuminate\Support\Facades\Password::broker();
+        if (!$user || $token === '' || !$broker->tokenExists($user, $token)) {
+            return response()->json(['error' => 'رابط تعيين كلمة المرور غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً من «نسيت كلمة المرور؟».'], 400);
+        }
+        if ((int) $user->status_id === \App\Models\UserStatus::BLOCKED) return response()->json(['error' => 'هذا الحساب موقوف'], 403);
+        $user->forceFill(['password' => Hash::make($password)])->save();
+        $broker->deleteToken($user);
         event(new Login('new-ui', $user, false));
         return $this->signedIn($user);
     }

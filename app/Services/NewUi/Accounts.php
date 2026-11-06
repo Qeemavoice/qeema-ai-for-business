@@ -321,6 +321,11 @@ class Accounts
     {
         if (!$accessToken) return null;
         try {
+            // the token must have been issued to OUR Google client, or any app's Google token could sign in as its user
+            $clientId = Store::googleClientId();
+            if ($clientId === '') return null;
+            $info = \Illuminate\Support\Facades\Http::timeout(15)->get('https://oauth2.googleapis.com/tokeninfo', ['access_token' => $accessToken]);
+            if (!$info->successful() || (string) ($info->json('aud') ?: $info->json('azp')) !== $clientId) return null;
             $r = \Illuminate\Support\Facades\Http::withToken($accessToken)->timeout(15)->get('https://www.googleapis.com/oauth2/v3/userinfo');
             if (!$r->successful()) return null;
             $g = $r->json();

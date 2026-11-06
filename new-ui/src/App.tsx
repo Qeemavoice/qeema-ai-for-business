@@ -59,7 +59,7 @@ import { getGoogleAccessToken } from './lib/googleSignIn';
 import { SignInGate } from './components/SignInGate';
 import { NewFeaturesGate } from './components/NewFeaturesGate';
 import { InsufficientCreditsDialog } from './components/InsufficientCreditsDialog';
-import { EarlyAccessPage, EarlyWelcomePage, WaitlistPage } from './pages/EarlyAccessPage';
+import { EarlyAccessPage, EarlyWelcomePage, WaitlistPage, ResetPasswordPage } from './pages/EarlyAccessPage';
 import { setRowadFeatures, setPublicLaunchAt, markRowadReady } from './lib/rowad';
 import { setCommissionPercent } from '../shared/pricing';
 
@@ -328,6 +328,7 @@ export default function App() {
           <Route path="/ar/early" element={<EarlyAccessPage isLoggedIn={isLoggedIn} onOpenLogin={(email) => { setAuthEmail(email || ''); setAuthModalMode('login'); }} onOpenSignup={(email) => { setAuthEmail(email || ''); setAuthRole('client'); setAuthModalMode('signup'); }} onActivated={() => { loadMe().catch(() => {}); }} />} />
           <Route path="/ar/early/welcome" element={<EarlyWelcomePage isLoggedIn={isLoggedIn} onOpenLogin={() => setAuthModalMode('login')} />} />
           <Route path="/ar/waitlist" element={<WaitlistPage />} />
+          <Route path="/ar/reset-password" element={<ResetPasswordPage onSignedIn={async (user) => { await completeAuth(user); if (user.accountType !== 'talent') setPostAuthPath('/ar/account'); }} />} />
           <Route path="/ar/saudi-voice-over" element={<SaudiVoiceOverPage />} />
           <Route path="/ar/emirati-voice-over" element={<EmiratiVoiceOverPage />} />
           <Route path="/ar/egyptian-voice-over" element={<EgyptianVoiceOverPage />} />

@@ -16,6 +16,8 @@ Route::prefix('auth')->group(function () {
     Route::post('signup', 'AuthController@signup');
     Route::post('login', 'AuthController@login');
     Route::post('google', 'AuthController@google');
+    Route::post('forgot', 'AuthController@forgot')->middleware('throttle:password');
+    Route::post('reset', 'AuthController@reset')->middleware('throttle:password');
     Route::post('claim', 'AuthController@claim');
     Route::post('logout', 'AuthController@logout');
     Route::middleware('qv.user')->group(function () {

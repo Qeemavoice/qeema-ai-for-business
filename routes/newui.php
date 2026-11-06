@@ -51,7 +51,7 @@ $spa = [
     '/ar/p/about-us', '/ar/p/terms-of-use', '/ar/p/privacy-policy', '/ar/p/revisions-policy',
     '/ar/saudi-voice-over', '/ar/emirati-voice-over', '/ar/egyptian-voice-over', '/ar/generate', '/ar/chatbot',
     '/ar/account', '/ar/admin', '/ar/talent-dashboard', '/ar/talent-profile', '/ar/talent-earnings', '/ar/talent-samples',
-    '/ar/talent-voices', '/ar/talent-settings', '/ar/claim', '/claim/{token}', '/ar/waitlist',
+    '/ar/talent-voices', '/ar/talent-settings', '/ar/claim', '/claim/{token}', '/ar/waitlist', '/ar/reset-password',
     '/narrator/dashboard', '/narrator/profile', '/narrator/earnings', '/narrator/settings',
 ];
 foreach ($spa as $path) {

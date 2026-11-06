@@ -277,7 +277,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {mode === 'login' && (
                 <button
                   type="button"
-                  onClick={() => alert('يرجى التحقق من بريدك الإلكتروني لإعادة تعيين كلمة المرور.')}
+                  onClick={async () => {
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setMessage({ type: 'error', text: 'اكتب بريدك الإلكتروني في الخانة أعلاه، ثم اضغط «نسيت كلمة المرور؟» مرة أخرى.' }); return; }
+                    setLoading(true); setMessage(null);
+                    try { setMessage({ type: 'success', text: await api.forgotPassword(email.trim()) }); }
+                    catch (err: any) { setMessage({ type: 'error', text: err.message || 'تعذر إرسال الرابط الآن' }); }
+                    finally { setLoading(false); }
+                  }}
+                  disabled={loading}
                   className="text-[11px] text-brand-text hover:underline"
                 >
                   نسيت كلمة المرور؟
