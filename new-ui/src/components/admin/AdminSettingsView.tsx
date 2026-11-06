@@ -36,7 +36,11 @@ const SecretInput: React.FC<{ value: string; hint?: string; onChange: (v: string
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
-      <input dir="ltr" type={show ? 'text' : 'password'} autoComplete="new-password" value={value} onChange={e => onChange(e.target.value)}
+      {/* a text field masked with CSS, not type="password": browsers then don't offer «Strong Password» or save it as a login */}
+      <input dir="ltr" type="text" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+        data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other"
+        style={{ WebkitTextSecurity: show ? 'none' : 'disc' } as React.CSSProperties}
+        value={value} onChange={e => onChange(e.target.value)}
         placeholder={hint ? `محفوظ ${hint} (اتركه فارغاً للإبقاء عليه)` : 'غير مضبوط'} className={`${input} font-mono text-left pl-10`} />
       <button type="button" onClick={() => setShow(s => !s)} className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer" title={show ? 'إخفاء' : 'إظهار'}>
         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
