@@ -279,7 +279,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
           className={`${onCancel ? '' : 'w-full justify-center'} px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-orange text-white text-sm font-bold transition-all shadow-md shadow-brand/25 flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60`}
         >
           <Lock className="w-3.5 h-3.5" />
-          <span>{sending ? 'جارٍ الإرسال...' : `ادفع الآن${totalUsd > 0 ? ` • $${totalUsd.toLocaleString('en-US')}` : ''}`}</span>
+          <span>{sending ? 'جارٍ الإرسال...' : 'ادفع الآن'}</span>
         </button>
       </div>
 
