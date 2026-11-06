@@ -279,7 +279,19 @@ class AdminController extends Controller
 
     public function settingsGet()
     {
-        return response()->json(['settings' => Store::settings(), 'integrations' => $this->publicIntegrations()]);
+        return response()->json(['settings' => $this->settingsWithLegacy(), 'integrations' => $this->publicIntegrations()]);
+    }
+
+    /** Settings the old site also reads, kept in its `settings` table: «السياسات» and «مزوّدو تحويل النص إلى صوت» */
+    private const TTS_PROVIDERS_KEY = 'new-ui-tts-providers';
+
+    private function settingsWithLegacy(): array
+    {
+        $tts = json_decode((string) \App\Models\Setting::where('key', self::TTS_PROVIDERS_KEY)->value('value'), true);
+        return Store::settings() + [
+            'paymentHoldDaysVoiceActor' => (int) \App\Models\Setting::where('key', 'payment_hold_days_voice_actor')->value('value'),
+            'ttsEnabled' => is_array($tts['enabled'] ?? null) ? array_values($tts['enabled']) : ['munsit'],
+        ];
     }
 
     public function settingsPost(Request $r)
@@ -300,6 +312,18 @@ class AdminController extends Controller
         if (array_key_exists('maintenanceMode', $settings)) $s['maintenanceMode'] = (bool) $settings['maintenanceMode'];
         if (array_key_exists('creditRatePer10kCharsUsd', $settings)) $s['creditRatePer10kCharsUsd'] = (float) $settings['creditRatePer10kCharsUsd'];
         Store::saveSettings($s);
+        if (array_key_exists('paymentHoldDaysVoiceActor', $settings)) {
+            $days = (int) $settings['paymentHoldDaysVoiceActor'];
+            if ($days < 0 || $days > 365) return response()->json(['error' => 'عدد أيام حجز المدفوعات يجب أن يكون بين 0 و 365'], 400);
+            \App\Models\Setting::updateOrCreate(['key' => 'payment_hold_days_voice_actor'], ['value' => (string) $days]);
+            \Illuminate\Support\Facades\Cache::forget('settings');
+        }
+        if (array_key_exists('ttsEnabled', $settings)) {
+            $enabled = array_values(array_intersect(['munsit', 'elevenlabs'], (array) $settings['ttsEnabled']));
+            \App\Models\Setting::updateOrCreate(['key' => self::TTS_PROVIDERS_KEY], ['value' => json_encode(['enabled' => $enabled, 'active' => $enabled[0] ?? 'munsit'])]);
+            \Illuminate\Support\Facades\Cache::forget('settings');
+            \Illuminate\Support\Facades\Cache::forget('munsit:tts:voices:v1');
+        }
 
         $current = Store::integrations();
         $changed = [];
@@ -315,7 +339,7 @@ class AdminController extends Controller
         }
         Store::saveIntegrations($current);
         Store::audit('system', 'admin', 'SETTINGS_UPDATED' . ($changed ? ' (' . implode(', ', $changed) . ')' : ''), Store::settings());
-        return response()->json(['success' => true, 'settings' => Store::settings(), 'integrations' => $this->publicIntegrations()]);
+        return response()->json(['success' => true, 'settings' => $this->settingsWithLegacy(), 'integrations' => $this->publicIntegrations()]);
     }
 
     // ---------- voice reviews ----------

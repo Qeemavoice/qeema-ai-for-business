@@ -3,10 +3,10 @@ import { RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { api } from '../../lib/api';
 import { setCommissionPercent } from '../../../shared/pricing';
 
-export type SettingsSection = 'currency' | 'commission' | 'payments' | 'smtp' | 'tts' | 'maintenance';
+export type SettingsSection = 'currency' | 'commission' | 'policies' | 'payments' | 'smtp' | 'tts' | 'maintenance';
 
 const TITLES: Record<SettingsSection, string> = {
-  currency: 'العملات', commission: 'العمولات', payments: 'طرق الدفع', smtp: 'إعدادات SMTP', tts: 'مزوّدو الصوت', maintenance: 'إعدادات الصيانة'
+  currency: 'العملات', commission: 'العمولات', policies: 'السياسات', payments: 'طرق الدفع', smtp: 'إعدادات SMTP', tts: 'مزوّدو تحويل النص إلى صوت', maintenance: 'إعدادات الصيانة'
 };
 const CURRENCIES = [
   { code: 'USD', label: 'دولار أمريكي' }, { code: 'SAR', label: 'ريال سعودي' }, { code: 'AED', label: 'درهم إماراتي' },
@@ -69,7 +69,8 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
         section === 'currency' ? { settings: { defaultCurrency: draft.defaultCurrency, creditRatePer10kCharsUsd: draft.creditRatePer10kCharsUsd } }
         : section === 'commission' ? { settings: { platformCommissionPercent: draft.platformCommissionPercent, stripeFeePercent: draft.stripeFeePercent } }
         : section === 'maintenance' ? { settings: { maintenanceMode: draft.maintenanceMode } }
-        : section === 'tts' ? { integrations: { elevenlabs: draft.integrations.elevenlabs, munsit: draft.integrations.munsit } }
+        : section === 'policies' ? { settings: { paymentHoldDaysVoiceActor: draft.paymentHoldDaysVoiceActor } }
+        : section === 'tts' ? { settings: { ttsEnabled: draft.ttsEnabled }, integrations: { elevenlabs: draft.integrations.elevenlabs, munsit: draft.integrations.munsit } }
         : { integrations: { [section === 'payments' ? 'stripe' : 'smtp']: section === 'payments' ? stripe : smtp } };
       const d = await api.saveAdminSettings(payload);
       setData(d); setDraft(structuredClone(d));
@@ -144,8 +145,29 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
             </>
           )}
 
+          {section === 'policies' && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="عدد الأيام المخصصة لحجز مدفوعات المعلق الصوتي" hint="بعد تسليم الحجز تبقى حصة المعلق محجوزة هذه المدة قبل أن تصبح قابلة للسحب.">
+                <input type="number" min={0} max={365} value={draft.paymentHoldDaysVoiceActor ?? 0} onChange={e => set('paymentHoldDaysVoiceActor', e.target.value)} className={`${input} font-mono`} />
+              </Field>
+            </div>
+          )}
+
           {section === 'tts' && (
             <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="المزوّدون المفعّلون" hint="المزوّد غير المفعّل لا تظهر أصواته في استوديو TTS ولا يُستخدم للتوليد." full>
+                <div className="flex flex-wrap gap-3">
+                  {([['munsit', 'منصّت (Munsit)'], ['elevenlabs', 'ElevenLabs']] as const).map(([k, l]) => {
+                    const on = (draft.ttsEnabled || []).includes(k);
+                    return (
+                      <label key={k} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm ${on ? 'border-brand bg-orange-50' : 'border-slate-200 bg-white'}`}>
+                        <input type="checkbox" checked={on} onChange={() => set('ttsEnabled', on ? draft.ttsEnabled.filter((x: string) => x !== k) : [...(draft.ttsEnabled || []), k])} className="accent-brand" />
+                        {l}
+                      </label>
+                    );
+                  })}
+                </div>
+              </Field>
               <Field label="مفتاح منصّت (Munsit API Key)" hint="أصوات منصّت العربية في استوديو TTS. اتركه فارغاً للإبقاء على المفتاح المحفوظ.">
                 <SecretInput value={draft.integrations.munsit?.apiKey || ''} hint={draft.integrations.munsit?.apiKeyHint} onChange={v => setInt('munsit', 'apiKey', v)} />
               </Field>
