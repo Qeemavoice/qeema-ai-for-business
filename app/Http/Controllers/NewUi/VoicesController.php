@@ -148,7 +148,7 @@ class VoicesController extends Controller
     private const DIALECTS = ['gulf', 'egyptian', 'levantine', 'maghrebi', 'fusha'];
     /** what the client sees as the dialect (one field «اللهجة» in the admin form) */
     private const DIALECT_AR = ['gulf' => 'خليجي', 'egyptian' => 'مصري', 'levantine' => 'شامي', 'maghrebi' => 'مغاربي', 'fusha' => 'فصحى'];
-    private const PROVIDERS = ['elevenlabs', 'qeema_acoustic'];
+    private const PROVIDERS = ['elevenlabs', 'munsit', 'qeema_acoustic'];
     private const DEFAULT_SHARE = 40;
 
     private function parse(Request $r, bool $creating)
@@ -199,7 +199,7 @@ class VoicesController extends Controller
         if (isset($p['error'])) return response()->json(['error' => $p['error']], 400);
         $f = $p['fields'];
         $provider = $f['provider'] ?? 'qeema_acoustic';   // own voices: the uploaded sample, no ElevenLabs id
-        if ($provider === 'elevenlabs' && empty($f['provider_voice_id'])) return response()->json(['error' => 'معرّف الصوت في ElevenLabs (voice_id) مطلوب'], 400);
+        if (in_array($provider, ['elevenlabs', 'munsit'], true) && empty($f['provider_voice_id'])) return response()->json(['error' => 'معرّف الصوت لدى المزوّد (voice_id) مطلوب'], 400);
         if (empty($f['preview_url'])) return response()->json(['error' => 'العينة الصوتية مطلوبة'], 400);
         $id = 'voice-ai-' . round(microtime(true) * 1000);
         DB::table('qv_tts_voices')->insert(array_merge([

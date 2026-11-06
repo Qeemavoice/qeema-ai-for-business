@@ -27,5 +27,7 @@
         <link href="{{ asset_admin('css/custom-rtl.css') }}" rel="stylesheet" type="text/css"/>
     @endif
 
+    <link href="{{ asset_admin('css/admin-responsive.css') }}?v={{ filemtime(public_path('admin_panel/assets/css/admin-responsive.css')) }}" rel="stylesheet" type="text/css"/>
+
     @stack('css')
 </head>

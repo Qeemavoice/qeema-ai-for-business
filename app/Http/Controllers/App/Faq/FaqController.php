@@ -17,12 +17,23 @@ class FaqController extends CoreController
         $this->dirView = 'faqs';
     }
 
-    public function index()
+    public function index($slug = null)
     {
+        $canonicalSlug = config('slugroute.slug_faq');
+
+        if ($slug !== $canonicalSlug) {
+            return redirect()->to(route_app('faq.index', ['slug' => $canonicalSlug]), 301);
+        }
+
         $pageTitle = trans_app('faqs');
-        meta_data($pageTitle, null, [
-            '' => $pageTitle
-        ]);
+        meta_data(
+            $pageTitle,
+            null,
+            ['' => $pageTitle],
+            'إجابات واضحة عن حجز المعلقين الصوتيين، الأسعار، مدة التنفيذ، جودة الملفات، التعديلات وآلية العمل في منصة قيمة فويس.'
+        );
+
+        meta('canonical', route_app('faq.index', ['slug' => config('slugroute.slug_faq')]));
         $banner = get_banner(Banner::$FAQs);
 
         $faqs = Faq::getFaqs();

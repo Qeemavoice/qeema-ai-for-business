@@ -20,9 +20,14 @@ class GuideController extends CoreController
     public function index()
     {
         $pageTitle = trans_app('get_valuable_clues_in_the_field_of_voiceover');
-        meta_data($pageTitle, $pageTitle, [
-            '#' => trans_app('guides'),
-        ]);
+        meta_data(
+            $pageTitle,
+            $pageTitle,
+            ['#' => trans_app('guides')],
+            'أدلة وموارد متخصصة في التعليق الصوتي تساعد المعلقين والعملاء على تطوير الأداء واختيار الخدمات الصوتية المناسبة.'
+        );
+
+        meta('canonical', route_app('guide.index'));
         $banner = get_banner(Banner::$GUIDES);
 
         $guides = Guide::paginate(12);

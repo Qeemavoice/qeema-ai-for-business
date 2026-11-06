@@ -61,6 +61,11 @@ use Illuminate\Support\Facades\File;
 
 class SynDatabaseController extends Controller
 {
+    public function __construct()
+    {
+        set_time_limit(0);
+        ini_set('memory_limit', '1024M');
+    }
 
     public function synIndex()
     {
@@ -404,8 +409,10 @@ class SynDatabaseController extends Controller
                         $dir = Banner::DIR_BANNER_UPLOADS;
                         $fileName = $d->file;
 
-                        if (File::exists(DIR_UPLOAD . '/' . $dir . '/' . $fileName)) {
-                            File::delete(DIR_UPLOAD . '/' . $dir . '/' . $fileName);
+                        $path = public_path(DIR_UPLOAD . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $fileName);
+
+                        if (File::exists($path)) {
+                            File::delete($path);
                         }
 
                         copyFilesFromOtherProject($fileName, Banner::DIR_BANNER_UPLOADS);
@@ -761,198 +768,599 @@ class SynDatabaseController extends Controller
     {
         try {
 
-            Schema::table('users', function () {
-                DB::statement('SET foreign_key_checks = 0;');
-            });
-            Schema::table('auth_service_providers', function () {
-                DB::statement('SET foreign_key_checks = 0;');
-            });
-            Schema::table('user_profile', function () {
-                DB::statement('SET foreign_key_checks = 0;');
-            });
+            /* ===============================
+             * 1️⃣ تفريغ الجداول (سريع وآمن)
+             * =============================== */
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+            DB::table('auth_service_providers')->truncate();
+            DB::table('user_work_fields')->truncate();
+
+            User::withTrashed()
+                ->whereNull('role_id')
+                ->forceDelete();
+
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
 
-            DB::transaction(function () {
+            /* ===============================
+             * 2️⃣ جلب البيانات من قاعدة ثانية
+             * =============================== */
+            DB::connection('mysql2')
+                ->table('clients')
+                ->orderBy('id')
+                ->chunk(300, function ($clients) {
 
-                AuthServiceProvider::query()->forceDelete();
+                    foreach ($clients as $d) {
 
-                UserWorkField::query()->forceDelete();
+                        /* ===============================
+                         * 3️⃣ معالجة الصورة
+                         * =============================== */
+                        $image = null;
+                        if (!is_null($d->image) && !empty($d->image)) {
+                            //$image = str_replace('assets/', '', $d->image);
 
-                User::withTrashed()->whereNull('role_id')->forceDelete();
+                            if (strpos($d->image, 'assets/') !== 0) {
 
-                $data = DB::connection('mysql2')->table('clients')->get();
+                                $fileName = $d->image;
+                                $dir = User::DIR_IMAGE_UPLOADS;
+                                if (File::exists(DIR_UPLOAD . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $fileName)) {
+                                    File::delete(DIR_UPLOAD . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $fileName);
+                                }
+                                copyFilesFromOtherProject($fileName, User::DIR_IMAGE_UPLOADS);
+                                $image = $fileName;
+                            } else {
+                                $image = null;
+                            }
+                        }
 
-                if ($data && count($data) > 0) {
+                        /* ===============================
+                         * 4️⃣ تجهيز بيانات المستخدم
+                         * =============================== */
+                        $list = [
+                            'full_name' => $d->name,
+                            'email' => $d->email,
+                            'password' => $d->password,
+                            'mobile' => $d->phone,
+                            'image' => $image,
+                            'user_type_id' => is_null($d->actors_id)
+                                ? UserType::CLIENT
+                                : UserType::VOICE_ACTOR,
+                            'status_id' => UserStatus::ACCEPTED,
+                            'uniq_id' => generate_uniq_id(),
+                            'created_at' => $d->created_at,
+                            'updated_at' => $d->updated_at,
+                            'deleted_at' => $d->deleted_at,
+                            'old_client_id' => $d->id,
+                            'old_voice_actor_id' => $d->actors_id,
+                        ];
 
-                    DB::connection('mysql2')
-                        ->table('clients')
-                        ->orderBy('id')
-                        ->chunk(500, function ($clients) {
-                            foreach ($clients as $d) {
 
-                                if (strpos($d->image, 'assets/') === 0) {
-                                    $image = str_replace('assets/', '', $d->image);
+                        /* ===============================
+                         * 5️⃣ إنشاء / تحديث المستخدم
+                         * =============================== */
+//                        $user = User::withTrashed()
+//                            ->where('email', $d->email)
+//                            ->first();
+//
+//                        if ($user) {
+//
+//                            if ($user->deleted_at && is_null($d->deleted_at)) {
+//                                $user->restore();
+//                            }
+//
+//                            $user->update($list);
+//
+//                        } else {
+//                            $user = User::create($list);
+//                        }
 
-                                    if (!is_null($image) && !empty($image)) {
-                                        $fileName = $image;
-                                        $dir = User::DIR_IMAGE_UPLOADS;
-                                        if (File::exists(DIR_UPLOAD . '/' . $dir . '/' . $fileName)) {
-                                            File::delete(DIR_UPLOAD . '/' . $dir . '/' . $fileName);
-                                        }
-                                        copyFilesFromOtherProject($fileName, User::DIR_IMAGE_UPLOADS);
-                                    }
+                        $isUser = false;
+                        if (!is_null($d->email)) {
+                            $isUser = User::withTrashed()->where('email', $d->email)->first();
+                        } else {
+                            if (!is_null($d->phone)) {
+                                $isUser = User::withTrashed()->where('mobile', $d->phone)->first();
+                            }
+                        }
 
+                        if ($isUser) {
+
+                            if (is_null($isUser->deleted_at)) {
+
+                                if (is_null($d->deleted_at)) {
+                                    unset($list['id']);
+                                    unset($list['email']);
+                                    User::query()->where('email', $d->email)->update($list);
                                 } else {
-                                    $image = $d->image;
+                                    $list['email'] = uniqid() . '_' . $list['email'];
+                                    $list['mobile'] = uniqid() . '_' . $list['mobile'];
+                                    User::query()->create($list);
                                 }
 
+                            } else {
+                                $isUser->email = uniqid() . '_' . $list['email'];
+                                $isUser->mobile = uniqid() . '_' . $list['mobile'];
+                                $isUser->save();
 
-                                $isUser = User::withTrashed()->where('email', $d->email)->first();
+                                User::query()->create($list);
+                            }
 
-                                $list = [
-                                    'id' => $d->id,
-                                    'full_name' => $d->name,
-                                    'email' => $d->email,
-                                    'password' => $d->password,
-                                    'mobile' => $d->phone,
-                                    'image' => $image,
-                                    'user_type_id' => is_null($d->actors_id) ? UserType::CLIENT : UserType::VOICE_ACTOR,
-                                    'status_id' => UserStatus::ACCEPTED,
-                                    'uniq_id' => generate_uniq_id(),
-                                    'created_at' => $d->created_at,
-                                    'updated_at' => $d->updated_at,
-                                    'deleted_at' => $d->deleted_at,
-                                ];
+                            $user = User::withTrashed()->where('email', $d->email)->first();
+
+                        } else {
 
 
-                                if ($isUser) {
+                            try {
+                                $user = User::query()->create($list);
 
-                                    if (is_null($isUser->deleted_at)) {
+                            } catch (\Exception $exception) {
+                                Log::channel('update')->info("The User: ({$d->id}) not insert.");
 
-                                        if (is_null($d->deleted_at)) {
-                                            unset($list['id']);
-                                            unset($list['email']);
-                                            User::query()->where('email', $d->email)->update($list);
-                                        } else {
-                                            $list['email'] = uniqid() . '_' . $list['email'];
-                                            $list['mobile'] = uniqid() . '_' . $list['mobile'];
-                                            User::query()->create($list);
-                                        }
+                            }
 
-                                    } else {
-                                        $isUser->email = uniqid() . '_' . $list['email'];
-                                        $isUser->mobile = uniqid() . '_' . $list['mobile'];
-                                        $isUser->save();
+                        }
 
-                                        User::query()->create($list);
-                                    }
+                        /* ===============================
+                         * 6️⃣ الملف الشخصي
+                         * =============================== */
+                        $country = Country::where('name->ar', $d->country)->first();
 
-                                    $user = User::withTrashed()->where('email', $d->email)->first();
+                        $hours = null;
+                        $gender = null;
 
-                                    //$user = User::query()->create($list);
+                        if ($d->actors_id) {
+                            $actor = DB::connection('mysql2')
+                                ->table('voice_actors')
+                                ->where('id', $d->actors_id)
+                                ->first();
 
-                                } else {
-                                    $user = User::query()->create($list);
-                                }
+                            if ($actor) {
+                                $hours = $actor->hour_price;
+                                $gender = $actor->gender;
+                            }
+                        }
 
-                                $country = Country::where('name->ar', $d->country)->first();
+                        UserProfile::updateOrCreate(
+                            ['user_id' => $user->id],
+                            [
+                                'country_id' => isset($country->id) ? $country->id : null,
+                                'whatsapp_number' => $d->whatspp,
+                                'price_per_minute' => $d->mint_price,
+                                'price_per_hours' => $hours,
+                                'gender_id' => $gender,
+                                'business_link' => $d->link,
+                            ]
+                        );
 
 
-                                $isProfile = UserProfile::query()->where('user_id', $user->id)->first();
-
-                                $hours = 0;
-                                $gender = null;
-                                if (!is_null($d->actors_id)) {
-                                    $client = DB::connection('mysql2')->table('voice_actors')
-                                        ->where('id', $d->actors_id)
-                                        ->first();
-                                    $hours = $client->hour_price;
-                                    $gender = $client->gender;
-                                }
-                                $profile = [
+                        /* ===============================
+                         * 7️⃣ مزود تسجيل الدخول
+                         * =============================== */
+                        if ($d->provider_id) {
+                            AuthServiceProvider::firstOrCreate(
+                                [
                                     'user_id' => $user->id,
-                                    'country_id' => $country ? $country->id : null,
-                                    'whatsapp_number' => $d->whatspp,
+                                    'auth_service_name' => 'google',
+                                ],
+                                [
+                                    'auth_service_image' => $d->avatar,
+                                    'auth_service_id' => $d->provider_id,
+                                ]
+                            );
+                        }
+
+
+                        /* ===============================
+                         * 8️⃣ مجالات العمل (Clients)
+                         * =============================== */
+                        if (is_null($d->actors_id)) {
+
+                            $works = DB::connection('mysql2')
+                                ->table('clients_working')
+                                ->where('client_id', $user->id)
+                                ->get();
+
+                            foreach ($works as $work) {
+                                UserWorkField::firstOrCreate([
+                                    'user_id' => $user->id,
+                                    'work_field_id' => $work->id,
+                                ]);
+                            }
+                        }
+
+
+                        /* ===============================
+                         * 9️⃣ اللغات (Voice Actors)
+                         * =============================== */
+                        if ($d->actors_id) {
+
+                            $languages = DB::connection('mysql2')
+                                ->table('language_voice_actor')
+                                ->where('voice_actor_id', $d->actors_id)
+                                ->get();
+
+                            foreach ($languages as $language) {
+                                UserLanguage::firstOrCreate([
+                                    'user_id' => $user->id,
+                                    'language_id' => $language->language_id,
+                                ]);
+                            }
+                        }
+                    }
+                });
+
+            return response()->json(['status' => 'synClients done']);
+
+        } catch (\Throwable $e) {
+
+            Log::error('synClients failed', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'error' => 'Syn failed',
+                'msg' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ], 500);
+        }
+    }
+
+
+    public function synVoiceActors()
+    {
+        try {
+
+
+            DB::connection('mysql2')
+                ->table('voice_actors')
+                ->orderBy('id')
+                ->chunk(300, function ($voiceActors) {
+
+                    foreach ($voiceActors as $d) {
+
+                        $user = User::where('old_voice_actor_id', $d->id)->first();
+
+                        if (!$user) {
+
+                            $query = User::withTrashed();
+
+                            $hasCondition = false;
+
+                            if (!empty($d->email)) {
+                                $query->where('email', $d->email);
+                                $hasCondition = true;
+                            }
+
+                            if (!empty($d->mobile)) {
+                                $query->orWhere('mobile', $d->mobile);
+                                $hasCondition = true;
+                            }
+
+                            if ($hasCondition) {
+                                $user = $query->first();
+                            }
+                        }
+
+                        if(!$user && ($user && !is_null($user->deleted_at))) {
+                            $email = !empty($d->email) ? $d->email : null;
+                            $mobile = !empty($d->mobile) ? $d->mobile : null;
+
+                            if(!is_null($user->deleted_at)) {
+                                $user->email = uniqid().'_'.$user->email;
+                                $user->mobile = uniqid().'_'.$user->mobile;
+                                $user->save();
+                            }
+                            $list = [
+                                'full_name' => ['ar' => $d->title_ar, 'en' => $d->title_en],
+                                'email' => $email,
+                                'image' => null,
+                                'password' => $d->password ?? null,
+                                'mobile' => $mobile,
+                                'user_type_id' => UserType::VOICE_ACTOR,
+                                'status_id' => UserStatus::ACCEPTED,
+                                'uniq_id' => generate_uniq_id(),
+                                'created_at' => $d->created_at,
+                                'updated_at' => $d->updated_at,
+                                'deleted_at' => $d->deleted_at,
+                                'old_voice_actor_id' => $d->id,
+                            ];
+
+                                $newUser =  User::query()->create($list);
+
+                            $country = Country::where('name->ar', $d->country)->first();
+
+
+                            $hours = $d->hour_price;
+                            $gender = $d->gender;
+
+                            UserProfile::updateOrCreate(
+                                ['user_id' => $newUser->id],
+                                [
+                                    'country_id' => isset($country->id) ? $country->id : null,
+                                    'whatsapp_number' => $d->mobile,
                                     'price_per_minute' => $d->mint_price,
                                     'price_per_hours' => $hours,
                                     'gender_id' => $gender,
                                     'business_link' => $d->link,
-                                ];
+                                ]
+                            );
 
-                                if ($isProfile) {
-                                    UserProfile::query()->where('user_id', $user->id)->update($profile);
+                            /* ===============================
+                             * 7️⃣ مزود تسجيل الدخول
+                             * =============================== */
+
+                            $client = DB::connection('mysql2')
+                                ->table('clients')
+                                ->where('actors_id', $d->id)
+                                ->first();
+
+                            if ($client && $client->provider_id) {
+
+
+
+                                AuthServiceProvider::firstOrCreate(
+                                    [
+                                        'user_id' => $newUser->id,
+                                        'auth_service_name' => 'google',
+                                    ],
+                                    [
+                                        'auth_service_image' => $client->avatar,
+                                        'auth_service_id' => $client->provider_id,
+                                    ]
+                                );
+                            }
+
+
+
+                            /* ===============================
+                             * 9️⃣ اللغات (Voice Actors)
+                             * =============================== */
+
+                            $languages = DB::connection('mysql2')
+                                ->table('language_voice_actor')
+                                ->where('voice_actor_id', $d->id)
+                                ->get();
+
+                            foreach ($languages as $language) {
+                                UserLanguage::firstOrCreate([
+                                    'user_id' => $newUser->id,
+                                    'language_id' => $language->language_id,
+                                ]);
+                            }
+                        }
+                    }
+                });
+
+            return response()->json(['status' => 'synVoiceActors done']);
+
+        } catch (\Throwable $e) {
+
+            Log::error('synClients failed', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'error' => 'Syn failed',
+                'msg' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ], 500);
+        }
+    }
+
+    public function synClientsOld()
+    {
+
+        try {
+
+//            Schema::table('users', function () {
+//                DB::statement('SET foreign_key_checks = 0;');
+//            });
+//            Schema::table('auth_service_providers', function () {
+//                DB::statement('SET foreign_key_checks = 0;');
+//            });
+//            Schema::table('user_profile', function () {
+//                DB::statement('SET foreign_key_checks = 0;');
+//            });
+
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+            DB::table('auth_service_providers')->truncate();
+            DB::table('user_work_fields')->truncate();
+
+            User::withTrashed()
+                ->whereNull('role_id')
+                ->forceDelete();
+
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+            // DB::transaction(function () {
+
+            //AuthServiceProvider::query()->forceDelete();
+
+            //UserWorkField::query()->forceDelete();
+
+            //User::withTrashed()->whereNull('role_id')->forceDelete();
+
+            // $data = DB::connection('mysql2')->table('clients')->get();
+
+            // dd($data);
+            ///if ($data && count($data) > 0) {
+
+            DB::connection('mysql2')
+                ->table('clients')
+                ->orderBy('id')
+                ->chunk(300, function ($clients) {
+                    foreach ($clients as $d) {
+
+//                                if (strpos($d->image, 'assets/') === 0) {
+//                                    $image = str_replace('assets/', '', $d->image);
+//
+//                                    if (!is_null($image) && !empty($image)) {
+//                                        $fileName = $image;
+//                                        $dir = User::DIR_IMAGE_UPLOADS;
+//                                        if (File::exists(DIR_UPLOAD . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $fileName)) {
+//                                            File::delete(DIR_UPLOAD . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $fileName);
+//                                        }
+//                                        copyFilesFromOtherProject($fileName, User::DIR_IMAGE_UPLOADS);
+//                                    }
+//
+//                                } else {
+//                                    $image = $d->image;
+//                                }
+                        $image = $d->image;
+
+
+                        $list = [
+                            'id' => $d->id,
+                            'full_name' => $d->name,
+                            'email' => $d->email,
+                            'password' => $d->password,
+                            'mobile' => $d->phone,
+                            'image' => $image,
+                            'user_type_id' => is_null($d->actors_id) ? UserType::CLIENT : UserType::VOICE_ACTOR,
+                            'status_id' => UserStatus::ACCEPTED,
+                            'uniq_id' => generate_uniq_id(),
+                            'created_at' => $d->created_at,
+                            'updated_at' => $d->updated_at,
+                            'deleted_at' => $d->deleted_at,
+                        ];
+
+                        $isUser = User::withTrashed()->where('email', $d->email)->first();
+                        if ($isUser) {
+
+                            if (is_null($isUser->deleted_at)) {
+
+                                if (is_null($d->deleted_at)) {
+                                    unset($list['id']);
+                                    unset($list['email']);
+                                    User::query()->where('email', $d->email)->update($list);
                                 } else {
-                                    UserProfile::query()->create($profile);
+                                    $list['email'] = uniqid() . '_' . $list['email'];
+                                    $list['mobile'] = uniqid() . '_' . $list['mobile'];
+                                    User::query()->create($list);
                                 }
 
+                            } else {
+                                $isUser->email = uniqid() . '_' . $list['email'];
+                                $isUser->mobile = uniqid() . '_' . $list['mobile'];
+                                $isUser->save();
 
-                                if (!is_null($d->provider_id)) {
-                                    $userProvider = AuthServiceProvider::where('user_id', $d->id)->first();
+                                User::query()->create($list);
+                            }
 
-                                    if (!$userProvider) {
-                                        AuthServiceProvider::create([
+                            $user = User::withTrashed()->where('email', $d->email)->first();
+
+                            //$user = User::query()->create($list);
+
+                        } else {
+                            $user = User::query()->create($list);
+                        }
+
+                        $country = Country::where('name->ar', $d->country)->first();
+
+
+                        $isProfile = UserProfile::query()->where('user_id', $user->id)->first();
+
+                        $hours = 0;
+                        $gender = null;
+                        if (!is_null($d->actors_id)) {
+                            $client = DB::connection('mysql2')->table('voice_actors')
+                                ->where('id', $d->actors_id)
+                                ->first();
+                            $hours = $client->hour_price;
+                            $gender = $client->gender;
+                        }
+                        $profile = [
+                            'user_id' => $user->id,
+                            'country_id' => $country ? $country->id : null,
+                            'whatsapp_number' => $d->whatspp,
+                            'price_per_minute' => $d->mint_price,
+                            'price_per_hours' => $hours,
+                            'gender_id' => $gender,
+                            'business_link' => $d->link,
+                        ];
+
+                        if ($isProfile) {
+                            UserProfile::query()->where('user_id', $user->id)->update($profile);
+                        } else {
+                            UserProfile::query()->create($profile);
+                        }
+
+
+                        if (!is_null($d->provider_id)) {
+                            $userProvider = AuthServiceProvider::where('user_id', $d->id)->first();
+
+                            if (!$userProvider) {
+                                AuthServiceProvider::create([
+                                    'user_id' => $user->id,
+                                    'auth_service_name' => 'google',
+                                    'auth_service_image' => $d->avatar,
+                                    'auth_service_id' => $d->provider_id,
+                                    'updated_at' => null,
+                                ]);
+                            }
+                        }
+
+                        if (is_null($d->actors_id)) {
+                            $works = DB::connection('mysql2')->table('clients_working')
+                                ->where('client_id', $d->id)
+                                ->get();
+
+                            if (count($works) > 0) {
+                                foreach ($works as $work) {
+                                    $isWork = UserWorkField::where([
+                                        'user_id' => $user->id,
+                                        'work_field_id' => $work->working_id,
+                                    ])->first();
+
+                                    if (!$isWork && $work->working_id != 15) {
+                                        UserWorkField::insert([
+                                            'id' => $work->id,
                                             'user_id' => $user->id,
-                                            'auth_service_name' => 'google',
-                                            'auth_service_image' => $d->avatar,
-                                            'auth_service_id' => $d->provider_id,
-                                            'updated_at' => null,
+                                            'work_field_id' => $work->working_id,
                                         ]);
                                     }
                                 }
-
-                                if (is_null($d->actors_id)) {
-                                    $works = DB::connection('mysql2')->table('clients_working')
-                                        ->where('client_id', $user->id)
-                                        ->get();
-
-                                    if (count($works) > 0) {
-                                        foreach ($works as $work) {
-                                            $isWork = UserWorkField::where([
-                                                'user_id' => $user->id,
-                                                'work_field_id' => $work->id,
-                                            ])->first();
-
-                                            if (!$isWork) {
-                                                UserWorkField::insert([
-                                                    'id' => $work->id,
-                                                    'user_id' => $user->id,
-                                                    'work_field_id' => $work->id,
-                                                ]);
-                                            }
-                                        }
-                                    }
-                                }
-
-
-                                if (!is_null($d->actors_id)) {
-                                    $languages = DB::connection('mysql2')->table('language_voice_actor')
-                                        ->where('voice_actor_id', $d->actors_id)
-                                        ->get();
-
-
-                                    if (count($languages) > 0) {
-                                        foreach ($languages as $language) {
-
-                                            $isLanguage = UserLanguage::where([
-                                                'user_id' => $user->id,
-                                                'language_id' => $language->language_id,
-                                            ])->first();
-
-                                            if (!$isLanguage)
-                                                UserLanguage::insert([
-                                                    'user_id' => $user->id,
-                                                    'language_id' => $language->language_id,
-                                                ]);
-                                        }
-                                    }
-                                }
-
                             }
-                        });
+                        }
 
 
-                }
-            });
+                        if (!is_null($d->actors_id)) {
+                            $languages = DB::connection('mysql2')->table('language_voice_actor')
+                                ->where('voice_actor_id', $d->actors_id)
+                                ->get();
+
+
+                            if (count($languages) > 0) {
+                                foreach ($languages as $language) {
+
+                                    $isLanguage = UserLanguage::where([
+                                        'user_id' => $user->id,
+                                        'language_id' => $language->language_id,
+                                    ])->first();
+
+                                    if (!$isLanguage)
+                                        UserLanguage::insert([
+                                            'user_id' => $user->id,
+                                            'language_id' => $language->language_id,
+                                        ]);
+                                }
+                            }
+                        }
+
+                    }
+                });
+
+
+            //  }
+            //   });
 
             dd('synClients');
         } catch (\Exception $exception) {
@@ -960,7 +1368,7 @@ class SynDatabaseController extends Controller
         }
     }
 
-    public function synVoiceActors()
+    public function synVoiceActorsOld()
     {
         try {
             Schema::table('users', function () {
@@ -1145,25 +1553,24 @@ class SynDatabaseController extends Controller
 
                     $lang = Dialect::query()->find($d->dialect_id);
 
-//                    $client = DB::connection('mysql2')->table('clients')
-//                        ->Where('actors_id', $d->voice_actor_id)
+//                    $client = DB::connection('mysql2')->table('voice_actors')
+//                        ->Where('id', $d->voice_actor_id)
 //                        ->first();
 
-                    $client = DB::connection('mysql2')->table('voice_actors')
-                        ->Where('id', $d->voice_actor_id)
-                        ->first();
-
-                    if ($client) {
-                        $client = getUserByName($client->title_ar, $client->title_en);
-                    }
-//                    if (isset($file) && !is_null($file->file_name) && !empty($file->file_name)) {
-//                        $fileName = $file->file_name;
-//                        $dir = Voice::DIR_VOICES_UPLOADS;
-//                        if (File::exists(DIR_UPLOAD . '/' . $dir . '/' . $fileName)) {
-//                            File::delete(DIR_UPLOAD . '/' . $dir . '/' . $fileName);
-//                        }
-//                        copyFilesFromOtherProject($fileName, Voice::DIR_VOICES_UPLOADS);
+                    $client = User::where('old_voice_actor_id', $d->voice_actor_id)->first();
+//
+//                    if ($client) {
+//                        $client = getUserByName($client->title_ar, $client->title_en);
 //                    }
+                    $fileName = null;
+                    if (isset($file) && !is_null($file->file_name) && !empty($file->file_name)) {
+                        $fileName = $file->file_name;
+                        $dir = Voice::DIR_VOICES_UPLOADS;
+                        if (File::exists(DIR_UPLOAD . '/' . $dir . '/' . $fileName)) {
+                            File::delete(DIR_UPLOAD . '/' . $dir . '/' . $fileName);
+                        }
+                        copyFilesFromOtherProject($fileName, Voice::DIR_VOICES_UPLOADS);
+                    }
 
                     $list = [
                         'id' => $d->id,
@@ -1181,10 +1588,96 @@ class SynDatabaseController extends Controller
                         'total_price' => $d->mint_price,
                         'is_sample' => is_null($d->sample_id) ? null : YES,
                         'language_id' => $lang ? $lang->language_id : null,
-                        'audio_file' => $file ? $file->file_name : null,
+                        'audio_file' => $fileName,
                         'created_at' => $d->created_at,
                         'updated_at' => $d->updated_at,
                         'deleted_at' => $d->deleted_at,
+                    ];
+
+                    $voice = Voice::query()->create($list);
+                }
+            }
+
+            if ($data2 && count($data2) > 0) {
+                foreach ($data2 as $d) {
+                    VoiceCategory::insert([
+                        'voice_id' => $d->voice_id,
+                        'category_id' => $d->category_id,
+                    ]);
+                }
+            }
+            dd('synVoices');
+        } catch (\Exception $exception) {
+            dd($exception);
+        }
+    }
+
+    public function synVoicesAndSamplesOld()
+    {
+        try {
+            $data = DB::connection('mysql2')->table('voices')->get();
+            $data2 = DB::connection('mysql2')->table('category_voice')->get();
+
+            Schema::table('voices', function () {
+                DB::statement('SET foreign_key_checks = 0;');
+            });
+
+
+            Voice::truncate();
+            VoiceCategory::truncate();
+
+            if ($data && count($data) > 0) {
+                foreach ($data as $d) {
+                    $file = DB::connection('mysql2')->table('media')
+                        ->Where('model_id', $d->id)
+                        ->Where('model_type', Voice::class)
+                        ->Where('collection_name', 'file')
+                        ->first();
+
+                    $lang = Dialect::query()->find($d->dialect_id);
+
+//                    $client = DB::connection('mysql2')->table('clients')
+//                        ->Where('actors_id', $d->voice_actor_id)
+//                        ->first();
+
+                    $client = DB::connection('mysql2')->table('voice_actors')
+                        ->Where('id', $d->voice_actor_id)
+                        ->first();
+
+                    if ($client) {
+                        $client = getUserByName($client->title_ar, $client->title_en);
+                    }
+                    $fileName = null;
+                    if (isset($file) && !is_null($file->file_name) && !empty($file->file_name)) {
+                        $fileName = $file->file_name;
+                        $dir = Voice::DIR_VOICES_UPLOADS;
+                        if (File::exists(DIR_UPLOAD . '/' . $dir . '/' . $fileName)) {
+                            File::delete(DIR_UPLOAD . '/' . $dir . '/' . $fileName);
+                        }
+                        copyFilesFromOtherProject($fileName, Voice::DIR_VOICES_UPLOADS);
+                    }
+
+                    $list = [
+                        'id' => $d->id,
+                        'title' => ['ar' => $d->title_ar, 'en' => $d->title_en],
+                        'voice_type_id' => $d->type,
+                        'price_per_minute' => $d->mint_price,
+                        'number_of_likes' => $d->likes_count,
+                        'number_of_listened' => $d->listin_count,
+                        'number_of_orders' => $d->requests_count,
+                        'voiceover_id' => $client ? $client->id : null,
+                        'dialect_id' => $d->dialect_id,
+                        'voice_status_id' => VoiceStatus::ACCEPTED,
+                        'meta_description' => ['ar' => $d->meta_description, 'en' => $d->meta_description],
+                        'meta_title' => ['ar' => $d->meta_title, 'en' => $d->meta_title],
+                        'total_price' => $d->mint_price,
+                        'is_sample' => is_null($d->sample_id) ? null : YES,
+                        'language_id' => $lang ? $lang->language_id : null,
+                        'audio_file' => $fileName,
+                        'created_at' => $d->created_at,
+                        'updated_at' => $d->updated_at,
+                        'deleted_at' => $d->deleted_at,
+                        'status' => $d->status == 1? VoiceStatus::ACCEPTED : VoiceStatus::REJECTED,
                     ];
 
                     $voice = Voice::query()->create($list);
@@ -1219,11 +1712,11 @@ class SynDatabaseController extends Controller
 
             if ($data && count($data) > 0) {
                 foreach ($data as $d) {
-
+                    $user = User::where('old_client_id',$d->client_id)->first();
                     $list = [
                         'id' => $d->id,
                         'voice_id' => $d->voice_id,
-                        'user_id' => $d->client_id,
+                        'user_id' => isset($user) ? $user->id : null,
                     ];
 
                     Favorite::query()->create($list);
@@ -1266,14 +1759,15 @@ class SynDatabaseController extends Controller
             if ($data && count($data) > 0) {
                 foreach ($data as $d) {
 
-                    $clientOldDatabase = DB::connection('mysql2')->table('clients')
-                        ->where('actors_id', $d->voiceactor_id)
-                        ->first();
+//                    $clientOldDatabase = DB::connection('mysql2')->table('clients')
+//                        ->where('actors_id', $d->voiceactor_id)
+//                        ->first();
 
                     $voiceActoreNewDatabase = null;
 
-                    if ($clientOldDatabase)
-                        $voiceActoreNewDatabase = User::find($clientOldDatabase->id);
+//                    if ($clientOldDatabase)
+                        $voiceActoreNewDatabase = User::where(['old_voice_actor_id' => $d->voiceactor_id])->first();
+                        $client = User::where(['old_client_id' => $d->client_id])->first();
 
                     $discount_value = null;
                     if ($d->coupon_pct) {
@@ -1283,15 +1777,17 @@ class SynDatabaseController extends Controller
 
                     $status = 0;
 
-                    if ($d->status == 1) {
-                        $status = OrderStatus::IN_PROGRESS;
-                    }
-                    if ($d->status == 2) {
+                    if ($d->is_paid == 1) {
                         $status = OrderStatus::COMPLETED;
-                    }
-                    if ($d->status == 3) {
-                        $status = OrderStatus::CANCELED;
-                    }
+                    }else
+                        $status = OrderStatus::PENDING;
+
+//                    if ($d->status == 2) {
+//                        $status = OrderStatus::COMPLETED;
+//                    }
+//                    if ($d->status == 3) {
+//                        $status = OrderStatus::CANCELED;
+//                    }
 
 
                     $voice = Voice::with('dialect', 'language', 'categories.category', 'category')->find($d->voice_id);
@@ -1327,7 +1823,7 @@ class SynDatabaseController extends Controller
 
                     $list = [
                         'id' => $d->id,
-                        'customer_id' => $d->client_id,
+                        'customer_id' => isset($client) ? $client->id : null,
                         'voice_actor_id' => $voiceActoreNewDatabase ? $voiceActoreNewDatabase->id : null,
                         'customer_email' => $d->email,
                         'customer_phone' => $d->whatsapp_number,
@@ -1419,7 +1915,7 @@ class SynDatabaseController extends Controller
                             'transaction_type_id' => TransactionType::BOOKING,
                             'response' => null,
                             'description' => null,
-                            'payer_id' => $d->client_id,
+                            'payer_id' => isset($client) ? $client->id: null,
                             'payee_id' => $voiceActoreNewDatabase ? $voiceActoreNewDatabase->id : null,
                             'amount_paid' => $d->total_price > 0 ? $d->total_price : 0,
                             'transaction_fee' => 0,
@@ -1501,8 +1997,8 @@ class SynDatabaseController extends Controller
 
 
         foreach ($data as $d) {
-            $voiceActore = DB::connection('mysql2')->table('clients')->where('actors_id', $d->voiceactors_id)->first();
-
+           // $voiceActore = DB::connection('mysql2')->table('clients')->where('actors_id', $d->voiceactors_id)->first();
+            $voiceActore = User::where(['old_voice_actor_id' =>  $d->voiceactors_id])->first();
             if ($d->payment_way == 'بنكي') {
                 $withdrawal_method = WithdrawalMethod::ACCOUNT_BANK;
             }
@@ -1516,12 +2012,22 @@ class SynDatabaseController extends Controller
                 $withdrawal_method = WithdrawalMethod::OFFICE_TRANSFER;
             }
 
+            $fileName = null;
+            if ( !is_null($d->file) && !empty($d->file)) {
+                $fileName = $d->file;
+                $dir = Transaction::DIR_FILES_UPLOAD;
+                if (File::exists(DIR_UPLOAD . '/' . $dir . '/' . $fileName)) {
+                    File::delete(DIR_UPLOAD . '/' . $dir . '/' . $fileName);
+                }
+                copyFilesFromOtherProject($fileName, Transaction::DIR_FILES_UPLOAD);
+            }
+
             Transaction::create([
                 'transaction_id' => uniqid(),
                 'methodable_id' => $withdrawal_method,
                 'methodable_type' => WithdrawalMethod::class,
                 'transaction_type_id' => TransactionType::WITHDRAW_PROFITS,
-                'payee_id' => $voiceActore->id,
+                'payee_id' => isset($voiceActore) ? $voiceActore->id:null,
                 'amount_paid' => $d->amount,
                 'transaction_status_id' => TransactionStatus::SUCCEEDED,
                 'currency_id' => CurrencyHelper::getId(),
@@ -1715,7 +2221,6 @@ class SynDatabaseController extends Controller
             } else {
                 $user->update(['full_name' => ['ar' => $u]]);
             }
-
         }
     }
 
@@ -1801,7 +2306,7 @@ class SynDatabaseController extends Controller
                             'business_link' => $oldVoiceActor->link,
                         ]);
 
-                        WalletHelper::create($newUser->id);
+                        //WalletHelper::create($newUser->id);
 
                         Log::channel('update')->info(
                             "User not found  the voice: ({$cVoice->id}) and new user ({$newUser->id})"

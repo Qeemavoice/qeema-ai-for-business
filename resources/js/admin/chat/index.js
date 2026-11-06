@@ -2,114 +2,186 @@ Vue.component('chat-index', {
     data() {
         return {
             route: 'chat',
+            students: [],
             messages: [],
+            chat_details: '',
             message: '',
-            userMessageId: null,
             page: {
                 currentPage: 1,
                 totalPages: 0,
                 totalItems: 0,
                 itemsPerPage: 10
             },
-            form: {
-                validation: null,
-                disabledButton: true,
-                disabledButtonUpload: false,
-                loadingDisplay: false,
+            page1: {
+                currentPage: 1,
+                totalPages: 0,
+                totalItems: 0,
+                itemsPerPage: 10
             },
+            filter: {
+                completeCourse: false,
+            },
+            ADMIN_URL: ADMIN_URL,
+            LANG: LANG,
+            USER: USER,
+
+            showChat: false,
+            student: '',
         }
     },
-    props: ['orderId','userMessage'],
+
+    props: ['course'],
+
     mounted() {
-        if(this.userMessage) {
-            this.userMessageId = this.userMessage.id;
-        }
+        this.getStudents();
+
         this.listenerContent();
-        this.fetchMessages();
-
-
-        window.Echo.private('App.User.' + this.$user.id)
+        // this.fetchStudents();
+        window.Echo.private('App.User.' + USER.id)
             .listen('MessageSend', (e) => {
-                playSound('/assets/solemn');
-                this.fetchMessagesNotLoading();
-
-                $('#messages_scroll').animate({scrollTop: 10000000000000000000000}, 100);
+                if (e) {
+                    this.messages.push(e.message)
+                    $('#messages_scroll').animate({scrollTop: 10000000000000000000000}, 100);
+                }
             });
     },
 
     methods: {
-        fetchMessages(concat = false) {
-            this.message = '';
-            this.form.loadingDisplay = true;
-            axios.get(this.$admin_url + '/chat/fetch-messages', {
+        filterStudents(event) {
+            this.getStudents();
+        },
+        changeStatus(order_course_id) {
+            axios.post(ADMIN_URL + '/' + 'courses/' + order_course_id + '/change-order-course-status', {}).then(response => {
+                swalSuccess(response.data.message);
+                this.getStudents();
+            }).catch(error => {
+                swalError(error);
+            })
+        },
+        getStudents() {
+            showLoading();
+            axios.get(ADMIN_URL + '/courses/students/data', {
                 params: {
-                    page: this.page.currentPage,
-                    orderId: this.orderId,
-                    userMessageId: this.userMessageId,
+                    page: this.page1.currentPage,
+                    filter: this.filter,
+                    limit: this.limit,
+                    courseId: this.course.id,
                 }
             }).then(response => {
-
-                if (this.page.currentPage === 1) {
-
-                    this.listenerContent();
-                    this.page.totalItems = response.data.data.meta.total;
-                    this.messages = (response.data.data.data).reverse();
-                    $('#chat-content').animate({scrollTop: this.dropdownContent.scrollHeight + 300}, 50);
-
-                } else if (concat) {
-                    this.messages = [].concat(this.messages, response.data.data);
-                    $('#chat-content').animate({scrollTop: this.dropdownContent.scrollHeight + 300}, 50);
-                } else {
-                    $.each(response.data.data, (key, value) => {
-                        this.messages.unshift(value);
-                    });
-                    $('#chat-content').animate({scrollTop: 50}, 50);
-                }
-                this.form.loadingDisplay = false;
+                hideLoading();
+                this.students = response.data.data;
+                this.page1.totalPages = response.data.data.meta.last_page;
+                this.page1.totalItems = response.data.data.meta.total;
             }).catch(error => {
-                this.form.loadingDisplay = false;
-                //console.log(error);
+                hideLoading();
             });
         },
         listenerContent() {
-            this.dropdownContent = document.getElementById("chat-content");
-
-            if (this.dropdownContent) {
-                this.dropdownContent.addEventListener('scroll', (e) => {
+            let dropdownContent = document.getElementById("messages_scroll");
+            if (dropdownContent) {
+                dropdownContent.addEventListener('scroll', e => {
                     let scrollTop = e.target.scrollTop;
-                    let bottomOfWindow = scrollTop === 0;
-                    if (bottomOfWindow) {
-                        this.getMore();
-                    } else {
-                        this.bottomOfWindow = true;
+                    if (scrollTop === 0) {
+                        this.loadMore();
                     }
                 });
             }
         },
-        getMore() {
+        async loadMore() {
             if (this.messages.length < this.page.totalItems) {
+                showLoading();
                 this.page.currentPage++;
-                this.fetchMessages();
+                await axios.get(`${ADMIN_URL}/${this.route}/fetch-messages`, {
+                    params: {
+                        page: this.page.currentPage,
+                        student_id: this.student.id,
+                        course_id: this.course.id,
+                    }
+                }).then(response => {
+                    _.each(response.data.data.data, message => {
+                        this.messages.unshift(message)
+                    });
+                    $('#messages_scroll').animate({scrollTop: 50}, 100);
+                    hideLoading()
+                }).catch(error => {
+                    hideLoading();
+                });
             }
         },
+
+        // async fetchStudents() {
+        //     showLoading();
+        //     await axios.get(ADMIN_URL + "/" + this.route + '/fetch-students', {
+        //         params: {
+        //             // page: this.page.currentPage,
+        //         }
+        //     }).then(response => {
+        //         hideLoading();
+        //         this.students = response.data.data.data;
+        //         // this.page.totalPages = response.data.data.meta.last_page;
+        //         // this.page.totalItems = response.data.data.meta.total;
+        //     }).catch(error => {
+        //         hideLoading();
+        //     });
+        // },
+
+        // async fetchMessages(chat_details) {
+        //     this.chat_details = chat_details
+        //     showLoading();
+        //     await axios.get(ADMIN_URL + "/" + this.route + '/fetch-messages', {
+        //         params: {
+        //             user_message_id: chat_details.id,
+        //         }
+        //     }).then(response => {
+        //         console.log(response.data.data.data)
+        //         hideLoading();
+        //         this.messages = response.data.data.data;
+        //     }).catch(error => {
+        //         hideLoading();
+        //     });
+        //
+        //     $('#messages_scroll').animate({scrollTop: 10000000000000000000000},100);
+        // },
+
         sendMessage() {
-            this.form.disabledButton = true;
-            this.form.loadingDisplay = true;
-            this.form.validation = null;
-            axios.post(this.$admin_url + '/chat/store', {
-                userMessageId: this.userMessageId,
-                contentMessage: this.message,
-                orderId: this.orderId,
+            // this.form.disabledButton = true;
+            // this.form.validation = null;
+            axios.post(ADMIN_URL + '/' + this.route + '/send-message', {
+                student_id: this.student.id,
+                course_id: this.course.id,
+                message: this.message
             }).then(response => {
-                this.form.disabledButton = false;
-                this.form.loadingDisplay = false;
-                this.message = '';
-                this.fetchMessagesNotLoading();
+                this.messages.push(response.data.data)
+                this.message = ''
+                $('#messages_scroll').animate({scrollTop: 10000000000000000000000}, 100);
             }).catch(error => {
-                this.form.disabledButton = false;
-                this.form.loadingDisplay = false;
-                //console.log(error)
+                // this.form.disabledButton = false;
+                // this.form.validation = error.response.data.errors;
             })
         },
+
+        async showDrawer(student) {
+            this.showChat = true;
+            this.student = student
+
+            $('#kt_drawer_chat').addClass('drawer-on')
+            showLoading();
+            await axios.get(ADMIN_URL + "/" + this.route + '/fetch-messages', {
+                params: {
+                    page: this.page.currentPage,
+                    student_id: student.id,
+                    course_id: this.course.id,
+                }
+            }).then(response => {
+                hideLoading();
+                $('#messages_scroll').animate({scrollTop: 10000000000000000000000}, 100);
+                this.messages = response.data.data.data;
+                this.page.totalPages = response.data.data.meta.last_page;
+                this.page.totalItems = response.data.data.meta.total;
+            }).catch(error => {
+                hideLoading();
+            });
+
+        }
     }
 });

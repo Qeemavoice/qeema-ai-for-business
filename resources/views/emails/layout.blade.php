@@ -25,7 +25,7 @@
         {{trans_emails('layout.if_you_have_questions_about_your_account')}}
         <a href="{{ route_app('contactUs.index')}}">{{trans_emails('layout.contact_us')}}</a>
         {{trans_emails('layout.or')}} {{trans_emails('layout.direct_communication_via')}}
-        <a href="{{getSetting('whatsapp')}}">{{trans_emails('layout.whats_app')}}</a>
+        <a href="https://wa.me/{{$data['whatsapp']}}">{{trans_emails('layout.whats_app')}}</a>
     </p>
 
     <p>{{trans_emails('layout.kind_regard')}}</p>

@@ -1,6 +1,6 @@
 <div class="col-md-8" v-loading="form.loadingDisplay">
     <div style="padding: 18px 15px;border: 1px solid #eee;box-shadow: 2px 3px 7px #dedddd7a;">
-        <div class="container-chat pr-4 pr-3" ref="chatContainer"  @scroll="handleScroll" style="height: 550px;overflow-y: scroll;" id="chat-content"  v-chat-scroll>
+        <div class="container-chat pr-4 pr-3" ref="chatContainer"  style="height: 550px;overflow-y: scroll;" id="chat-content"  v-chat-scroll>
             <template v-for="(message,index) in messages" v-if="messages">
                 <div class="attachment p-1 message">
                     <div class="attachment-summary">
@@ -25,6 +25,9 @@
                         </div>
                     </div>
                 </div>
+            </template>
+            <template v-else>
+                <div class="alert alert-warning">لا يوجد رسائل</div>
             </template>
             {{--                                                    <div class="d-flex justify-content-center div-reponse">--}}
             {{--                                                        <button class="btn-add-message btn btn-warning font-weight-bold" data-id="1">نعم، كيف أؤكد الحجز؟</button>--}}

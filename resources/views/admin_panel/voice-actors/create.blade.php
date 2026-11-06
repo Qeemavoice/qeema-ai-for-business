@@ -27,7 +27,7 @@
                                 </div>
                                 <div class="fv-row w-100 flex-md-root">
                                     <label class="form-label">{{ trans_admin('mobile') }}</label>
-                                    <input type="number" v-model="mobile" class="form-control mb-2" />
+                                    <input type="text" v-model="mobile" class="form-control mb-2" />
                                     <div class="fv-plugins-message-container invalid-feedback" v-if="form.validation&&form.validation.mobile">@{{ form.validation.mobile[0] }}</div>
                                 </div>
                             </div>

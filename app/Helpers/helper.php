@@ -6,6 +6,55 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
+if (!function_exists('slugRouteCategories')) {
+    function slugRouteCategories()
+    {
+        return config('slugroute.slug_categories');
+    }
+}
+
+if (!function_exists('slugRouteVoices')) {
+    function slugRouteVoices()
+    {
+        return config('slugroute.slug_voices');
+    }
+}
+
+if (!function_exists('slugRouteBookingSteps')) {
+    function slugRouteBookingSteps()
+    {
+        return config('slugroute.slug_booking_steps');
+    }
+}
+
+if (!function_exists('slugRouteBlogs')) {
+    function slugRouteBlogs()
+    {
+        return config('slugroute.slug_blogs');
+    }
+}
+
+if (!function_exists('slugRouteOurWorks')) {
+    function slugRouteOurWorks()
+    {
+        return config('slugroute.slug_our_works');
+    }
+}
+
+if (!function_exists('slugRouteContactUs')) {
+    function slugRouteContactUs()
+    {
+        return config('slugroute.slug_contact_us');
+    }
+}
+
+if (!function_exists('slugRouteFaq')) {
+    function slugRouteFaq()
+    {
+        return config('slugroute.slug_faq');
+    }
+}
+
 if (!function_exists('searchFile')) {
     function searchFile($directory, $filename)
     {
@@ -58,19 +107,20 @@ function getUserByName($textAr = '', $textEn = '')
         ->first();
 }
 
-function copyFilesFromOtherProject($filename, $newPath, $oldProjectFolderName = '')
+function copyFilesFromOtherProjectOld($filename, $newPath, $oldProjectFolderName = '')
 {
     // مسار المشروع الأب (مثلاً /var/www/)
     if (config('app.env') != 'local') {
         $projectsBasePath = DIRECTORY_SEPARATOR . 'var' . DIRECTORY_SEPARATOR . 'www' . DIRECTORY_SEPARATOR;
-        $oldProjectFolderName = 'v3.qeemavoice.com';
+        //$oldProjectFolderName = 'v3.qeemavoice.com';
+        $oldProjectFolderName = 'qeemavoice';
     } else {
         $projectsBasePath = dirname(base_path()) . DIRECTORY_SEPARATOR;
         $oldProjectFolderName = 'qeemavoice';
     }
 
     // بناء المسار الكامل للمشروع القديم
-    $oldProjectUploads = $projectsBasePath . $oldProjectFolderName . DS . 'public' . DS . 'uploads';
+    $oldProjectUploads = $projectsBasePath . $oldProjectFolderName . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads';
 
     // المسار الحالي للمشروع الجديد (ديناميكي)
     $newProjectUploads = public_path('uploads' . DIRECTORY_SEPARATOR . $newPath);
@@ -103,6 +153,28 @@ function copyFilesFromOtherProject($filename, $newPath, $oldProjectFolderName = 
     }
 
     return $results;
+}
+
+
+function copyFilesFromOtherProject($filename, $newPath)
+{
+    //v3.qeemavoice.com
+    $basePath = '/var/www/qeemavoice/public/uploads';
+    $newFullPath = public_path("uploads/$newPath/$filename");
+
+    foreach (File::allFiles($basePath) as $file) {
+        if ($file->getFilename() === $filename) {
+
+            if (!File::exists($newFullPath)) {
+                File::ensureDirectoryExists(dirname($newFullPath));
+                File::copy($file->getPathname(), $newFullPath);
+            }
+
+            return true; // وجد الملف وتوقف
+        }
+    }
+
+    return false; // لم يُعثر عليه
 }
 
 if (!function_exists('searchAndMoveFiles')) {
@@ -196,7 +268,7 @@ if (!function_exists('slugify')) {
         // Make alphanumeric (removes all other characters)
         // this makes the string safe especially when used as a part of a URL
         // this keeps latin characters and arabic charactrs as well
-        $string = preg_replace("/[^a-z0-9_\s\-ءاأإآؤئبتثجحخدذرزسشصضطظعغفقكلمنهويةى]#u/", "", $string);
+        $string = preg_replace('/[^\\p{L}\\p{N}_\\s-]/u', '', $string);
 
         // Remove multiple dashes or whitespaces
         $string = preg_replace("/[\s-]+/", " ", $string);
@@ -271,6 +343,13 @@ if (!function_exists('trans_app')) {
     function trans_app($key, $replace = [], $locale = null)
     {
         return trans('app.' . $key, $replace, $locale);
+    }
+}
+
+if (!function_exists('trans_seo')) {
+    function trans_seo($key, $replace = [], $locale = null)
+    {
+        return trans('seo.' . $key, $replace, $locale);
     }
 }
 
@@ -385,7 +464,14 @@ if (!function_exists('app_name')) {
     function app_name()
     {
         $name = getSetting('website_name', true);
-        return $name ? $name->{get_locale()} : config('app.name');
+        return $name ? $name->{get_locale()} : app_name_config();
+    }
+}
+
+if (!function_exists('app_name_config')) {
+    function app_name_config()
+    {
+        return config('app.name');
     }
 }
 

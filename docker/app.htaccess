@@ -1,0 +1,27 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Preserve bearer tokens and other Authorization headers for Laravel.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Public React routes under /new-ui/ar. Keep built assets untouched and
+    # serve the SPA shell when a visitor opens or refreshes an SEO page.
+    RewriteCond %{REQUEST_URI} ^/new-ui/ar(?:/.*)?$ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^new-ui/ar(?:/.*)?$ new-ui/index.html [L]
+
+    # Normalize trailing slashes for non-directory requests.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Route every non-file request through Laravel's front controller.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>

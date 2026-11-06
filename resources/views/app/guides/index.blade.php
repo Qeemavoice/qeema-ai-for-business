@@ -17,7 +17,7 @@
                 <div class="col-md-3 col-lg-3 col-sm-12 book_div">
                     <a href="{{route_app('guide.details.index',['slug' => $guide->slug])}}" class="book d-block mb-3">
                         <div class="book-img">
-                            <img src="{{$guide->image_url}}" height="200px" style="object-fit:cover" width="100%" alt="{{$guide->name}}">
+                            <img src="{{$guide->image_url}}" height="200" style="object-fit:cover" width="100%" alt="{{$guide->name}}" loading="lazy" decoding="async">
                         </div>
                         <div class="book-info">
                             <div class="divider position-relative"></div>

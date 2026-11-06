@@ -106,9 +106,17 @@ class Setting extends Model
                     ]);
                     break;
                 case self::GENERAL_SETTING_FAVICON:
+                    $faviconPath = public_path(DIR_UPLOAD . '/' . self::DIR_LOGOS_UPLOADS . '/' . $this->value);
+                    $value = file_exists($faviconPath)
+                        ? asset_upload(self::DIR_LOGOS_UPLOADS . '/' . $this->value)
+                        : favicon();
+                    break;
                 case self::GENERAL_SETTING_HEADER_LOGO:
-                case self::GENERAL_SETTING_LOGO  :
-                    $value = asset_upload(self::DIR_LOGOS_UPLOADS . '/' . $this->value);
+                case self::GENERAL_SETTING_LOGO:
+                    $logoPath = public_path(DIR_UPLOAD . '/' . self::DIR_LOGOS_UPLOADS . '/' . $this->value);
+                    $value = file_exists($logoPath)
+                        ? asset_upload(self::DIR_LOGOS_UPLOADS . '/' . $this->value)
+                        : logoHeaderApp();
                     break;
                 case self::HOME_PAGE_VOICES_SECTION  :
                     $value = json_decode($this->value);

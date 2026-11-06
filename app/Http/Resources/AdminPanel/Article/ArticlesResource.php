@@ -14,6 +14,7 @@ class ArticlesResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'status' => $this->status,
+            'read_count' => $this->read_count,
             'created_at' => $this->created_at,
         ];
     }

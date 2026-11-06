@@ -15,7 +15,7 @@
             <div class="video-item">
                 <div class="box-video">
                     <div class="video-container" style="height:100%">
-                        <iframe width="395" height="270" class="lazy"  src="{{$work->url}}" data-src="{{$work->url}}" allowfullscreen="allowfullscreen"></iframe>
+                        <iframe width="395" height="270" class="lazy" src="{{$work->url}}" data-src="{{$work->url}}" title="عمل صوتي من قيمة فويس" loading="lazy" allowfullscreen="allowfullscreen"></iframe>
                     </div>
                 </div>
             </div>

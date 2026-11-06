@@ -19,7 +19,7 @@
             @foreach($partners as $partner)
             <div class="col-sm-12 col-md-6 col-lg-6">
                 <div class="card wow fadeIn animated" data-wow-delay="1.{{$loop->index}}s" style="visibility: visible;-webkit-animation-delay: 1.{{$loop->index}}s; -moz-animation-delay: 1.{{$loop->index}}s; animation-delay: 1.{{$loop->index}}s;">
-                    <img data-src="{{$partner->image_url}}" src="{{$partner->image_url}}" class="card-img-top lazy" alt="{{stringReplace($partner->alt)}}">
+                    <img data-src="{{$partner->image_url}}" src="{{$partner->image_url}}" class="card-img-top lazy" alt="{{stringReplace($partner->alt) ?: $partner->full_name}}" loading="lazy" decoding="async">
                     <div class="card-body">
                         <div class="card-title">
                             <h5 class="">{{$partner->full_name}}</h5>

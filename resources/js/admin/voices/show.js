@@ -15,11 +15,13 @@ Vue.component('voices-show', {
         }
     },
     mounted() {
+        console.log(this.route)
         this.fetchData(this.route);
     },
     methods: {
         showAdvancedFilter() {
 
         },
+
     }
 });

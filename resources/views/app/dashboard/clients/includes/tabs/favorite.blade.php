@@ -20,7 +20,7 @@
                         <td>@{{ favorite.voice_total_code }}</td>
                         <td>@{{ favorite.user_full_name }}</td>
                         <td>@{{ favorite.voice_total_price }}</td>
-                        <td><a :href="`{{route_app('client.booking.index')}}/${favorite.voice_slug}`" target="_blank" style="float: unset !important; width: 43px; "  class="pull-right show_voice"><i class="fa fa-book"></i></a></td>
+                        <td><a :href="'{{ route_app('booking.index', ['slug' => '__slug__']) }}'.replace('__slug__', order.voide_slug)" target="_blank" style="float: unset !important; width: 43px; "  class="pull-right show_voice"><i class="fa fa-book"></i></a></td>
                     </tr>
                     </tbody>
                 </table>

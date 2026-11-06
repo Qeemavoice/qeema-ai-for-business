@@ -36,11 +36,51 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
+    'elevenlabs' => [
+        'api_key' => env('ELEVENLABS_API_KEY'),
+        'agent_id' => env('ELEVENLABS_AGENT_ID'),
+        'environment' => env('ELEVENLABS_ENVIRONMENT', 'production'),
+        'base_url' => env('ELEVENLABS_BASE_URL', 'https://api.elevenlabs.io'),
+        'tts_model' => env('ELEVENLABS_TTS_MODEL', 'eleven_multilingual_v2'),
+        'tts_output_format' => env('ELEVENLABS_TTS_OUTPUT_FORMAT', 'mp3_44100_128'),
+        'tts_timeout' => (int) env('ELEVENLABS_TTS_TIMEOUT', 45),
+        'tts_max_chars' => (int) env('ELEVENLABS_TTS_MAX_CHARS', 2000),
+    ],
+
+    'munsit' => [
+        'api_key' => env('MUNSIT_API_KEY'),
+        'base_url' => env('MUNSIT_BASE_URL', 'https://api.munsit.com/api/v1'),
+        'model' => env('MUNSIT_TTS_MODEL', 'faseeh-v1-preview'),
+        'timeout' => (int) env('MUNSIT_TIMEOUT', 60),
+    ],
+
+    'tts' => [
+        'default_provider' => env('TTS_DEFAULT_PROVIDER', 'munsit'),
+    ],
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.1-flash-lite'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'timeout' => (int) env('GEMINI_TIMEOUT', 15),
+        'guest_daily_limit' => (int) env('GEMINI_GUEST_DAILY_LIMIT', 5),
+        'user_daily_limit' => (int) env('GEMINI_USER_DAILY_LIMIT', 20),
+        'global_daily_limit' => (int) env('GEMINI_GLOBAL_DAILY_LIMIT', 500),
+    ],
+
     'zeptomail' => [
         'api_key' => env('ZEPTO_API_KEY'),
         'bounce_address' => env('ZEPTO_BOUNCE'),
         'from_address' => env('ZEPTO_FROM_ADDRESS'),
         'from_name' => env('ZEPTO_FROM_NAME'),
     ],
+
+    'recaptcha' => [
+        'key' => env('RECAPTCHA_SITE_KEY'),
+        'secret' => env('RECAPTCHA_SECRET')
+    ],
+
+    'payments_enabled' => env('PAYMENTS_ENABLED', env('APP_ENV') === 'production'),
+
 
 ];

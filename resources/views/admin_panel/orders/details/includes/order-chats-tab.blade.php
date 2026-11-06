@@ -3,7 +3,7 @@
                 :user-message="{{isset($userMessage)  ? json_encode($userMessage) : 'null'}}"
                 inline-template>
         <div class="d-flex flex-column gap-7 gap-lg-10" >
-            @if($userMessage)
+            @if(isset($userMessage) && $userMessage)
 
                 <div class="card">
                     <div class="card-header">

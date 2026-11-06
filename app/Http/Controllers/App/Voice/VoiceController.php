@@ -25,12 +25,22 @@ class VoiceController extends CoreController
         $this->dirView = 'voices';
     }
 
-    public function index()
+    public function index($slug = null)
     {
+        $canonicalSlug = config('slugroute.slug_voices');
 
-        meta_data(trans_app('choose_from_the_value_of_one_voice'), trans_app('voices'), [
-            '#' => trans_app('voices'),
-        ]);
+        if ($slug !== $canonicalSlug) {
+            return redirect()->to(route_app('voice.index', ['slug' => $canonicalSlug]), 301);
+        }
+
+        meta_data(
+            trans_app('choose_from_the_value_of_one_voice'),
+            trans_app('voices'),
+            ['#' => trans_app('voices')],
+            'استمع واختر من مجموعة كبيرة من المعلقين الصوتيين العرب المحترفين حسب اللغة واللهجة والتصنيف، واحجز الصوت المناسب لمشروعك مباشرة عبر قيمة فويس.'
+        );
+
+        meta('canonical', route_app('voice.index', ['slug' => config('slugroute.slug_voices')]));
 
         $languages = Language::getLanguages();
         $types = VoiceType::getTypes();

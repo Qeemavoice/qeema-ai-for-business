@@ -45,6 +45,12 @@
                             <div class="card-body">
                                 {!! html_entity_decode(build_fields('title',trans_admin('title'))) !!}
 
+                                <div class="mb-6">
+                                    <label for="elevenlabs_voice_id" class="form-label mb-2">معرّف نموذج صوت المعلق (للتوليد فقط)</label>
+                                    <input id="elevenlabs_voice_id" v-model="elevenlabs_voice_id" type="text" class="form-control" dir="ltr" placeholder="اتركه فارغاً إذا كان الصوت للحجز فقط">
+                                    <div class="form-text">لن يظهر هذا الصوت في الاستوديو إلا بعد ربطه بمعرّف نموذج المعلق الخاص بكم. لا تُعرض أصوات مكتبة ElevenLabs العامة.</div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-lg-6 mb-8">
                                         <label for="type" class="form-label mb-2">{{trans_admin('type')}}</label>

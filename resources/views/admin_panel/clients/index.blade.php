@@ -20,6 +20,9 @@
                     </div>
                 </div>
                 <div class="card-toolbar">
+                    <div class="d-flex justify-content-end">
+                        @include('admin_panel.includes.buttons.export')
+                    </div>
                 </div>
             </div>
 

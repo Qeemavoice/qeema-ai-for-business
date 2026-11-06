@@ -76,7 +76,7 @@ class PartnerController extends CoreController
 
     public function edit($id)
     {
-        $category = $this->model::findOrFail($id);
+        $partner = $this->model::findOrFail($id);
 
         $pageTitle = trans_admin('edit_partner');
 
@@ -85,7 +85,7 @@ class PartnerController extends CoreController
             '' => $pageTitle
         ]);
 
-        return view(ADMIN_VIEWS_DIR . '.' . $this->dirView . '.create', compact('pageTitle', 'category'));
+        return view(ADMIN_VIEWS_DIR . '.' . $this->dirView . '.create', compact('pageTitle', 'partner'));
     }
 
 
@@ -104,9 +104,13 @@ class PartnerController extends CoreController
         $store->alt = $request->alt;
         $store->job_title = $request->job_title;
         $store->image = $request->image;
+        $store->reference_url = $request->reference_url;
+        $store->show_on_homepage = $request->boolean('show_on_homepage');
+        $store->permission_confirmed = $request->boolean('permission_confirmed');
         $store->save();
 
         Cache::forget('partners');
+        Cache::forget('partners-homepage');
         return $this->successResponse($store);
     }
 
@@ -114,6 +118,7 @@ class PartnerController extends CoreController
     {
         $delete = $this->model::findOrFail($id)->delete();
         Cache::forget('partners');
+        Cache::forget('partners-homepage');
         return $this->deleteResponse($delete);
     }
 

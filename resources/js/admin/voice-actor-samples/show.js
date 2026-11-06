@@ -12,6 +12,7 @@ Vue.component('voice-actor-samples-show', {
             filter: {
                 searchText: '',
             },
+            status:'',
         }
     },
     mounted() {
@@ -21,6 +22,23 @@ Vue.component('voice-actor-samples-show', {
         showAdvancedFilter() {
 
         },
+        changeStatus(id) {
+            if(this.status!=='')
+            {
+                showLoading();
 
+                axios.put(this.$admin_url + '/' + this.route +'/'+id+ '/change-status', {
+                    status : this.status
+                }).then(response => {
+                    hideLoading();
+                    swalSuccess(response.data.message);
+                    this.fetchData(this.route);
+                }).catch(error => {
+                    hideLoading();
+                    swalError(error);
+                });
+            }
+        }
     }
+
 });

@@ -5,28 +5,6 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\File;
 
-Route::get('/test', function () {
-//    $fileName = '6229fa6688e58_الخارجي.png';
-//    $oldProjectFolderName = 'qeemavoice';
-//    $newPath = 'banners';
-//    dd(copyFilesFromOtherProject($oldProjectFolderName,$newPath,$fileName));
-
-    try {
-        Mail::to('alhassanfayyad@gmail.com')->send(new UserWelcomeMail(\App\Models\User::query()->inRandomOrder()->first()));
-
-//        $to = 'alhassanfayyad@gmail.com';
-//        $subject = 'Hello from ZeptoMail API';
-//        $html = '<p>This is a test email using ZeptoMail API</p>';
-
-//        $send = new ZeptoMailService();
-//        $result = $send->send($to, $subject, $html);
-//        dd($result);
-//        return response()->json($result);
-    } catch (Exception $exception) {
-        dd($exception->getMessage());
-    }
-});
-
 Route::get('/', 'HomeController@index')->name('home.index');
 Route::post('/download-file', 'HomeController@downloadFile')->name('home.downloadFile');
 Route::get('/categories/{slug?}', 'CategoryController@index')->name('category.index');
@@ -37,9 +15,8 @@ Route::group(['prefix' => 'voices', 'namespace' => 'Voice', 'as' => 'voice.'], f
     // Route::get('/do/data', 'VoiceController@data')->name('data');
 });
 
-Route::get('/booking-steps/{slug}', 'BookingStepController@index')->name('bookingStep.index');
+Route::get('/booking-steps/{slug?}', 'BookingStepController@index')->name('bookingStep.index');
 Route::get('/our-works/{slug}', 'OurWorkController@index')->name('ourWork.index');
-Route::get('/careers', 'CareerController@index')->name('career.index');
 
 
 Route::group(['prefix' => 'contact-us', 'as' => 'contactUs.'], function () {
@@ -76,7 +53,7 @@ Route::group(['prefix' => 'guides', 'namespace' => 'Guide', 'as' => 'guide.'], f
 });
 
 Route::group(['prefix' => 'faqs', 'namespace' => 'Faq', 'as' => 'faq.'], function () {
-    Route::get('/{slug}', 'FaqController@index')->name('index');
+    Route::get('/{slug?}', 'FaqController@index')->name('index');
 });
 
 Route::group(['prefix' => 'blogs', 'namespace' => 'Blog', 'as' => 'blog.'], function () {
@@ -84,10 +61,17 @@ Route::group(['prefix' => 'blogs', 'namespace' => 'Blog', 'as' => 'blog.'], func
     Route::get('/details/{slug}', 'BlogController@details')->name('details');
 });
 
-Route::group(['prefix' => 'jobs', 'namespace' => 'Career', 'as' => 'career.'], function () {
-    Route::get('/', 'CareerController@index')->name('index');
-    Route::get('/details/{slug}', 'CareerController@details')->name('details');
-    Route::post('job-applications/apply', 'CareerController@apply')->name('apply');
+Route::group(['namespace' => 'Career', 'as' => 'career.'], function () {
+
+    Route::get('/careers', function () {
+        return redirect()->to(route_app('career.index'), 301);
+    });
+
+    Route::group(['prefix' => 'jobs'], function () {
+        Route::get('/', 'CareerController@index')->name('index');
+        Route::get('/details/{slug}', 'CareerController@details')->name('details');
+        Route::post('job-applications/apply', 'CareerController@apply')->name('apply');
+    });
 });
 
 

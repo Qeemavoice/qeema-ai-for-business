@@ -99,6 +99,13 @@
                 </div>
                 <div class="modal-footer">
                     <div class="col-md-12">
+                    <div class="form-group">
+                        <vue-recaptcha v-show="showRecaptcha" :sitekey="recaptchaKey" @verify="onVerify" ref="recaptcha"></vue-recaptcha>
+                        <span class="error" v-if="form.validation&&form.validation.recaptcha">{{ form.validation.recaptcha[0] }}</span>
+                    </div>
+                    </div>
+
+                    <div class="col-md-12">
                         <div v-if="form.message_error" class="alert alert-danger">{{ form.message_error }}</div>
                         <div v-if="form.message_success" class="alert alert-success">{{ form.message_success }}</div>
                         <button :disabled="form.disabledButton" class="btn btn-primary btn-color-orange" type="button" @click="orderProcessing"> تأكيد الدفع</button>
@@ -114,6 +121,8 @@
 </template>
 
 <script>
+import VueRecaptcha from 'vue-recaptcha';
+
 export default {
     name: "payment-form-for-booking",
     // provide() {
@@ -124,6 +133,8 @@ export default {
     // },
     data() {
         return {
+            showRecaptcha:false,
+            recaptcha: '',
             card: {
                 full_name: '',
                 number: '',
@@ -152,6 +163,10 @@ export default {
         commissions: '',
         currency: '',
         pOrder: null,
+        recaptchaKey:'',
+    },
+    components: {
+        VueRecaptcha,
     },
     watch: {},
     computed: {
@@ -170,11 +185,15 @@ export default {
         $('#modal_payment').on('show.bs.modal', (e) => {
             if (this.pOrder) {
                 this.order = this.pOrder;
+                this.showRecaptcha = true;
             }
         });
 
     },
     methods: {
+        onVerify(response) {
+            this.recaptcha = response;
+        },
         resetForm() {
             this.card = {
                 full_name: '',
@@ -184,6 +203,11 @@ export default {
                 expiry_year: '',
             };
             this.order = null;
+            this.recaptcha = '';
+
+            if (this.$refs.recaptcha) {
+                this.$refs.recaptcha.reset();
+            }
         },
         orderProcessing() {
             if (this.validationForm()) {
@@ -202,6 +226,8 @@ export default {
             // });
             this.form.loadingDisplay = true;
             this.form.disabledButton = true;
+
+            //Recaptcha $recaptcha,
             let $form = $('#form_stripe');
 
 
@@ -252,6 +278,18 @@ export default {
             });
         },
         validationForm() {
+            if (!this.recaptcha) {
+
+                if (!this.form.validation) {
+                    this.form.validation = {};
+                }
+
+                this.form.message_error = 'يرجى تأكيد أنك لست روبوت';
+
+                return true;
+            }
+
+            return false;
 
         },
     }

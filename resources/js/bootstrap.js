@@ -45,20 +45,25 @@ axios.interceptors.response
         })
 
 import Echo from 'laravel-echo';
-window.Pusher = require('pusher-js');
 
-window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: process.env.MIX_PUSHER_APP_KEY,
-    cluster: process.env.MIX_PUSHER_APP_CLUSTER,
-    //wsHost: window.location.hostname,
-    authEndpoint:  '/broadcasting/auth',
-    forceTLS: (/true/i).test(process.env.MIX_LARAVEL_WEBSOCKETS_SSL),
-    //encrypted: (/true/i).test(process.env.MIX_LARAVEL_WEBSOCKETS_ENCRYPTED),
-    //enabledTransports: ['ws', 'wss'],
-    //wsPort: Number(process.env.MIX_LARAVEL_WEBSOCKETS_WSS_PORT),
-    //wssPort: Number(process.env.MIX_LARAVEL_WEBSOCKETS_WSS_PORT),
-    //disableStats: false,
-});
+// Realtime is optional in local development. Pusher throws during startup when
+// no app key is configured, which prevents Vue from mounting at all.
+if (process.env.MIX_PUSHER_APP_KEY) {
+    window.Pusher = require('pusher-js');
+
+    window.Echo = new Echo({
+        broadcaster: 'pusher',
+        key: process.env.MIX_PUSHER_APP_KEY,
+        cluster: process.env.MIX_PUSHER_APP_CLUSTER,
+        //wsHost: window.location.hostname,
+        authEndpoint: '/broadcasting/auth',
+        forceTLS: (/true/i).test(process.env.MIX_LARAVEL_WEBSOCKETS_SSL),
+        //encrypted: (/true/i).test(process.env.MIX_LARAVEL_WEBSOCKETS_ENCRYPTED),
+        //enabledTransports: ['ws', 'wss'],
+        //wsPort: Number(process.env.MIX_LARAVEL_WEBSOCKETS_WSS_PORT),
+        //wssPort: Number(process.env.MIX_LARAVEL_WEBSOCKETS_WSS_PORT),
+        //disableStats: false,
+    });
+}
 
 

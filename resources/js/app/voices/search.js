@@ -27,17 +27,17 @@ Vue.component('voices-search', {
     },
     mounted() {
 
-        if (this.category) {
-            let id = getIdBySlug(this.category);
-            this.checkedCategoryField(id);
-            this.fetchDataMore();
-        } else {
-            this.fetchDataMore();
-        }
+        // if (this.category) {
+        //     let id = getIdBySlug(this.category);
+        //     this.checkedCategoryField(id);
+        //     this.fetchData(this.route);
+        // } else {
+        //     this.fetchData(this.route);
+        // }
     },
     methods: {
         search() {
-            this.fetchDataMore();
+            this.fetchData(this.route);
         },
         checkedCategoryField(id) {
             if ($("#category_" + id).hasClass("td-checked")) {
@@ -81,9 +81,9 @@ Vue.component('voices-search', {
 
         async loadMore() {
             //if (this.data.length < this.page.totalItems) {
-            this.page.currentPage++;
-            await this.fetchDataMore();
-            // }
+                this.page.currentPage++;
+                await this.fetchDataMore();
+           // }
         },
     }
 });

@@ -21,6 +21,7 @@ use App\Models\UserStatus;
 use App\Models\UserType;
 use App\Models\Voice;
 use App\Models\VoiceType;
+use App\Rules\Recaptcha;
 use App\Services\BookingPrices;
 use App\Services\CurrencyHelper;
 use App\Services\Payment\Gateways\StripePayment;
@@ -37,16 +38,36 @@ class BookingController extends CoreController
     {
 
         $this->dirView = 'booking';
-        $this->middleware('throttle:8,1')->except('index');
+        $this->middleware('throttle:3,1')->except('index');
     }
 
     public function index($slug)
     {
-        meta_data(trans_app('book_a_voiceover_for_your_project'), trans_app('now_booking'), [
-            '#' => trans_app('now_booking'),
-        ]);
+        $voice = Voice::with('dialect', 'language', 'categories.category', 'category')->findOrFail(get_id_by_slug($slug));
 
-        $voice = Voice::with('dialect', 'language', 'categories.category','category')->findOrFail(get_id_by_slug($slug));
+        if ($slug !== $voice->slug) {
+            return redirect()->to(route_app('booking.index', ['slug' => $voice->slug]), 301);
+        }
+
+        if ($voice->meta_title)
+            $title = $voice->meta_title;
+        else
+            $title = $voice->title;
+
+        //  $title = trans_app('book_a_voiceover_for_your_project');
+
+        $voiceMetaDescription = $voice->meta_description
+            ?: 'احجز صوت ' . $voice->title . ' للتعليق الصوتي الاحترافي عبر قيمة فويس، واستمع للعينة ثم أرسل السيناريو والتعليمات وأكمل طلبك بسهولة.';
+
+        meta_data(
+            $title,
+            trans_app('now_booking'),
+            ['#' => trans_app('now_booking')],
+            $voiceMetaDescription
+        );
+
+        meta('canonical', route_app('booking.index', ['slug' => $voice->slug]));
+
         $user = user();
         $languages = Language::getLanguages();
         $actorTypes = VoiceType::getTypes();
@@ -62,7 +83,7 @@ class BookingController extends CoreController
         );
     }
 
-    public function validateBookingOrderRequest(ValidateBookingOrderRequest $request)
+    public function validateBookingOrderRequest(ValidateBookingOrderRequest $request, Recaptcha $recaptcha)
     {
         $user = User::where('email', $request->email)->first();
 

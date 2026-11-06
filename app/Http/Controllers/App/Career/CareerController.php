@@ -26,6 +26,8 @@ class CareerController extends CoreController
         meta_data($pageTitle, $pageTitle, [
             '' => $pageTitle
         ]);
+        meta('canonical', route_app('career.index'));
+
         $jobs = Career::where('status', YES)->oldest()->get();
         $banner = get_banner(Banner::$CAREERS);
         return view(APP_VIEWS_DIR . '.' . $this->dirView . '.index',
@@ -37,10 +39,16 @@ class CareerController extends CoreController
     {
         $career = Career::where('status', YES)->findOrFail(explode('-', $slug)[0]);
 
+        if ($slug !== $career->slug) {
+            return redirect()->to(route_app('career.details', ['slug' => $career->slug]), 301);
+        }
+
         meta_data($career->title, null, [
             route_app('career.index') => trans_app('careers'),
             '#' => $career->title,
         ]);
+
+        meta('canonical', route_app('career.details', ['slug' => $career->slug]));
 
         return view(APP_VIEWS_DIR . '.' . $this->dirView . '.details', compact('career'));
     }

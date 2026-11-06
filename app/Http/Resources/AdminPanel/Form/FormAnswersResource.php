@@ -12,8 +12,9 @@ class FormAnswersResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user' => $this->user,
+            'user' => $this->user ? $this->user->full_name : null,
             'answer' => $this->answer,
+            'form_field' => $this->field ? $this->form_field->label : null,
             'token' => $this->token,
         ];
     }

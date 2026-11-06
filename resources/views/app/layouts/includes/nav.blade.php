@@ -36,7 +36,9 @@
             <li class="nav-item has-children">
                 <a class="nav-link" href="javaScript:;"><i class="fas fa-ellipsis-h"></i></a>
                 <ul class="dropdown arrow-top">
-                    <li><a href="{{route_app('page.index',['page' => \App\Models\Page::ABOUT_US])}}" class="nav-link">من نحن</a></li>
+                    @if(isset($data['pages']) && $data['pages']->contains('slug', \App\Models\Page::ABOUT_US))
+                        <li><a href="{{route_app('page.index',['page' => \App\Models\Page::ABOUT_US])}}" class="nav-link">من نحن</a></li>
+                    @endif
                     <li><a href="{{route_app('career.index')}}" class="nav-link">الوظائف</a></li>
                     <li><a href="{{route_app('contactUs.index',['slug' => $slugContactUs])}}" class="nav-link"> تواصل معنا</a></li>
                 </ul>

@@ -19,7 +19,10 @@
                     </div>
                 </div>
                 <div class="card-toolbar">
-                    @include('admin_panel.includes.buttons.create')
+                    <div class="d-flex justify-content-end">
+                        @include('admin_panel.includes.buttons.create')
+                        @include('admin_panel.includes.buttons.export')
+                    </div>
                 </div>
             </div>
             <div class="card-body pt-0">
@@ -52,16 +55,13 @@
                                 <td>@{{ row.voiceover }}</td>
                                 <td>@{{ row.dialect }}</td>
                                 <td>
-                                    <a :href="row.audio_file_url" target="_blank">{{ trans_admin('view_file') }}</a>
-{{--                                    <audio controls :id="'voice_'+row.id">--}}
-{{--                                        <source :src="row.audio_file_url" type="audio/ogg">--}}
-{{--                                        <source :src="row.audio_file_url" type="audio/mpeg">--}}
-{{--                                        Your browser does not support the audio element.--}}
-{{--                                    </audio>--}}
+                                    <a href="javascript:;" @click="doCopy(`${'{{ url_lang('booking') }}'}/${row.slug}`)">
+                                        {{ trans_admin('copy') }}
+                                    </a>
                                 </td>
                                 <td>@{{ row.created_at }}</td>
                                 <td>
-{{--                                    @include('admin_panel.includes.buttons.details')--}}
+{{--                                @include('admin_panel.includes.buttons.details')--}}
                                     @include('admin_panel.includes.buttons.edit')
                                     @include('admin_panel.includes.buttons.delete')
                                 </td>

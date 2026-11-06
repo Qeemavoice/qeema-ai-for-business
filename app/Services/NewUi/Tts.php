@@ -31,13 +31,37 @@ class Tts
                 if ($r) return $r;
             }
         }
+        if ($provider === 'munsit' && !empty($voice['provider_voice_id'])) {
+            $r = self::munsit((string) $voice['provider_voice_id'], $text, $settings);
+            if ($r) return $r;
+        }
         return self::acoustic($text, $voice['gender'] ?? 'male', $settings);
+    }
+
+    /** منصّت (Munsit), the other developer's Arabic engine; key in MUNSIT_API_KEY */
+    private static function munsit(string $voiceId, string $text, array $settings): ?array
+    {
+        try {
+            $m = app(\App\Services\MunsitTts::class);
+            if (!$m->isConfigured()) return null;
+            $resp = $m->generate($voiceId, $text, $settings);
+            return [
+                'audio' => $resp->body(),
+                'mime' => 'audio/wav',
+                'duration' => round(max(1.5, mb_strlen($text) / 14), 2),
+                'provider' => 'munsit',
+                'model' => (string) config('services.munsit.model', 'faseeh-v1-preview'),
+                'cost' => 0.0,
+            ];
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     public static function elevenLabsKey(): string
     {
         $k = (string) (Store::integrations()['elevenlabs']['apiKey'] ?? '');
-        if (strlen(trim($k)) < 6) $k = (string) env('ELEVENLABS_API_KEY', '');
+        if (strlen(trim($k)) < 6) $k = (string) config('services.elevenlabs.api_key', '');
         return strlen(trim($k)) >= 6 ? trim($k) : '';
     }
 

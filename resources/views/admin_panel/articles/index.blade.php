@@ -34,6 +34,7 @@
                                 <th>#</th>
                                 <th>{{trans_admin('id')}}</th>
                                 <th>{{trans_admin('name')}}</th>
+                                <th>{{trans_admin('read_count')}}</th>
                                 <th>{{trans_admin('status')}}</th>
                                 <th>{{trans_admin('created_at')}}</th>
                                 <th>{{trans_admin('actions')}}</th>
@@ -44,6 +45,7 @@
                                 <td>@{{ index + 1 }}</td>
                                 <td>@{{ row.id }}</td>
                                 <td>@{{ row.title }}</td>
+                                <td>@{{ row.read_count }}</td>
                                 <td>
                                     <div v-if="row.status=={{\App\Models\ArticleStatus::PUBLISHED}}" class="rounded-circle bg-success w-15px h-15px"></div>
                                     <div v-if="row.status=={{\App\Models\ArticleStatus::UN_PUBLISHED}}" class="rounded-circle bg-danger w-15px h-15px"></div>

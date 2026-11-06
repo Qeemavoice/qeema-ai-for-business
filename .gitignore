@@ -89,3 +89,8 @@ package-lock.json
 !/public/new-ui/assets/**
 !/new-ui/public/assets/
 !/new-ui/public/assets/**
+
+# from the live v2 setup
+.env.staging
+/.local
+/new-ui/node_modules

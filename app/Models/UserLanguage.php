@@ -12,6 +12,7 @@ class UserLanguage extends Model
     use HasFactory;
 
     public $guarded = [];
+    public $timestamps = false;
 
 
     public static function sync(array $data, $id)

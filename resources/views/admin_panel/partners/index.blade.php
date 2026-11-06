@@ -34,6 +34,8 @@
                                 <th>{{trans_admin('full_name')}}</th>
                                 <th>{{trans_admin('job_title')}}</th>
                                 <th>{{trans_admin('description')}}</th>
+                                <th>عرض في الرئيسية</th>
+                                <th>المرجع</th>
                                 <th>{{trans_admin('created_at')}}</th>
                                 <th>{{trans_admin('actions')}}</th>
                             </tr>
@@ -55,6 +57,8 @@
                                 </td>
                                 <td>@{{ row.job_title }}</td>
                                 <td>@{{ row.description }}</td>
+                                <td>@{{ row.show_on_homepage && row.permission_confirmed && row.reference_url ? 'معتمد' : 'غير منشور' }}</td>
+                                <td><a v-if="row.reference_url" :href="row.reference_url" target="_blank" rel="noopener noreferrer">فتح المرجع</a><span v-else>غير مضاف</span></td>
                                 <td>@{{ row.created_at }}</td>
                                 <td>
                                     @include('admin_panel.includes.buttons.edit')

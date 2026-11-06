@@ -22,6 +22,10 @@ Route::post('password/email', 'ForgotPasswordController@sendResetLinkEmail')->na
 Route::get('password/reset', 'ResetPasswordController@showResetForm')->name('password.reset');
 Route::post('password/reset', 'ResetPasswordController@reset')->name('password.do_reset');
 
-Route::get('auth/{service}', 'SocialiteController@redirectToProvider')->name('socialite.auth');
-Route::get('auth/{service}/callback', 'SocialiteController@handleProviderCallback')->name('socialite.callback');
+Route::get('auth/{service}', 'SocialiteController@redirectToProvider')
+    ->where('service', 'google')
+    ->name('socialite.auth');
+Route::get('auth/{service}/callback', 'SocialiteController@handleProviderCallback')
+    ->where('service', 'google')
+    ->name('socialite.callback');
 Route::post('authenticate', 'AuthController@authenticate')->name('broadcast.authenticate');

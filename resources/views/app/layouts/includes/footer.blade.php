@@ -5,7 +5,7 @@
                 <div class="col-sm-12 col-md-3">
                     <div class="single-col">
                         <ul class="pages">
-                            <li><div class="footer-logo"><img src="{{isset($data['header_logo']) ? $data['header_logo'] : logoHeaderApp()}}" alt="قيمة فويس"></div></li>
+                            <li><div class="footer-logo"><img src="{{isset($data['header_logo']) ? $data['header_logo'] : logoHeaderApp()}}" alt="قيمة فويس" loading="lazy" decoding="async"></div></li>
                             @isset($data['footer_about_site'])
                             <li><p style="text-align: justify;">{{$data['footer_about_site']}}</p></li>
                             @endisset

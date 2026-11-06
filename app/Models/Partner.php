@@ -27,13 +27,19 @@ class Partner extends Model
 
     public static function getPartners($limit = null)
     {
-        return Cache::remember('partners', CACHE_TTL, function () use ($limit) {
+        return Cache::remember('partners-homepage', CACHE_TTL, function () use ($limit) {
+            $query = self::query()
+                ->where('show_on_homepage', true)
+                ->where('permission_confirmed', true)
+                ->whereNotNull('reference_url')
+                ->where('reference_url', '!=', '')
+                ->oldest();
+
             if (!is_null($limit)) {
-                $data = self::oldest()->limit($limit)->get();
-            } else {
-                $data = self::all();
+                $query->limit($limit);
             }
-            return $data;
+
+            return $query->get();
         });
     }
 

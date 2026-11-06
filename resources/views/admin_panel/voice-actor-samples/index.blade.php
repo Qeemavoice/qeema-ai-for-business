@@ -64,20 +64,25 @@
                                 <td>@{{ row.language }}</td>
                                 <td>@{{ row.category }}</td>
                                 <td>@{{ row.dialect }}</td>
-                                <td>
-                                    <a :href="row.file_url" target="_blank">{{ trans_admin('view_file') }}</a>
-
-{{--                                    <audio controls>--}}
-{{--                                        <source :src="row.file_url" type="audio/ogg">--}}
-{{--                                        <source :src="row.file_url" type="audio/mpeg">--}}
-{{--                                        Your browser does not support the audio element.--}}
-{{--                                    </audio>--}}
-                                </td>
+                                <td><a :href="row.file_url" target="_blank">{{ trans_admin('view_file') }}</a></td>
                                 <td>@{{ row.price_per_minute }}</td>
                                 <td>@{{ row.total_price }}</td>
                                 <td>@{{ row.status }}</td>
                                 <td>@{{ row.created_at }}</td>
-                                <td></td>
+                                <td>
+                                    <div class="col-lg-6 mb-8">
+                                        <select @change="changeStatus(row.id)" class="form-select mb-2" v-model="status">
+                                            <option value="" readonly>{{trans_admin('status')}}</option>
+                                            @foreach(\App\Models\VoiceStatus::getStatuses() as $key => $value)
+                                                <option value="{{$value->id}}">{{$value->name}}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </td>
+{{--                                <td>--}}
+{{--                                    @include('admin_panel.includes.buttons.edit')--}}
+{{--                                    @include('admin_panel.includes.buttons.delete')--}}
+{{--                                </td>--}}
                             </tr>
                             <tr v-else>
                                 <td colspan="10">

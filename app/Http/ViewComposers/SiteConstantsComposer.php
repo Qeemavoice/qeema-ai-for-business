@@ -6,6 +6,7 @@ namespace App\Http\ViewComposers;
 use App\Models\Category;
 use App\Models\Country;
 use App\Models\Gender;
+use App\Models\Page;
 use App\Models\WorkField;
 use Illuminate\Contracts\View\View;
 
@@ -44,6 +45,7 @@ class SiteConstantsComposer
 
         $genders = Gender::getGenders();
         $countries = Country::getCountries();
+        $pages = Page::pages();
 
         $this->data = [
             'favicon' => $favicon,
@@ -64,6 +66,7 @@ class SiteConstantsComposer
             'genders' => $genders,
             'workFields' => $workFields,
             'countries' => $countries,
+            'pages' => $pages,
         ];
     }
 

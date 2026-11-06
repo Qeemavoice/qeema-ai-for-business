@@ -93,7 +93,7 @@
                                             <div class="col-sm-12 col-md-6">
                                                 <div class="form-group">
                                                     <label for="byWho">المؤدي<span class="required">*</span></label>
-                                                    <input type="text" value="{{isset($voice->voiceOver) ? $voice->voiceOver->full_name:null}}" class="form-control" readonly>
+                                                    <input type="text" value="{{isset($voice->type) ? $voice->type->name:null}}" class="form-control" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-sm-12 col-md-6">
@@ -130,7 +130,7 @@
                                             @foreach($services as $service)
                                                 <div class="col-md-12 col-lg-12">
                                                     <label for="service_{{$service->id}}">
-                                                        <input type="checkbox" @click="setServices({{$service}})" value="{{$service}}" id="service_{{$service->id}}" data-type="{{$service->type}}" data-price="{{$service->value}}" style="margin-left: 5px;margin-right: 5px;cursor: pointer;" class="service">
+                                                        <input type="checkbox" @change="setServices($event,{{$service}})" value="{{$service}}" id="service_{{$service->id}}" data-type="{{$service->type}}" data-price="{{$service->value}}" style="margin-left: 5px;margin-right: 5px;cursor: pointer;" class="service">
                                                         {{$service->title}}
                                                     </label>
                                                 </div>
@@ -244,6 +244,7 @@
                     </div>
                 </form>
                 <payment-form-for-booking
+                    recaptcha-key="{{ config('services.recaptcha.key') }}"
                     :p-order.sync="order"
                     :currency="`{{$currency}}`"
                     :commissions="{{json_encode($commissions)}}"
@@ -255,6 +256,8 @@
 @endsection
 
 @push('js')
+    <script src="https://www.google.com/recaptcha/api.js?onload=vueRecaptchaApiLoaded&render=explicit" defer></script>
+
     <script src="https://js.stripe.com/v2/" defer></script>
 @endpush
 

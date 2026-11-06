@@ -19,7 +19,10 @@
                     </div>
                 </div>
                 <div class="card-toolbar">
-                    @include('admin_panel.includes.buttons.create')
+                    <div class="d-flex justify-content-end">
+                        @include('admin_panel.includes.buttons.create')
+                        @include('admin_panel.includes.buttons.export')
+                    </div>
                 </div>
             </div>
             <div class="card-body pt-0">
@@ -29,8 +32,8 @@
                             <thead class="fs-7 text-gray-400 text-uppercase">
                             <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
                                 <th>#</th>
-                                <th>{{trans_admin('id')}}</th>
-                                <th>{{trans_admin('code')}}</th>
+{{--                                <th>{{trans_admin('id')}}</th>--}}
+{{--                                <th>{{trans_admin('code')}}</th>--}}
                                 <th>{{trans_admin('full_name')}}</th>
                                 <th>{{trans_admin('mobile')}}</th>
                                 <th>{{trans_admin('payment_method')}}</th>
@@ -42,8 +45,8 @@
                             <tbody>
                             <tr v-if="data.length > 0" v-for="(row,index) in data">
                                 <td>@{{ index + 1 }}</td>
-                                <td>@{{ row.id }}</td>
-                                <td>@{{ row.uniq_id }}</td>
+{{--                                <td>@{{ row.id }}</td>--}}
+{{--                                <td>@{{ row.uniq_id }}</td>--}}
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div v-if="row.image_url" class="me-5 position-relative">

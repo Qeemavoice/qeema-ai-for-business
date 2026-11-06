@@ -7,6 +7,7 @@ Vue.component('voice-form', {
             meta_title: languages(),
             meta_description: languages(),
             audio_file: null,
+            elevenlabs_voice_id: '',
             type: '',
             dialect: '',
             dialects: [],
@@ -42,6 +43,7 @@ Vue.component('voice-form', {
             this.meta_title = this.voice.meta_title
             this.meta_description = this.voice.meta_description
             this.type = this.voice.voice_type_id
+            this.elevenlabs_voice_id = this.voice.elevenlabs_voice_id || ''
 
 
             this.price_per_minute = this.voice.price_per_minute
@@ -105,6 +107,7 @@ Vue.component('voice-form', {
                 meta_description: this.meta_description,
                 meta_title: this.meta_title,
                 audio_file: this.setAudioFile(),
+                elevenlabs_voice_id: this.elevenlabs_voice_id,
                 type: this.type,
                 dialect: this.dialect,
                 language: this.language,

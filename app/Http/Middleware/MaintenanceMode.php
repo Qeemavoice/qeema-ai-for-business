@@ -9,10 +9,13 @@ class MaintenanceMode
 {
     public function handle($request, Closure $next)
     {
-        $maintenanceMode = getSetting('maintenance_mode');
+        $maintenanceMode =  config('app.maintenance_mode');
 
-        if (isset($maintenanceMode) && $maintenanceMode == YES)
-            return abort(503);
+//        if(!$request->dev_alhassan) {
+//            if (isset($maintenanceMode) && $maintenanceMode)
+//                return abort(503);
+//        }
+
 
         return $next($request);
     }

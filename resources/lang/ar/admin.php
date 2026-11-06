@@ -8,6 +8,8 @@ return [
     'policies' => 'السياسات',
     'group' => 'المجموعة',
     'activation' => 'تفعيل',
+    'read_count' => 'عدد القراءات',
+    'copy' => 'نسخ',
     'edit_criteria' => 'تعديل معيار',
     'edit_group' => 'تعديل مجموعة',
     'add_criteria' => 'اضافة معيار',

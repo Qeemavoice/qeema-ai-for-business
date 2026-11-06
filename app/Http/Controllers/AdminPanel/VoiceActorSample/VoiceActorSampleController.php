@@ -44,7 +44,7 @@ class VoiceActorSampleController extends CoreController
         $rows = $this->sort($request, $rows);
 
         $limit = $request->limit ? $request->limit : ADMIN_PER_PAGE;
-        $rows = $rows->paginate($limit);
+        $rows = $rows->with('status')->paginate($limit);
 
         $data = VoiceActorSamplesResources::collection($rows);
         $meta = collect($rows)->except('data');
@@ -53,6 +53,15 @@ class VoiceActorSampleController extends CoreController
             'data' => $data,
             'meta' => $meta,
         ]);
+    }
+
+    public function changeStatus($id,Request $request)
+    {
+        $sample = $this->model::findOrFail($id);
+        $sample->voice_status_id = $request->status;
+        $sample->save();
+
+        return $this->successResponse($sample);
     }
 
 
