@@ -134,7 +134,9 @@ class MunsitTts
 
     private function apiKey(): string
     {
-        return trim((string) config('services.munsit.api_key'));
+        // the admin dashboard «الإعدادات ← مزوّدو الصوت» first, then MUNSIT_API_KEY
+        $k = \App\Services\NewUi\Store::integrationKey('munsit');
+        return $k !== '' ? $k : trim((string) config('services.munsit.api_key'));
     }
 
     private function apiUrl(string $path): string

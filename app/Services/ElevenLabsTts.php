@@ -110,7 +110,9 @@ class ElevenLabsTts
 
     private function apiKey(): string
     {
-        return trim((string) config('services.elevenlabs.api_key'));
+        // the admin dashboard «الإعدادات ← مزوّدو الصوت» first, then ELEVENLABS_API_KEY
+        $k = \App\Services\NewUi\Store::integrationKey('elevenlabs');
+        return $k !== '' ? $k : trim((string) config('services.elevenlabs.api_key'));
     }
 
     private function apiUrl(string $path): string

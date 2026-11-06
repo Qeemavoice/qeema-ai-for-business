@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 /** Admin dashboard API (port of new-ui/server/routes/admin.ts) on MySQL. */
 class AdminController extends Controller
 {
-    private const SECRET_FIELDS = ['stripe' => ['liveSecretKey', 'testSecretKey'], 'smtp' => ['password'], 'elevenlabs' => ['apiKey']];
+    private const SECRET_FIELDS = ['stripe' => ['liveSecretKey', 'testSecretKey'], 'smtp' => ['password'], 'elevenlabs' => ['apiKey'], 'munsit' => ['apiKey']];
 
     public static function earningRow(object $e): array
     {

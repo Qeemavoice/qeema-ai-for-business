@@ -3,10 +3,10 @@ import { RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { api } from '../../lib/api';
 import { setCommissionPercent } from '../../../shared/pricing';
 
-export type SettingsSection = 'currency' | 'commission' | 'payments' | 'smtp' | 'maintenance';
+export type SettingsSection = 'currency' | 'commission' | 'payments' | 'smtp' | 'tts' | 'maintenance';
 
 const TITLES: Record<SettingsSection, string> = {
-  currency: 'العملات', commission: 'العمولات', payments: 'طرق الدفع', smtp: 'إعدادات SMTP', maintenance: 'إعدادات الصيانة'
+  currency: 'العملات', commission: 'العمولات', payments: 'طرق الدفع', smtp: 'إعدادات SMTP', tts: 'مزوّدو الصوت', maintenance: 'إعدادات الصيانة'
 };
 const CURRENCIES = [
   { code: 'USD', label: 'دولار أمريكي' }, { code: 'SAR', label: 'ريال سعودي' }, { code: 'AED', label: 'درهم إماراتي' },
@@ -57,7 +57,7 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
 
   if (!draft) return <div className="p-10 text-center"><RefreshCw className="w-5 h-5 animate-spin inline text-slate-400" /></div>;
   const set = (k: string, v: any) => setDraft((d: any) => ({ ...d, [k]: v }));
-  const setInt = (group: 'stripe' | 'smtp', k: string, v: any) => setDraft((d: any) => ({ ...d, integrations: { ...d.integrations, [group]: { ...d.integrations[group], [k]: v } } }));
+  const setInt = (group: 'stripe' | 'smtp' | 'elevenlabs' | 'munsit', k: string, v: any) => setDraft((d: any) => ({ ...d, integrations: { ...d.integrations, [group]: { ...d.integrations[group], [k]: v } } }));
   const stripe = draft.integrations.stripe;
   const smtp = draft.integrations.smtp;
 
@@ -69,6 +69,7 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
         section === 'currency' ? { settings: { defaultCurrency: draft.defaultCurrency, creditRatePer10kCharsUsd: draft.creditRatePer10kCharsUsd } }
         : section === 'commission' ? { settings: { platformCommissionPercent: draft.platformCommissionPercent, stripeFeePercent: draft.stripeFeePercent } }
         : section === 'maintenance' ? { settings: { maintenanceMode: draft.maintenanceMode } }
+        : section === 'tts' ? { integrations: { elevenlabs: draft.integrations.elevenlabs, munsit: draft.integrations.munsit } }
         : { integrations: { [section === 'payments' ? 'stripe' : 'smtp']: section === 'payments' ? stripe : smtp } };
       const d = await api.saveAdminSettings(payload);
       setData(d); setDraft(structuredClone(d));
@@ -141,6 +142,17 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
                 </Field>
               </div>
             </>
+          )}
+
+          {section === 'tts' && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="مفتاح منصّت (Munsit API Key)" hint="أصوات منصّت العربية في استوديو TTS. اتركه فارغاً للإبقاء على المفتاح المحفوظ.">
+                <SecretInput value={draft.integrations.munsit?.apiKey || ''} hint={draft.integrations.munsit?.apiKeyHint} onChange={v => setInt('munsit', 'apiKey', v)} />
+              </Field>
+              <Field label="مفتاح ElevenLabs (API Key)" hint="أصوات ElevenLabs والمساعد الصوتي. اتركه فارغاً للإبقاء على المفتاح المحفوظ.">
+                <SecretInput value={draft.integrations.elevenlabs?.apiKey || ''} hint={draft.integrations.elevenlabs?.apiKeyHint} onChange={v => setInt('elevenlabs', 'apiKey', v)} />
+              </Field>
+            </div>
           )}
 
           {section === 'smtp' && (

@@ -12,7 +12,7 @@ export type AdminTab =
   | 'voices' | 'plans' | 'services' | 'dialects' | 'categories'
   | 'admins' | 'audit' | 'settings'
   | 'page-privacy' | 'page-terms' | 'page-about'
-  | 'settings-currency' | 'settings-commission' | 'settings-payments' | 'settings-smtp' | 'settings-maintenance';
+  | 'settings-currency' | 'settings-commission' | 'settings-payments' | 'settings-smtp' | 'settings-tts' | 'settings-maintenance';
 
 export interface AdminNavItem {
   id?: AdminTab;
@@ -109,6 +109,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
           { id: 'settings-commission', label: 'العمولات', desc: 'رسوم المنصة ورسوم بوابة الدفع' },
           { id: 'settings-payments', label: 'طرق الدفع', desc: 'ربط بوابة Stripe ووضع الاختبار' },
           { id: 'settings-smtp', label: 'إعدادات SMTP', desc: 'خادم البريد الصادر للإشعارات' },
+          { id: 'settings-tts', label: 'مزوّدو الصوت', desc: 'مفاتيح منصّت و ElevenLabs لاستوديو TTS' },
           { id: 'settings-maintenance', label: 'إعدادات الصيانة', desc: 'تشغيل الموقع في وضع الصيانة' }
         ]
       }

@@ -63,6 +63,7 @@ class Store
             'smtp' => ['driver' => 'smtp', 'fromName' => 'Qeema Voice', 'fromAddress' => '', 'host' => '', 'port' => 465,
                 'username' => '', 'password' => '', 'encryption' => 'SSL'],
             'elevenlabs' => ['apiKey' => '', 'agentId' => ''],
+            'munsit' => ['apiKey' => ''],
         ];
     }
 
@@ -72,6 +73,16 @@ class Store
         $out = self::integrationsDefaults();
         foreach ($out as $g => $vals) $out[$g] = array_merge($vals, $saved[$g] ?? []);
         return $out;
+    }
+
+    /** One provider key from the admin dashboard; '' when unset or the store is unreachable (the env key is then used) */
+    public static function integrationKey(string $group): string
+    {
+        try {
+            return trim((string) (self::integrations()[$group]['apiKey'] ?? ''));
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     public static function saveIntegrations(array $i): void
