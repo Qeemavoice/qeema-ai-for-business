@@ -21,7 +21,6 @@ import {
 import { Company, User } from '../types';
 import { WhiteFridayBar } from './WhiteFridayBar';
 import { RowadBadge } from './RowadBadge';
-import { useRowad } from '../lib/rowad';
 
 interface HeaderProps {
   currentCompany: Company | null;
@@ -48,7 +47,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const location = useLocation();
   const currentPath = location.pathname;
-  const canUseNew = useRowad().canUse;   // TTS links: Rowad members now, everyone from the public launch (plans are open to all)
 
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -151,7 +149,7 @@ export const Header: React.FC<HeaderProps> = ({
                     )}
 
                     {/* أستوديو TTS (Rowad members now, everyone from the public launch) */}
-                    {canUseNew && (
+                    
                     <Link
                       to="/ar/text-to-speech"
                       onClick={() => setOpenDropdown(null)}
@@ -165,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700">توليد فوري</span>
                       </div>
                     </Link>
-                    )}
+                    
 
                     <div className="my-1 border-t border-slate-100" />
 
@@ -360,7 +358,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <RowadBadge />
                     </div>
 
-                    {canUseNew && (
+                    
                     <div className="p-2 border-b border-slate-100 space-y-1">
                       <Link
                         to="/ar/text-to-speech"
@@ -371,7 +369,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>استوديو تحويل النص إلى صوت (TTS)</span>
                       </Link>
                     </div>
-                    )}
+                    
 
                     <div className="p-2 border-t border-slate-100">
                       <button
@@ -424,7 +422,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[10px] text-slate-400">1000+ موهبة</span>
             </Link>
 
-            {canUseNew && (
+            
             <Link
               to="/ar/text-to-speech"
               onClick={() => setMobileMenuOpen(false)}
@@ -436,7 +434,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">توليد فوري</span>
             </Link>
-            )}
+            
 
             <Link
               to="/ar/booking-steps"

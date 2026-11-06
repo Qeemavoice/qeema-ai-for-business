@@ -19,6 +19,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { TextToSpeechPlayground } from '../components/TextToSpeechPlayground';
 import { TextToSpeechVisitorLanding } from '../components/TextToSpeechVisitorLanding';
 import { VoiceStyleShowcase } from '../components/VoiceStyleShowcase';
+import { useRowad } from '../lib/rowad';
 
 interface TextToSpeechPageProps {
   isLoggedIn: boolean;
@@ -34,8 +35,12 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
   useSeo(STATIC_SEO_ROUTES['/ar/text-to-speech']);
   const navigate = useNavigate();
 
-  // Visitors see the technology guide; signed-in users get the generation studio
-  const activeTab = isLoggedIn ? 'playground' : 'overview';
+  // Visitors (and Google) see the technology guide; signed-in users with access get the studio,
+  // signed-in users without it yet («روّاد قيمة» before the public launch) see the guide and can join the waitlist
+  const { canUse, ready } = useRowad();
+  const studio = isLoggedIn && canUse;
+  const activeTab = studio ? 'playground' : 'overview';
+  if (isLoggedIn && !ready) return null;   // account still loading: don't flash the guide to a member
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20" dir="rtl">
@@ -49,7 +54,7 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
       </div>
 
       {/* SEO Headline Header with Single Strict H1 */}
-      {isLoggedIn && <header className="py-8 bg-white border-b border-slate-200">
+      {studio && <header className="py-8 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-2">
@@ -148,7 +153,7 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
             onOpenLogin={onOpenLogin}
             onOpenSignup={onOpenSignup}
             onGoogle={onGoogle}
-            onTryStudio={onOpenSignup}
+            onTryStudio={isLoggedIn ? () => navigate('/ar/waitlist') : onOpenSignup}
           />
         </section>
       )}

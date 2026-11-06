@@ -321,7 +321,8 @@ export default function App() {
           <Route path="/ar/voice-models/stories" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['stories']} />} />
           <Route path="/ar/voice-models/promo" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['promo']} />} />
           <Route path="/ar/voice-models/religious" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['religious']} />} />
-          <Route path="/ar/text-to-speech" element={<NewFeaturesGate><TextToSpeechPage isLoggedIn={isLoggedIn} voices={voices} onGenerated={setBalanceCredits} onGoogle={loginWithGoogle} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} /></NewFeaturesGate>} />
+          {/* open to everyone (and to Google); the studio inside the page is for Rowad members until the public launch */}
+          <Route path="/ar/text-to-speech" element={<TextToSpeechPage isLoggedIn={isLoggedIn} voices={voices} onGenerated={setBalanceCredits} onGoogle={loginWithGoogle} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} />} />
           <Route path="/ar/pricing" element={<PricingPage />} />
           {/* «روّاد قيمة» invite links (the server checks the code first) and the waitlist */}
           <Route path="/ar/early" element={<EarlyAccessPage isLoggedIn={isLoggedIn} onOpenLogin={(email) => { setAuthEmail(email || ''); setAuthModalMode('login'); }} onOpenSignup={(email) => { setAuthEmail(email || ''); setAuthRole('client'); setAuthModalMode('signup'); }} onActivated={() => { loadMe().catch(() => {}); }} />} />
