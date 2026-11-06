@@ -126,7 +126,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
             >
               <span className="w-10 h-10 shrink-0 rounded-xl bg-slate-900 text-brand font-black flex items-center justify-center">{voice?.name.charAt(0).toUpperCase() || '?'}</span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] text-slate-500">الصوت · {all.length} صوت متاح</span>
+                <span className="block text-[11px] text-slate-500">الصوت</span>
                 <span className="block text-sm font-bold text-slate-900 truncate">{voice?.name || 'اختر صوتاً'}</span>
                 {voice && <span className="block text-[11px] text-slate-500 truncate">{[ar(voice.dialect), voice.gender === 'female' ? 'نسائي' : 'رجالي', ar(voice.style)].filter(Boolean).join(' · ')}</span>}
               </span>
@@ -169,7 +169,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               <span className="block text-sm font-bold text-slate-900">اللهجة</span>
               <select value={dialectFilter === 'all' ? 'auto' : dialectFilter} onChange={e => pickDialect(e.target.value)} className={select}>
                 <option value="auto">تلقائي حسب النص والصوت</option>
-                {dialects.map(d => <option key={d} value={d}>{ar(d)} ({all.filter(v => v.dialect === d).length})</option>)}
+                {dialects.map(d => <option key={d} value={d}>{ar(d)}</option>)}
               </select>
               <span className="block text-[11px] text-slate-500">اختيار اللهجة يعرض أصواتها في القائمة ويختار صوتاً منها.</span>
             </label>
