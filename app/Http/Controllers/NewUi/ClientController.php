@@ -227,7 +227,10 @@ class ClientController extends Controller
     public function bookings(Request $r)
     {
         $ctx = Accounts::context($r);
-        return response()->json(['bookings' => Bookings::forCustomer($ctx['companyUser']->id)]);
+        $u = $ctx['companyUser'];
+        // company: who the invoices are made out to (the invoice window needs it)
+        return response()->json(['bookings' => Bookings::forCustomer($u->id),
+            'company' => ['id' => Accounts::companyId($u), 'name' => Accounts::name($u), 'country' => '']]);
     }
 
     public function book(Request $r)

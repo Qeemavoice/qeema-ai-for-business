@@ -34,7 +34,7 @@ export const BillingTab: React.FC<Props> = ({ balanceCredits, currentPlanId, onO
 
   useEffect(() => {
     Promise.all([api.getMyBookings(), api.getCredits()]).then(([bk, cr]) => {
-      const customer = bk.company;
+      const customer = bk.company || { name: '' };
       const purchases = (cr.transactions as CreditTransaction[]).filter(t => t.reason === 'purchase');
       const fromPurchases = purchases.map((t): InvoiceData => {
         const price = Number(/(\d+(?:\.\d+)?) USD/.exec(t.description)?.[1] || 0);

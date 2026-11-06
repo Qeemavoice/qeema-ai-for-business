@@ -285,7 +285,7 @@ export const HumanBookingsSubView: React.FC<HumanBookingsSubViewProps> = ({ onBo
 
   useEffect(() => {
     api.getMyBookings().then(d => {
-      setBookings(d.bookings); setCustomer(d.company);
+      setBookings(d.bookings); setCustomer(d.company || { name: "" });
       // Open the project that needs attention first (being recorded, else the newest)
       setOpenId((d.bookings.find(b => b.status === 'in_studio') || d.bookings[0])?.id || null);
     }).catch(() => setBookings([]));

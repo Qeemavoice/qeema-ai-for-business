@@ -40,6 +40,7 @@ class NarratorNameHiddenTest extends TestCase
         $list = $api->getJson('/api/v1/client/bookings')->assertOk();
         $this->assertStringNotContainsString($secret, $list->getContent());
         $this->assertContains('إعلان حماسي', collect($list->json('bookings'))->pluck('sampleName')->all());
+        $this->assertSame('عميل', $list->json('company.name'));   // invoices are made out to the client
 
         $this->assertStringNotContainsString(rawurlencode('محمد'), $this->get('/sitemap.xml')->getContent());
     }
