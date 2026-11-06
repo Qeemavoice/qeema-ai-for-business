@@ -67,11 +67,27 @@ class Store
         ];
     }
 
+    /** Keys and passwords: stored encrypted with the app key (APP_KEY), never shown back in full */
+    public const SECRET_FIELDS = ['stripe' => ['liveSecretKey', 'testSecretKey'], 'smtp' => ['password'], 'elevenlabs' => ['apiKey'], 'munsit' => ['apiKey']];
+    private const ENC = 'enc:';
+
     public static function integrations(): array
     {
         $saved = self::get('integrations', []) ?: [];
         $out = self::integrationsDefaults();
         foreach ($out as $g => $vals) $out[$g] = array_merge($vals, $saved[$g] ?? []);
+        foreach (self::SECRET_FIELDS as $g => $fields) {
+            foreach ($fields as $f) {
+                $v = (string) ($out[$g][$f] ?? '');
+                if (strpos($v, self::ENC) !== 0) continue;   // older plain value: encrypted on the next save
+                try {
+                    $out[$g][$f] = \Illuminate\Support\Facades\Crypt::decryptString(substr($v, strlen(self::ENC)));
+                } catch (\Throwable $e) {
+                    report($e);   // APP_KEY changed: the key has to be entered again
+                    $out[$g][$f] = '';
+                }
+            }
+        }
         return $out;
     }
 
@@ -87,6 +103,12 @@ class Store
 
     public static function saveIntegrations(array $i): void
     {
+        foreach (self::SECRET_FIELDS as $g => $fields) {
+            foreach ($fields as $f) {
+                $v = (string) ($i[$g][$f] ?? '');
+                if ($v !== '' && strpos($v, self::ENC) !== 0) $i[$g][$f] = self::ENC . \Illuminate\Support\Facades\Crypt::encryptString($v);
+            }
+        }
         self::set('integrations', $i);
     }
 
