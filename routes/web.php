@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('change-language/{locale}', 'ChangeLanguageController@changeLanguages')->name('change.language');
-Route::get('/sitemap.xml', 'SitemapXmlController@index');
+Route::get('/sitemap.xml', 'SitemapXmlController@index')->name('sitemap');
 
 
 Route::group([

@@ -41,7 +41,7 @@ if (!function_exists('getSetting')) {
 
         $setting = $setting->where('key', $key)->first();
 
-        return isset($setting) ? ($isValueDecoded ? $setting->value_decoded : $setting->value) : null;
+        return isset($setting) ? ($isValueDecoded ? $setting->value_decoded : str_replace('+', '', $setting->value)) : null;
     }
 }
 
@@ -75,7 +75,14 @@ if (!function_exists('getLogo')) {
     function getLogo($key = 'header_logo')
     {
         $logo = collect(getSettings())->where('key', $key)->first();
-        return isset($logo) ? $logo->value : logoHeaderApp();
+
+        if (!isset($logo)) {
+            return logoHeaderApp();
+        }
+
+        $decoded = $logo->value_decoded;
+
+        return $decoded ?: logoHeaderApp();
     }
 }
 
@@ -94,7 +101,7 @@ if (!function_exists('logoHeaderApp')) {
 if (!function_exists('favicon')) {
     function favicon()
     {
-        return asset('media/logo/favicon.png');
+        return asset('favicon.ico');
     }
 }
 if (!function_exists('defaultCurrency')) {

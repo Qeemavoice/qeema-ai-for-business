@@ -1,7 +1,6 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
+
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'un.auth.admin'], function () {
@@ -33,6 +32,9 @@ Route::group(['middleware' => 'un.auth.admin'], function () {
     Route::get('/synPages', 'SynDatabaseController@synPages')->name('synPages');
     Route::get('/updateNameUsers', 'SynDatabaseController@updateNameUsers')->name('updateNameUsers');
     Route::get('/addMissingVoiceOversTheVoiceTable', 'SynDatabaseController@addMissingVoiceOversTheVoiceTable')->name('addMissingVoiceOversTheVoiceTable');
+
+
+    Route::get('/', 'DashboardController@index')->name('index');
 
     Route::group(['namespace' => 'Dashboard', 'as' => 'dashboard.'], function () {
         Route::get('/', 'DashboardController@index')->name('index');
@@ -153,6 +155,8 @@ Route::group(['middleware' => 'un.auth.admin'], function () {
 //        Route::get('{id}/edit', 'ClientController@edit')->name('edit');
 //        Route::delete('{id}/delete', 'ClientController@destroy')->name('destroy');
         Route::get('{id}/details', 'ClientController@index')->name('details.index');
+        Route::get('export', 'ClientExportController@export')->name('export');
+
     });
 
     Route::group(['prefix' => 'roles', 'namespace' => 'Role', 'as' => 'role.'], function () {
@@ -277,6 +281,12 @@ Route::group(['middleware' => 'un.auth.admin'], function () {
         Route::get('{id}/details', 'WorkController@index')->name('details.index');
     });
 
+    Route::group(['prefix' => 'success-stories', 'namespace' => 'SuccessStory', 'as' => 'successStory.'], function () {
+        Route::get('/', 'SuccessStoryController@index')->name('index');
+        Route::post('/import', 'SuccessStoryController@import')->name('import');
+        Route::post('/{story}/update', 'SuccessStoryController@update')->name('update');
+    });
+
     Route::group(['prefix' => 'services', 'namespace' => 'Service', 'as' => 'service.'], function () {
         Route::get('/', 'ServiceController@index')->name('index');
         Route::get('/data', 'ServiceController@data')->name('data');
@@ -320,8 +330,11 @@ Route::group(['middleware' => 'un.auth.admin'], function () {
     });
 
     Route::group(['prefix' => 'settings', 'namespace' => 'Setting'], function () {
-        Route::group(['as' => 'setting.', 'middleware' => []], function () {
+        Route::get('/download-uploads', 'UploadsBackupController@downloadVoices');
 
+        Route::group(['as' => 'setting.', 'middleware' => []], function () {
+            Route::get('tts-providers', 'TtsProviderController@index')->name('tts-providers.index');
+            Route::post('tts-providers', 'TtsProviderController@update')->name('tts-providers.update');
             Route::get('{page?}', 'SettingController@index')->name('index');
             Route::post('/store', 'SettingController@store')->name('store');
         });
@@ -357,6 +370,7 @@ Route::group(['middleware' => 'un.auth.admin'], function () {
         Route::post('/store', 'VoiceActorController@store')->name('store');
         Route::delete('{id}/delete', 'VoiceActorController@destroy')->name('destroy');
         Route::get('/search', 'VoiceActorController@search')->name('search');
+        Route::get('export', 'VoiceActorExportController@export')->name('export');
 
         Route::get('{id}/details', 'VoiceActorDetailsController@index')->name('details.index');
     });
@@ -364,6 +378,7 @@ Route::group(['middleware' => 'un.auth.admin'], function () {
     Route::prefix('voice-actor-samples')->as('voiceActorSample.')->namespace('VoiceActorSample')->group(function () {
         Route::get('/', 'VoiceActorSampleController@index')->name('index');
         Route::get('/data', 'VoiceActorSampleController@data')->name('data');
+        Route::put('/{id}/change-status', 'VoiceActorSampleController@changeStatus')->name('changeStatus');
     });
 
     Route::prefix('voices')->as('voice.')->namespace('Voice')->group(function () {
@@ -374,6 +389,7 @@ Route::group(['middleware' => 'un.auth.admin'], function () {
         Route::post('/store', 'VoiceController@store')->name('store');
         Route::delete('{id}/delete', 'VoiceController@destroy')->name('destroy');
         Route::get('/search', 'VoiceController@search')->name('search');
+        Route::get('export', 'VoiceExportController@export')->name('export');
     });
 
     Route::prefix('coupons')->as('coupon.')->namespace('Coupon')->group(function () {

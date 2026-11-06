@@ -59,7 +59,7 @@ trait UploadTrait
     {
         $mime = $file->getClientOriginalExtension();
         $path = my_public() . DIR_UPLOAD . DIRECTORY_SEPARATOR . $direction;
-        File::exists($path) or File::makeDirectory($path, 755, true);
+        File::exists($path) or File::makeDirectory($path, 0755, true);
         $file_name = rand(100, 9999999) . '.' . $mime;
         $file->move($path, $file_name);
         return $file_name;

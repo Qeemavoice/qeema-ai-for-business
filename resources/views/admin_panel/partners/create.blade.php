@@ -5,7 +5,7 @@
 @endpush
 
 @section('content')
-    <partner-form :article="{{ isset($article) ? $article : 'null'}}" inline-template>
+    <partner-form :partner="{{ isset($partner) ? $partner : 'null'}}" inline-template>
         <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
             <div class="d-flex flex-column gap-7 gap-lg-10">
                 <div class="card">
@@ -33,6 +33,21 @@
 
 
                         {!! html_entity_decode(build_fields('alt',trans_admin('alt'),'','textarea')) !!}
+                        <div class="mb-5">
+                            <label class="form-label" for="partner-reference-url">رابط مرجعي يثبت العلاقة مع الجهة</label>
+                            <input id="partner-reference-url" type="url" v-model.trim="reference_url" class="form-control" placeholder="https://example.com/..." dir="ltr">
+                            <span v-if="form.validation && form.validation.reference_url" class="error-block">@{{ form.validation.reference_url[0] }}</span>
+                        </div>
+                        <div class="form-check form-switch mt-4">
+                            <input class="form-check-input" type="checkbox" id="show_on_homepage" v-model="show_on_homepage">
+                            <label class="form-check-label" for="show_on_homepage">عرض الجهة في الصفحة الرئيسية</label>
+                            <div class="form-text">يتطلب تفعيل العرض رابطًا مرجعيًا وتأكيد إذن استخدام الاسم والشعار.</div>
+                        </div>
+                        <div class="form-check form-switch mt-4">
+                            <input class="form-check-input" type="checkbox" id="permission_confirmed" v-model="permission_confirmed">
+                            <label class="form-check-label" for="permission_confirmed">تم التأكد من إذن استخدام الاسم والشعار</label>
+                            <span v-if="form.validation && form.validation.permission_confirmed" class="error-block d-block">@{{ form.validation.permission_confirmed[0] }}</span>
+                        </div>
                     </div>
                 </div>
             </div>

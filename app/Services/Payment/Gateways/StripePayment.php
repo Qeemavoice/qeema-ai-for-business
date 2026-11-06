@@ -59,6 +59,10 @@ class StripePayment
 
     public function pay($totalsAmounts, $stripeToken, $currency = '')
     {
+        if (!Config::get('services.payments_enabled', false)) {
+            throw new \RuntimeException('Payments are disabled in this environment.');
+        }
+
         try {
             //This value must be greater than or equal to 1
             $pay = Stripe\Charge::create([

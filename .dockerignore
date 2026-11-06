@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+vendor
+node_modules
+new-ui/node_modules
+public/new-ui
+public/uploads
+public/*.tar.gz
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+npm-debug.log
+.DS_Store
+

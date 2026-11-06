@@ -15,6 +15,7 @@ class VoicesResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'slug' => $this->slug,
             'show_id' => $this->show_id,
             'title' => $this->title,
             'show_price_per_minute' => $this->show_price_per_minute,

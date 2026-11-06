@@ -10,6 +10,8 @@ class Wallet extends Model
     protected $guarded = [];
     protected $appends = ['all_profits'];
 
+    public const DIR_WALLET_UPLOADS = 'wallets';
+
     public function getBalanceAttribute($value)
     {
         return $value > 0 ? $value : (is_null($value) ? 0 : $value);

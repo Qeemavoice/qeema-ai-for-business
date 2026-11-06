@@ -23,10 +23,21 @@ class GuideDetailsController extends CoreController
     {
         $guide = Guide::findOrFail(explode('-', $slug)[0]);
 
-        meta_data($guide->name, null, [
-            route_app('guide.index') => trans_app('guides'),
-            '#' => $guide->name,
-        ]);
+        if ($slug !== $guide->slug) {
+            return redirect()->to(route_app('guide.details.index', ['slug' => $guide->slug]), 301);
+        }
+
+        meta_data(
+            $guide->name,
+            null,
+            [
+                route_app('guide.index') => trans_app('guides'),
+                '#' => $guide->name,
+            ],
+            'دليل ' . $guide->name . ' من قيمة فويس، مورد متخصص يساعدك في التعليق الصوتي وتطوير مهاراتك واختيار حلول الصوت المناسبة.'
+        );
+
+        meta('canonical', route_app('guide.details.index', ['slug' => $guide->slug]));
         $currency = CurrencyHelper::getSymbol();
         $keyStripe = StripePayment::config('key_id');
         $commissions = commissions();

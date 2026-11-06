@@ -15,7 +15,7 @@
                 @foreach($customers as $customer)
                     <div class="item">
                         <div class="icon-item">
-                            <img data-src="{{$customer->image_url}}" src="{{$customer->image_url}}" class="lazy" alt="{{$customer->alt}}">
+                            <img data-src="{{$customer->image_url}}" src="{{$customer->image_url}}" class="lazy" alt="{{$customer->alt ?: 'عميل قيمة فويس'}}" loading="lazy" decoding="async">
                         </div>
                     </div>
                 @endforeach

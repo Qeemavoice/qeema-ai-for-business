@@ -5,7 +5,7 @@
                 @isset($homePageWelcomeSection->video_url)
                 <div class="box-video">
                     <div class="video-container">
-                        <iframe width="590" height="332" src="{{$homePageWelcomeSection->video_url}}" allowfullscreen="allowfullscreen"></iframe>
+                        <iframe width="590" height="332" src="{{$homePageWelcomeSection->video_url}}" title="قيمة فويس - خدمات التعليق الصوتي" allowfullscreen="allowfullscreen"></iframe>
                     </div>
                 </div>
                 @endisset

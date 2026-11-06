@@ -7,7 +7,6 @@ namespace App\Http\Controllers\AdminPanel\Order;
 use App\Http\Controllers\AdminPanel\CoreController;
 use App\Models\Order;
 use App\Models\OrderStatus;
-use App\Models\UserMessage;
 use App\Models\Voice;
 
 class OrderDetailsController extends CoreController
@@ -46,10 +45,8 @@ class OrderDetailsController extends CoreController
         $asRoute = $this->asRoute;
         $orderStatuses = OrderStatus::getStatuses();
 
-        $userMessage = UserMessage::with('fromUser','toUser')->where('order_id', $order->id)->first();
-
         return view(ADMIN_VIEWS_DIR . '.' . $this->dirView . '.details.index',
-            compact('pageTitle', 'asRoute', 'order', 'orderStatuses','userMessage')
+            compact('pageTitle', 'asRoute', 'order', 'orderStatuses')
         );
     }
 

@@ -21,6 +21,7 @@ class StoreVoiceRequest extends FormRequest
         $rules['language'] = ['required'];
         $rules['type'] = ['required'];
         $rules['audio_file'] = ['required'];
+        $rules['elevenlabs_voice_id'] = ['nullable', 'string', 'max:191'];
         $rules['categories_ids'] = ['required','array'];
 
         foreach (languages() as $key => $value) {

@@ -92,7 +92,7 @@
                             </a>
                             <div class="row">
                                 <div class="col-8">
-                                    <a href="{{route_app('blog.details',['slug' => $article->slug])}}"><span class="name">{{ $article->short_description }}</span></a>
+                                    <a href="{{route_app('blog.details',['slug' => $article->slug])}}"><span class="name">{{ mb_substr($article->short_description, 0, 50) }}...</span></a>
                                 </div>
                                 <div class="col-4">
                                     <span class="date">{{$article->format_y_m_d_created_at}}</span>

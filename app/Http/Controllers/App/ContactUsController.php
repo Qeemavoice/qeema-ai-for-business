@@ -17,11 +17,22 @@ class ContactUsController extends CoreController
         $this->dirView = 'contact-us';
     }
 
-    public function index()
+    public function index($slug = null)
     {
-        meta_data(trans_app('contact_us_for_the_best_services'),trans_app('contact_us'),[
-            '#' => trans_app('contact_us')
-        ]);
+        $canonicalSlug = config('slugroute.slug_contact_us');
+
+        if ($slug !== $canonicalSlug) {
+            return redirect()->to(route_app('contactUs.index', ['slug' => $canonicalSlug]), 301);
+        }
+
+        meta_data(
+            trans_app('contact_us_for_the_best_services'),
+            trans_app('contact_us'),
+            ['#' => trans_app('contact_us')],
+            'تواصل مع فريق قيمة فويس للاستفسار عن خدمات التعليق الصوتي والدوبلاج وحجز الأصوات المناسبة لمشروعك.'
+        );
+
+        meta('canonical', route_app('contactUs.index', ['slug' => $canonicalSlug]));
         $banner = get_banner(Banner::$CONTACT_US);
 
         return view(APP_VIEWS_DIR . '.' . $this->dirView . '.index',compact('banner'));

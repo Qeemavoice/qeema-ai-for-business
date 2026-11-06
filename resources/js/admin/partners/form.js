@@ -8,6 +8,9 @@ Vue.component('partner-form', {
             description: languages(),
             alt: languages(),
             image: null,
+            reference_url: '',
+            show_on_homepage: false,
+            permission_confirmed: false,
             form: {
                 validation: null,
                 disabledButton: false,
@@ -23,6 +26,9 @@ Vue.component('partner-form', {
             this.description = this.partner.description
             this.alt = this.partner.alt
             this.image = this.partner.image
+            this.reference_url = this.partner.reference_url || ''
+            this.show_on_homepage = Boolean(this.partner.show_on_homepage)
+            this.permission_confirmed = Boolean(this.partner.permission_confirmed)
         }
     },
     methods: {
@@ -37,6 +43,9 @@ Vue.component('partner-form', {
                 description: this.description,
                 alt: this.alt,
                 image: this.image && this.image.file_link ? this.image.file_link : this.image,
+                reference_url: this.reference_url,
+                show_on_homepage: this.show_on_homepage,
+                permission_confirmed: this.permission_confirmed,
             }).then(response => {
                 hideLoading();
                 this.form.disabledButton = false;

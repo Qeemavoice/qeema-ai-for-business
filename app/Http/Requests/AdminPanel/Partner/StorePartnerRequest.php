@@ -17,6 +17,16 @@ class StorePartnerRequest extends FormRequest
     {
         $rules['image'] = ['required', 'string'];
         $rules['job_title'] = ['nullable'];
+        $rules['show_on_homepage'] = ['nullable', 'boolean'];
+        $rules['permission_confirmed'] = ['nullable', 'boolean'];
+        $rules['reference_url'] = [
+            $this->boolean('show_on_homepage') ? 'required' : 'nullable',
+            'url',
+            'max:2048',
+        ];
+        if ($this->boolean('show_on_homepage')) {
+            $rules['permission_confirmed'][] = 'accepted';
+        }
 
         foreach (languages() as $key => $value) {
             $rules['full_name.' . $key] = ['required', 'string'];

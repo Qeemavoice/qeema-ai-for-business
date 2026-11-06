@@ -25,9 +25,9 @@ class AdminLanguage
         // Check if the first segment matches a language code
         if (!array_key_exists($segment1, languages())) {
 
-            if(Cookie::get('locale')) {
-                $localeURL = Cookie::get('locale');
-            }
+//            if (Cookie::get('locale')) {
+//                $localeURL = Cookie::get('locale');
+//            }
 
             // Store segments in array
             $segments = $request->segments();
@@ -41,6 +41,7 @@ class AdminLanguage
         app()->setLocale($localeURL);
 
         // The request already contains the language code
-        return $next($request)->cookie('locale', $localeURL, 1300000);
+        return $next($request);
+        //return $next($request)->cookie('locale', $localeURL, 1300000);
     }
 }

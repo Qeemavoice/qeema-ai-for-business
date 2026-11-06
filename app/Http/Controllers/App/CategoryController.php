@@ -17,13 +17,24 @@ class CategoryController extends CoreController
         $this->dirView = 'categories';
     }
 
-    public function index()
+    public function index($slug = null)
     {
+        $canonicalSlug = config('slugroute.slug_categories');
+
+        if ($slug !== $canonicalSlug) {
+            return redirect()->to(route_app('category.index', ['slug' => $canonicalSlug]), 301);
+        }
+
         $pageTitle = trans_app('categories');
 
-        meta_data($pageTitle, $pageTitle, [
-            '' => $pageTitle
-        ]);
+        meta_data(
+            $pageTitle,
+            $pageTitle,
+            ['' => $pageTitle],
+            'استكشف تصنيفات التعليق الصوتي في قيمة فويس واختر الأداء المناسب للإعلانات والوثائقيات والدوبلاج والبودكاست والكتب والمشاريع الصوتية.'
+        );
+
+        meta('canonical', route_app('category.index', ['slug' => config('slugroute.slug_categories')]));
 
         $categories = Category::categories();
         $faqs = Faq::getFaqs(8);

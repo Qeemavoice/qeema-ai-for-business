@@ -121,6 +121,7 @@ class VoiceController extends CoreController
             $store->meta_title = $request->meta_title;
             $store->meta_description = $request->meta_description;
             $store->audio_file = $request->audio_file;
+            $store->elevenlabs_voice_id = $request->elevenlabs_voice_id ?: null;
             $store->voice_status_id = VoiceStatus::ACCEPTED;
             $store->voice_type_id = $request->type;
             $store->save();

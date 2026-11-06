@@ -49,25 +49,28 @@
                     </div>
                 </div>
 
-{{--                <div class="card py-4">--}}
-{{--                    <div class="card-header">--}}
-{{--                        <div class="card-title">--}}
-{{--                            <h2>{{trans_admin('status')}}</h2>--}}
-{{--                        </div>--}}
-{{--                        <div class="card-toolbar">--}}
-{{--                            <div class="rounded-circle bg-success w-15px h-15px" id="kt_ecommerce_add_product_status"></div>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-{{--                    <div class="card-body">--}}
-{{--                        <select class="form-select mb-2" v-model="status">--}}
-{{--                            <option value="" disabled>{{trans_admin('select')}}...</option>--}}
-{{--                            @foreach($statuses as $key => $status)--}}
-{{--                                <option value="{{$status->id}}">{{$status->name}}</option>--}}
-{{--                            @endforeach--}}
-{{--                        </select>--}}
-{{--                        <div class="text-muted fs-7">{{trans_admin('set_the_article_status')}}.</div>--}}
-{{--                    </div>--}}
-{{--                </div>--}}
+                <div class="card py-4">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <h2>{{trans_admin('status')}}</h2>
+                        </div>
+                        <div class="card-toolbar">
+                            <div class="rounded-circle bg-success w-15px h-15px" id="kt_ecommerce_add_product_status"></div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <select class="form-select mb-2" v-model="status">
+                            <option value="" disabled>{{trans_admin('select')}}...</option>
+                            @foreach($statuses as $key => $status)
+                                @if($status->id === \App\Models\ArticleStatus::SCHEDULED)
+                                    @continue
+                                @endif
+                                <option value="{{$status->id}}">{{$status->name}}</option>
+                            @endforeach
+                        </select>
+                        <div class="text-muted fs-7">{{trans_admin('set_the_article_status')}}.</div>
+                    </div>
+                </div>
 
                 <div class="card py-4">
                     <div class="card-header">

@@ -9,6 +9,7 @@ return [
     'fees' => 'Fees',
     'commissions' => 'Commissions',
     'currencies' => 'Currencies',
+    'read_count' => 'Read Count',
     'currency' => 'Currency',
     'voices_section' => 'Voices Section',
     'edit_voice_actor' => 'Edit Voice Actor',

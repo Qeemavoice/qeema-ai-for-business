@@ -6,7 +6,7 @@
                     <a href="javaScript:;" :id="'audio_favorite_icon_'+{{$voice->id}}" @click="addOrRemoveToFavorite({{$voice->id}})" style="{{$voice->favorite ? 'color:red' : ''}}" class="addToFavorite"><span> اضافة للمفضلة</span><i class="fa fa-heart"></i></a>
                 @endif
                 <div class="targetDiv">
-                    <audio controlslist="nodownload" controls="true" @play="handlePlay(`{{$voice->id}}`)" src="{{$voice->audio_file_url}}" id="'voice_audio_'+{{$voice->id}}" class="ppbutton fa fa-play audio-class"></audio>
+                    <audio preload="none" controlslist="nodownload" controls="true" @play="handlePlay(`{{$voice->id}}`)" src="{{$voice->audio_file_url}}" id="'voice_audio_'+{{$voice->id}}" class="ppbutton fa fa-play audio-class"></audio>
                 </div>
 
                 <div class="soundName">

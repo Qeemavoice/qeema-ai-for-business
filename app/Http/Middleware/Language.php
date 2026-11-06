@@ -25,14 +25,14 @@ class Language
         // Check if the first segment matches a language code
         if (!array_key_exists($segment1, languages())) {
 
-            if(Cookie::get('locale')) {
-                $localeURL = Cookie::get('locale');
-            }
+//            if(Cookie::get('locale')) {
+//                $localeURL = Cookie::get('locale');
+//            }
 
             // Store segments in array
             $segments = $request->segments();
 
-            $segments = Arr::prepend($segments, $localeURL);
+            $segments = Arr::prepend($segments,  config('app.locale'));
 
             // Redirect to the correct url
             return redirect()->to(implode('/', $segments));
@@ -41,8 +41,6 @@ class Language
         app()->setLocale($localeURL);
 
         // The request already contains the language code
-        return $next($request)
-            //->cookie('locale', $localeURL, 1300000);
-        ;
+        return $next($request);
     }
 }

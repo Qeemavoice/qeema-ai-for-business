@@ -20,7 +20,7 @@
         <li><a href="{{route_admin('synPartners')}}" target="_blank">Syn Partners</a></li>
         <li><a href="{{route_admin('synCustomers')}}" target="_blank">Syn Customers</a></li>
         <li><a href="{{route_admin('synClients')}}" target="_blank">Syn Clients & VoiceActors</a></li>
-{{--        <li><a href="{{route_admin('synVoiceActors')}}" target="_blank">Syn VoiceActors</a></li>--}}
+        <li><a href="{{route_admin('synVoiceActors')}}" target="_blank">Syn VoiceActors</a></li>
         <li><a href="{{route_admin('synVoicesAndSamples')}}" target="_blank">Syn  Voices And Samples</a></li>
         <li><a href="{{route_admin('synArticles')}}" target="_blank">Syn Articles</a></li>
         <li><a href="{{route_admin('synFavorites')}}" target="_blank">Syn Favorites</a></li>

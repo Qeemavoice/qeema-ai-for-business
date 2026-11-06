@@ -38,9 +38,9 @@
     @stack('js_module')
 @else
     @isset($enableVueAppAuth)
-        <script src="{{ asset('js/app/auth.js') }}"></script>
+        <script src="{{ asset('js/app/auth.js') }}?v={{ filemtime(public_path('js/app/auth.js')) }}"></script>
     @else
-        <script src="{{ asset('js/app/app.js') }}"></script>
+        <script src="{{ asset('js/app/app.js') }}?v={{ filemtime(public_path('js/app/app.js')) }}"></script>
     @endif
 @endif
 @stack('js')

@@ -18,8 +18,8 @@ class TransactionsResource extends JsonResource
         $paymentMethod = $this->methodable ? $this->methodable->name : '';
 
         return [
-            //'order_id' => $this->order_id,
-            //'order_show_id' => isset($order) ? $order->show_id : '-',
+            'order_id' => $this->order_id,
+            'order_show_id' => isset($this->order) ? $this->order->show_id : '-',
             'payer' => isset($payer) ? $payer->full_name : '-',
             'payee' => isset($payee) ? $payee->full_name : app_name(),
             'transaction_id' => $this->transaction_id,

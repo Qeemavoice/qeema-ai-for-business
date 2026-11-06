@@ -2,6 +2,37 @@
 
 @push('page-title',meta('page-title'))
 
+@push('structured-data')
+    @php
+        $articleSchema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Article',
+            'headline' => strip_tags($article->title),
+            'description' => strip_tags($article->meta_description ?: $article->short_description ?: ''),
+            'datePublished' => optional($article->created_at)->toIso8601String(),
+            'dateModified' => optional($article->updated_at)->toIso8601String(),
+            'mainEntityOfPage' => url()->current(),
+            'author' => [
+                '@type' => 'Organization',
+                'name' => app_name(),
+            ],
+            'publisher' => [
+                '@type' => 'Organization',
+                'name' => app_name(),
+                'logo' => [
+                    '@type' => 'ImageObject',
+                    'url' => getLogo(),
+                ],
+            ],
+        ];
+
+        if ($article->external_image_url) {
+            $articleSchema['image'] = [$article->external_image_url];
+        }
+    @endphp
+    <script type="application/ld+json">{!! json_encode($articleSchema, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) !!}</script>
+@endpush
+
 
 @section('content')
     <div class="container blog-page">
@@ -16,7 +47,7 @@
                             <iframe  width="100%" height="100%" src="{{$article->video_url}}" frameborder="0" allowfullscreen="allowfullscreen"></iframe>
                         @else
                             @if($article->external_image)
-                                <img src="{{$article->external_image_url}}" style="object-fit:cover" alt="{{$article->title}}">
+                                <img src="{{$article->external_image_url}}" style="object-fit:cover" alt="{{$article->title}}" loading="lazy" decoding="async">
                             @endif
                         @endif
                     </div>

@@ -45,7 +45,7 @@ class TransactionController extends CoreController
         $transactions = $this->sort($request, $transactions);
 
         $limit = $request->limit ? $request->limit : ADMIN_PER_PAGE;
-        $transactions = $transactions->with('transactionType','methodable','payer','payee','order')->paginate($limit);
+        $transactions = $transactions->with('transactionType','methodable','payer','payee','order','status')->paginate($limit);
 
         $data = TransactionsResource::collection($transactions);
         $meta = collect($transactions)->except('data');

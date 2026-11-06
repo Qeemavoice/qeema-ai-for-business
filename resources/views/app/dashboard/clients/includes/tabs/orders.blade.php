@@ -26,7 +26,7 @@
                         <td class="text-center">@{{ order.category }}</td>
                         <td class="text-center"> @{{ order.date }} <br> @{{ order.time }}</td>
                         <td class="text-center"><a @click="detailsOrder(order.id)" style="float: unset !important; width: 43px; margin: 0 auto;" class="pull-right showDetails" href="javascript:void(0);"><i class="fa fa-eye"></i></a></td>
-                        <td class="text-center"><a :href="`{{route_app('client.booking.index')}}/${order.voide_slug}`" target="_blank" style="float: unset !important; width: 43px; margin: 0 auto; " class="pull-right show_voice" ><i class="fa fa-book"></i></a></td>
+                        <td class="text-center"><a :href="'{{ route_app('booking.index', ['slug' => '__slug__']) }}'.replace('__slug__', order.voide_slug)" target="_blank" style="float: unset !important; width: 43px; margin: 0 auto; " class="pull-right show_voice" ><i class="fa fa-book"></i></a></td>
                         <td class="text-center">
                             <span v-if="order.status_id == {{\App\Models\OrderStatus::IN_PROGRESS}}">-</span>
 {{--                            <a href="javascript:;" v-if="order.status_id == {{\App\Models\OrderStatus::IN_PROGRESS}}" @click="ratingOrder(order.id)" style="float: unset !important; width: 43px; margin: 0 auto;" class="pull-right rat">--}}

@@ -500,6 +500,13 @@
             </div>
 
             <div class="menu-item">
+                <a class="menu-link {{ route_is('successStory.index') ? 'active' : '' }}" href="{{ route_admin('successStory.index') }}">
+                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                    <span class="menu-title">قصص النجاح</span>
+                </a>
+            </div>
+
+            <div class="menu-item">
                 <a class="menu-link {{(route_is('form.index') || route_is('form.create') || route_is('form.edit')) ? 'active' : ''}}" href="{{ route_admin('form.index') }}" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-dismiss="click" data-bs-placement="right">
                     <span class="menu-icon">
                         <span class="svg-icon svg-icon-2">
@@ -715,7 +722,7 @@
 {{--            </div>--}}
 
 
-            <div data-kt-menu-trigger="click" class="menu-item menu-accordion mb-1 {{arrow_down_url_sidebar([PAGE_GENERAL,PAGE_PAYMENT_METHODS,PAGE_MAIL,PAGE_MAINTENANCES,PAGE_CURRENCIES,PAGE_COMMISSIONS,PAGE_POLICIES])}}">
+            <div data-kt-menu-trigger="click" class="menu-item menu-accordion mb-1 {{arrow_down_url_sidebar([PAGE_GENERAL,PAGE_PAYMENT_METHODS,PAGE_MAIL,PAGE_MAINTENANCES,PAGE_CURRENCIES,PAGE_COMMISSIONS,PAGE_POLICIES,'tts-providers'])}}">
                 <span class="menu-link">
                     <span class="menu-icon">
                         <span class="svg-icon svg-icon-2">
@@ -760,6 +767,11 @@
                     <div class="menu-item {{ active_link_sidebar(PAGE_MAINTENANCES) }}">
                         <a class="menu-link" href="{{route_admin('setting.index',['page'=> PAGE_MAINTENANCES])}}">
                             <span class="menu-bullet"><span class="bullet bullet-dot"></span></span><span class="menu-title">{{ trans_admin('maintenances_config') }}</span>
+                        </a>
+                    </div>
+                    <div class="menu-item {{ active_link_sidebar('tts-providers') }}">
+                        <a class="menu-link" href="{{route_admin('setting.tts-providers.index')}}">
+                            <span class="menu-bullet"><span class="bullet bullet-dot"></span></span><span class="menu-title">مزوّدو تحويل النص إلى صوت</span>
                         </a>
                     </div>
                 </div>

@@ -21,6 +21,7 @@ class VoiceActorSamplesResources extends JsonResource
             'user' => isset($voiceOver) ? $voiceOver : '-',
             'title' => $this->title,
             'price_per_minute' => $this->price_per_minute,
+            'created_at' => $this->created_at,
             'total_price' => $this->total_price,
             'file_url' => $this->audio_file_url,
             'language' => isset($language) ? $language->name : '-',

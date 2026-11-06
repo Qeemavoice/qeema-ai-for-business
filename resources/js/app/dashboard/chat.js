@@ -201,6 +201,9 @@ Vue.component('chat-index', {
         //         });
         //     }
         // },
+        async handleScroll() {
+
+        }
     }
 });
 

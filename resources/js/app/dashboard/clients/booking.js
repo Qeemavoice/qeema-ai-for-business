@@ -148,7 +148,15 @@ Vue.component('booking-voice-form', {
                     sub_total_percentage: totalPercentage,
                     total: parseFloat(_total.toFixed(2)),
                 };
+            }else {
+                this.order.services = {
+                    list: [],
+                    sub_total_value: 0,
+                    sub_total_percentage: 0,
+                    total: 0,
+                };
             }
+
             return this.order.services.total;
         },
         subTotal: function () {
@@ -265,13 +273,19 @@ Vue.component('booking-voice-form', {
             this.code = '';
             this.order.coupon = null;
         },
-        setServices(service) {
+        setServices(event,service) {
             // let arr = [];
             // $.each(this.services, (index, service) => {
             //     arr.push(JSON.parse(service));
             // });
             // return arr;
-            this.services.push(service);
+            if (event.target.checked) {
+                this.services.push(service);
+            } else {
+                this.services = this.services.filter(s => s.id !== service.id);
+            }
+
+           // this.services.push(service);
         },
         validationForm() {
             this.validationFullName();

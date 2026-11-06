@@ -29,7 +29,7 @@
 {{--                                    <i class="fas fa-play" id="audio_controller_icon_{{$voice->id}}"></i>--}}
 {{--                                </a>--}}
                                 <div class="targetDiv">
-                                    <audio controlslist="nodownload" controls="true" @play="handlePlay({{$voice->id}})"   src="{{$voice->audio_file_url}}" id="voice_audio_{{$voice->id}}" class="ppbutton fa fa-play audio-class"></audio>
+                                    <audio preload="none" controlslist="nodownload" controls="true" @play="handlePlay({{$voice->id}})" src="{{$voice->audio_file_url}}" id="voice_audio_{{$voice->id}}" class="ppbutton fa fa-play audio-class"></audio>
                                 </div>
                             </div>
                             <div class="soundName">

@@ -42,12 +42,48 @@ class RouteServiceProvider extends ServiceProvider
 
             $this->mapAuthRoutes();
 
+            $this->mapNewUiRoutes();
+
             $this->mapAppRoutes();
 
             $this->mapWebRoutes();
 
+            $this->mapProductionPublicSiteRoutes();
+
             $this->mapAdminRoutes();
         });
+    }
+
+    /**
+     * Serve the isolated React preview before the locale-prefixed legacy routes.
+     */
+    private function mapNewUiRoutes()
+    {
+        Route::prefix('new-ui')
+            ->middleware('web')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/new-ui.php'));
+    }
+
+    /**
+     * Serve the React public site from the canonical production URLs while
+     * leaving authentication, dashboards, admin routes, and legacy pages to
+     * their existing locale-prefixed route groups. These routes must be
+     * registered after the legacy app routes because Laravel replaces routes
+     * that share the same HTTP method and URI.
+     */
+    private function mapProductionPublicSiteRoutes()
+    {
+        Route::middleware('web')
+            ->namespace($this->namespace)
+            ->group(function () {
+                Route::get('/ar/our-works', 'NewUiController')
+                    ->name('new-ui.production.success-stories');
+
+                Route::get('/ar/services/{service}', 'NewUiController')
+                    ->where('service', 'dubbing|audiobooks|podcast|ivr')
+                    ->name('new-ui.production.service');
+            });
     }
 
 
@@ -71,6 +107,7 @@ class RouteServiceProvider extends ServiceProvider
         $locale = request()->segment(1);
 
         Route::prefix($locale . '/' . ADMIN_PREFIX)
+            //->where(['lang' => implode('|', array_keys(languages()))])
             ->middleware('admin')
             ->namespace($this->namespace . '\\' . ADMIN_NAMESPACE)
             ->as(ADMIN_ROUTE . '.')
@@ -80,8 +117,8 @@ class RouteServiceProvider extends ServiceProvider
     private function mapAuthRoutes()
     {
         $locale = request()->segment(1);
-
         Route::prefix($locale)
+            //->where(['lang' => implode('|', array_keys(languages()))])
             ->middleware('sys_auth')
             ->namespace($this->namespace . '\\Auth')
             ->as('auth.')
@@ -95,7 +132,7 @@ class RouteServiceProvider extends ServiceProvider
         Route::prefix($locale)
             ->middleware('app')
             ->namespace($this->namespace . '\\' . APP_NAMESPACE)
-            ->as(APP_ROUTE.'.')
+            ->as(APP_ROUTE . '.')
             ->group(base_path('routes/app.php'));
     }
 
