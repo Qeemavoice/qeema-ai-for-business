@@ -6,6 +6,7 @@ import type { Narrator } from '../../types';
 import { Badge, SamplePlayer } from './adminUi';
 import { UploadField } from './UploadField';
 import { DIALECT_AR } from './AdminTtsView';
+import { arLabel, useMunsitVoices } from '../../lib/studioVoices';
 
 interface TtsVoice {
   id: string; name: string; gender: 'male' | 'female'; dialect: string; dialectLabel: string; styleLabel: string;
@@ -41,6 +42,7 @@ export const AdminTtsVoicesView: React.FC = () => {
   const narratorName = (id?: string) => narrators.find(n => n.id === id)?.displayName;
   const toggle = async (v: TtsVoice) => { await send(`${API}/${v.id}`, 'PUT', { isActive: !v.isActive }); load(); };
 
+  const munsit = useMunsitVoices();
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
@@ -101,6 +103,40 @@ export const AdminTtsVoicesView: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Munsit catalogue: read-only here (managed at Munsit; switch it on/off in «الإعدادات ← مزوّدو تحويل النص إلى صوت») */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-slate-100">
+          <h3 className="font-bold text-sm text-slate-900">أصوات منصّت <span className="text-slate-400 font-mono">({munsit.length})</span></h3>
+          <p className="text-xs text-slate-400 mt-0.5">تظهر للعملاء في استوديو التوليد بعد أصوات الجدول أعلاه. تُدار من حساب منصّت، وتفعيلها أو إيقافها من «الإعدادات ← مزوّدو تحويل النص إلى صوت».</p>
+        </div>
+        {munsit.length === 0 ? (
+          <p className="py-10 text-center text-xs text-slate-400">منصّت غير مفعّل أو مفتاحه غير مضبوط</p>
+        ) : (
+          <div className="max-h-[520px] overflow-y-auto overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 text-[11px]">
+                  <th className="py-3 px-4 font-bold">الصوت</th>
+                  <th className="py-3 px-4 font-bold">اللهجة</th>
+                  <th className="py-3 px-4 font-bold">الأسلوب</th>
+                  <th className="py-3 px-4 font-bold">العينة</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {munsit.map(v => (
+                  <tr key={v.id} className="hover:bg-slate-50/60">
+                    <td className="py-3 px-4"><span className="font-bold text-slate-900 block">{v.name}</span><span className="text-[10px] text-slate-400">{v.gender === 'female' ? 'نسائي' : 'رجالي'}</span></td>
+                    <td className="py-3 px-4 text-slate-600">{arLabel(v.dialect)}</td>
+                    <td className="py-3 px-4 text-slate-600">{arLabel(v.style)}</td>
+                    <td className="py-3 px-4 min-w-[170px]">{v.previewUrl ? <SamplePlayer url={v.previewUrl} compact /> : <span className="text-slate-300">-</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {editing && <VoiceForm voice={editing} narrators={narrators} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}

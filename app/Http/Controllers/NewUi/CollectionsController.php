@@ -53,6 +53,7 @@ class CollectionsController extends Controller
             return response()->json(['error' => 'تعذر الحفظ: ' . $e->getMessage()], 500);
         }
         if (!$item) return response()->json(['error' => 'العنصر غير موجود'], 404);
+        if (isset($item['error'])) return response()->json(['error' => $item['error']], 400);
         return response()->json(['item' => $item]);
     }
 

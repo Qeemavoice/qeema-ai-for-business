@@ -59,7 +59,7 @@ export const AdminVoicesView: React.FC = () => {
   };
   const toggle = async (r: VoiceSampleRow) => { await api.updateCollectionItem('humanVoices', r.id, { status: r.status === 'active' ? 'hidden' : 'active' }); load(); };
   const remove = async (r: VoiceSampleRow) => {
-    if (!window.confirm(`حذف الصوت «${r.sampleName}» من المكتبة؟`)) return;
+    if (!window.confirm(`إخفاء الصوت «${r.sampleName}» من المكتبة؟ يبقى محفوظاً ويمكن إظهاره مجدداً.`)) return;
     await api.deleteCollectionItem('humanVoices', r.id); load();
   };
 

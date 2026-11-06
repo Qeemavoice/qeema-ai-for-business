@@ -71,8 +71,62 @@ class Collections
             case 'messages': return MailMessage::latest()->get()->map(fn ($m) => self::messageItem($m))->all();
             case 'newsletter': return MailingList::latest()->get()->map(fn ($m) => ['id' => (string) $m->id, 'email' => $m->email, 'date' => Store::day(Store::created($m))])->all();
             case 'jobPostings': return Career::latest()->get()->map(fn ($c) => self::careerItem($c))->all();
+            case 'humanVoices': return self::libraryVoices();
             default: return Store::list($name);
         }
+    }
+
+    // ---------- humanVoices: the library voices of the old `voices` table (admin «الأصوات») ----------
+    private const NARRATOR_SAMPLE_MSG = 'هذه العينة من لوحة المعلق: عدّلها من «المعلقون الصوتيون ← أصواته في المكتبة».';
+
+    private static function libraryVoices(): array
+    {
+        $pct = Plans::commissionPercent();
+        $out = array_map(fn ($v) => self::voiceAdminItem($v, 'active'), Library::all());
+        // hidden ones (taken out of the library from here) stay listed so they can be shown again
+        foreach (\App\Models\Voice::with(['voiceOver', 'dialect', 'language', 'category.category'])->where('voice_status_id', \App\Models\VoiceStatus::DRAFT)
+            ->whereNotNull('voiceover_id')->latest('id')->get() as $v) {
+            $out[] = self::voiceAdminItem(Library::fromVoice($v, $pct), 'hidden');
+        }
+        return $out;
+    }
+
+    private static function voiceAdminItem(array $v, string $status): array
+    {
+        return ['id' => $v['id'], 'sampleName' => $v['sampleName'], 'talentName' => $v['talentName'], 'gender' => $v['gender'], 'subtitle' => $v['subtitle'],
+            'categories' => $v['categories'], 'languages' => array_values(array_filter([$v['language']])), 'dialect' => $v['dialect'], 'accent' => $v['accent'], 'flag' => '',
+            'narratorPriceUsd' => $v['narratorPriceUsd'], 'previewUrl' => $v['previewUrl'], 'fileName' => $v['_audioFile'] ?? '',
+            'metaTitle' => $v['metaTitle'], 'metaDescription' => $v['metaDescription'], 'status' => $status, 'createdAt' => $v['createdAt'],
+            'source' => ($v['_voiceRowId'] ?? 0) ? 'library' : 'narrator'];
+    }
+
+    private static function updateVoice(string $id, array $d): ?array
+    {
+        if (!ctype_digit($id)) return ['error' => self::NARRATOR_SAMPLE_MSG];
+        $v = \App\Models\Voice::find((int) $id);
+        if (!$v) return null;
+        if (array_key_exists('sampleName', $d)) $v->setTranslations('title', self::tr(trim((string) $d['sampleName'])));
+        if (array_key_exists('metaTitle', $d)) $v->setTranslations('meta_title', self::tr((string) $d['metaTitle']));
+        if (array_key_exists('metaDescription', $d)) $v->setTranslations('meta_description', self::tr((string) $d['metaDescription']));
+        if (array_key_exists('narratorPriceUsd', $d)) {
+            $price = (float) $d['narratorPriceUsd'];
+            if ($price < 0 || $price > 1000) return ['error' => 'سعر الدقيقة يجب أن يكون بين 0 و 1000 دولار'];
+            $v->price_per_minute = $price;
+            $v->total_price = $price;   // the model's mutator adds the platform commission
+        }
+        if (array_key_exists('gender', $d)) $v->voice_type_id = $d['gender'] === 'female' ? \App\Models\VoiceType::VOICE_TYPE_WOMEN : \App\Models\VoiceType::VOICE_TYPE_MAN;
+        if (!empty($d['dialect'])) {
+            $dl = Dialect::all()->first(fn ($x) => PublicController::tr($x, 'name') === $d['dialect']);
+            if ($dl) $v->dialect_id = $dl->id;
+        }
+        if (!empty($d['previewUrl']) && str_starts_with((string) $d['previewUrl'], 'data:')) {
+            $v->audio_file = self::upload((string) $d['previewUrl'], \App\Models\Voice::DIR_VOICES_UPLOADS, $v->audio_file);
+        }
+        if (array_key_exists('status', $d)) $v->voice_status_id = $d['status'] === 'hidden' ? \App\Models\VoiceStatus::DRAFT : \App\Models\VoiceStatus::ACCEPTED;
+        $v->save();
+        Library::forget();
+        $v = $v->fresh(['voiceOver', 'dialect', 'language', 'category.category']);
+        return self::voiceAdminItem(Library::fromVoice($v, Plans::commissionPercent()), (int) $v->voice_status_id === \App\Models\VoiceStatus::ACCEPTED ? 'active' : 'hidden');
     }
 
     private static function pageItem(Page $p): array
@@ -101,6 +155,7 @@ class Collections
     public static function create(string $name, array $d): array
     {
         switch ($name) {
+            case 'humanVoices': return ['error' => 'الأصوات الجديدة تُضاف من ملف المعلق: «المعلقون الصوتيون» أو من لوحة المعلق نفسه، ثم تظهر هنا بعد الموافقة.'];
             case 'articles':
                 $a = new Article();
                 $a->forceFill(self::articleCols($d, null))->save();
@@ -147,6 +202,7 @@ class Collections
     public static function update(string $name, string $id, array $d): ?array
     {
         switch ($name) {
+            case 'humanVoices': return self::updateVoice($id, $d);
             case 'articles':
                 $a = Article::find((int) $id); if (!$a) return null;
                 $a->forceFill(self::articleCols($d, $a))->save();
@@ -204,6 +260,8 @@ class Collections
     public static function delete(string $name, string $id): bool
     {
         switch ($name) {
+            // a library voice is never erased from here: it is hidden (status draft) and can be shown again
+            case 'humanVoices': return ctype_digit($id) && (bool) self::updateVoice($id, ['status' => 'hidden']);
             case 'articles': return (bool) optional(Article::find((int) $id))->delete();
             case 'faqs': return (bool) optional(Faq::find((int) $id))->delete();
             case 'guides': return (bool) optional(Guide::find((int) $id))->delete();

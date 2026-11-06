@@ -16,6 +16,12 @@ class Library
 {
     private static $cache = null;
 
+    /** Drop the per-request list after a voice was changed */
+    public static function forget(): void
+    {
+        self::$cache = null;
+    }
+
     private static function tr($model, string $field): string
     {
         if (!$model) return '';
@@ -28,7 +34,7 @@ class Library
         return (string) $v;
     }
 
-    private static function fromVoice(Voice $v, float $pct): array
+    public static function fromVoice(Voice $v, float $pct): array
     {
         $actor = $v->voiceOver;
         $dialect = $v->dialect;
