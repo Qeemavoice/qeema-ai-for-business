@@ -659,9 +659,18 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
     filterCustomRates, 
     filterLiveModeration, 
     searchQuery, 
-    sortBy, 
+    sortBy,
     similarFilterVoice
   ]);
+
+  // Render 50 voices at a time («استمع للمزيد من الأصوات» adds 50); back to 50 whenever the filters change
+  const PAGE_SIZE = 50;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [
+    currentCatalog, subTab, selectedCategory, selectedDialect, activeMainTab, filterQuality, filterGender, filterAge,
+    filterNoticePeriod, filterCustomRates, filterLiveModeration, searchQuery, sortBy, similarFilterVoice
+  ]);
+  const visibleVoices = filteredVoices.slice(0, visibleCount);
 
   // Handle Play/Pause Audio preview
   const handleTogglePlay = (voice: UnifiedVoiceItem) => {
@@ -1320,7 +1329,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
         {/* 5. VOICE CARDS LISTING — High-Density Sleek Single-Line Row Layout        */}
         {/* ========================================================================= */}
         <div className="space-y-1.5" dir="rtl">
-          {filteredVoices.map(voice => {
+          {visibleVoices.map(voice => {
             const isPlaying = playingVoiceId === voice.id;
             const isSaved = savedVoiceIds.has(voice.id);
             const isHoveredLicense = hoveredLicenseVoiceId === voice.id;
@@ -1628,6 +1637,20 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
             );
           })}
         </div>
+
+        {filteredVoices.length > visibleCount && (
+          <div className="pt-4 text-center space-y-2">
+            <button
+              type="button"
+              onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-900 text-sm font-bold shadow-2xs transition cursor-pointer"
+            >
+              <Volume2 className="w-4 h-4 text-brand-text" />
+              استمع للمزيد من الأصوات
+            </button>
+            <p className="text-[11px] text-slate-400">يعرض {visibleVoices.length.toLocaleString('en-US')} من {filteredVoices.length.toLocaleString('en-US')} صوت</p>
+          </div>
+        )}
 
         {/* Empty State */}
         {filteredVoices.length === 0 && (
