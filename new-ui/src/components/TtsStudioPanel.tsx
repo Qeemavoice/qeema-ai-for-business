@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Play, Pause, Volume2, Download, RefreshCw, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Play, Pause, Volume2, Download, RefreshCw, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import type { Generation, Voice } from '../types';
 import { api } from '../lib/api';
 
@@ -7,7 +7,7 @@ import { api } from '../lib/api';
  * Signed-in TTS studio: our voices plus the Munsit catalogue (the other developer's work),
  * with his controls (dialect filter and steering, diacritics, emotion, speed). Generation goes
  * through /api/v1/generations, so credits, history and narrator earnings stay on our ledger.
- * Layout: text and controls on the right, voices on the left.
+ * Layout: text, voice dropdown and controls on the right, the audio preview on the left.
  */
 interface StudioVoice { id: string; name: string; dialect: string; gender: string; style: string; description: string; previewUrl: string; munsit: boolean }
 
@@ -42,6 +42,15 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   const dialects = useMemo(() => [...new Set(all.map(v => v.dialect).filter(Boolean))], [all]);
   const shown = dialectFilter === 'all' ? all : all.filter(v => v.dialect === dialectFilter);
   const [voiceId, setVoiceId] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const close = (e: MouseEvent) => { if (!pickerRef.current?.contains(e.target as Node)) setPickerOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setPickerOpen(false); };
+    document.addEventListener('mousedown', close); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
+  }, [pickerOpen]);
   const voice = all.find(v => v.id === voiceId) || all[0];
 
   const [text, setText] = useState('مرحباً بك في قيمة فويس، حيث يتحول النص العربي إلى صوت واضح وطبيعي.');
@@ -94,7 +103,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-        {/* Text, controls and the result: right */}
+        {/* Text, voice and controls: right */}
         <div className="order-1 md:col-span-7 space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <textarea
@@ -107,9 +116,57 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               className="w-full min-h-[170px] resize-y border-none bg-transparent text-base leading-relaxed text-slate-800 focus:outline-none"
             />
             <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
-              <span>الصوت المختار: <strong className="text-slate-700">{voice?.name || '-'}</strong>{voice?.dialect ? ` (${ar(voice.dialect)})` : ''}</span>
+              <span>الحد الأقصى 5,000 حرف</span>
               <span>{text.length} حرف<span className="hidden sm:inline text-slate-300"> · Ctrl + Enter للتوليد</span></span>
             </div>
+          </div>
+
+          {/* Voices: a dropdown under the text box */}
+          <div ref={pickerRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setPickerOpen(o => !o)}
+              aria-expanded={pickerOpen}
+              className="w-full flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-right hover:border-slate-300 transition"
+            >
+              <span className="w-10 h-10 shrink-0 rounded-xl bg-slate-900 text-brand font-black flex items-center justify-center">{voice?.name.charAt(0).toUpperCase() || '?'}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px] text-slate-500">الصوت · {all.length} صوت متاح</span>
+                <span className="block text-sm font-bold text-slate-900 truncate">{voice?.name || 'اختر صوتاً'}</span>
+                {voice && <span className="block text-[11px] text-slate-500 truncate">{[ar(voice.dialect), voice.gender === 'female' ? 'نسائي' : 'رجالي', ar(voice.style)].filter(Boolean).join(' · ')}</span>}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {voice?.description && <p className="mt-1.5 px-1 text-[11px] text-slate-500 leading-relaxed line-clamp-2" dir="auto">{voice.description}</p>}
+            {pickerOpen && (
+              <div className="absolute z-30 inset-x-0 top-[calc(100%+6px)] rounded-2xl border border-slate-200 bg-white shadow-xl p-2 space-y-2">
+                <select value={dialectFilter} onChange={e => setDialectFilter(e.target.value)} className={select} aria-label="تصفية حسب اللهجة المسجلة للصوت">
+                  <option value="all">كل اللهجات</option>
+                  {dialects.map(d => <option key={d} value={d}>{ar(d)}</option>)}
+                </select>
+                <div className="max-h-80 overflow-y-auto space-y-1.5">
+            {shown.map(v => (
+              <div
+                key={v.id}
+                onClick={() => { setVoiceId(v.id); setPickerOpen(false); }}
+                className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer border transition ${voice?.id === v.id ? 'border-brand bg-white shadow-sm' : 'border-transparent bg-white/70 hover:bg-white'}`}
+              >
+                <span className="w-10 h-10 shrink-0 rounded-xl bg-slate-900 text-brand font-black flex items-center justify-center">{v.name.charAt(0).toUpperCase()}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-slate-900 truncate">{v.name}</span>
+                  <span className="block text-[11px] text-slate-500 truncate">{[ar(v.dialect), v.gender === 'female' ? 'نسائي' : 'رجالي', ar(v.style)].filter(Boolean).join(' · ')}</span>
+                </span>
+                {v.previewUrl && (
+                  <button type="button" onClick={e => { e.stopPropagation(); togglePreview(v); }} className="w-9 h-9 shrink-0 rounded-full bg-slate-950 text-white flex items-center justify-center" aria-label={playingId === v.id ? `إيقاف عينة ${v.name}` : `تشغيل عينة ${v.name}`}>
+                    {playingId === v.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                  </button>
+                )}
+              </div>
+            ))}
+            {!shown.length && <p className="p-4 text-center text-xs text-slate-500">لا توجد أصوات بهذه اللهجة.</p>}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -149,7 +206,11 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
             {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5" />}
             {busy ? 'جارٍ التوليد...' : 'توليد الصوت'}
           </button>
-          {/* Audio preview: always visible, like the other developer's studio */}
+        </div>
+
+        {/* Audio preview: left */}
+        <div className="order-2 md:col-span-5">
+          <div className="md:sticky md:top-24">
           <div className="rounded-3xl bg-slate-950 text-white overflow-hidden">
             <div className="p-5 space-y-3 border-b border-white/10">
               <div className="flex items-center justify-between">
@@ -186,45 +247,10 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               )}
             </div>
           </div>
-        </div>
-
-        {/* Voices: left */}
-        <div className="order-2 md:col-span-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-900">كل الأصوات المتاحة</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">{all.length} صوت</span>
-          </div>
-          {voice?.description && <p className="text-xs text-slate-500 leading-relaxed line-clamp-2" dir="auto">{voice.description}</p>}
-          <label className="block space-y-1.5">
-            <span className="block text-xs font-bold text-slate-700">تصفية حسب اللهجة المسجلة للصوت</span>
-            <select value={dialectFilter} onChange={e => setDialectFilter(e.target.value)} className={select}>
-              <option value="all">كل اللهجات</option>
-              {dialects.map(d => <option key={d} value={d}>{ar(d)}</option>)}
-            </select>
-          </label>
-          <div className="max-h-[560px] overflow-y-auto space-y-2 rounded-2xl border border-slate-200 bg-slate-50/40 p-2">
-            {shown.map(v => (
-              <div
-                key={v.id}
-                onClick={() => setVoiceId(v.id)}
-                className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer border transition ${voice?.id === v.id ? 'border-brand bg-white shadow-sm' : 'border-transparent bg-white/70 hover:bg-white'}`}
-              >
-                <span className="w-10 h-10 shrink-0 rounded-xl bg-slate-900 text-brand font-black flex items-center justify-center">{v.name.charAt(0).toUpperCase()}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold text-slate-900 truncate">{v.name}</span>
-                  <span className="block text-[11px] text-slate-500 truncate">{[ar(v.dialect), v.gender === 'female' ? 'نسائي' : 'رجالي', ar(v.style)].filter(Boolean).join(' · ')}</span>
-                </span>
-                {v.previewUrl && (
-                  <button type="button" onClick={e => { e.stopPropagation(); togglePreview(v); }} className="w-9 h-9 shrink-0 rounded-full bg-slate-950 text-white flex items-center justify-center" aria-label={playingId === v.id ? `إيقاف عينة ${v.name}` : `تشغيل عينة ${v.name}`}>
-                    {playingId === v.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                  </button>
-                )}
-              </div>
-            ))}
-            {!shown.length && <p className="p-4 text-center text-xs text-slate-500">لا توجد أصوات بهذه اللهجة.</p>}
           </div>
         </div>
       </div>
+
 
       {/* My recordings */}
       {history.length > 0 && (
