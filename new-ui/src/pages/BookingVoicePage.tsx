@@ -52,6 +52,7 @@ const VoiceReviews: React.FC<{ sampleId: string }> = ({ sampleId }) => {
 };
 
 export const BookingVoicePage: React.FC<BookingVoicePageProps> = ({ voices }) => {
+  const [booked, setBooked] = useState(false);
   const { slug } = useParams<{ slug: string }>();
   const decoded = decodeURIComponent(slug || '');
 
@@ -243,10 +244,11 @@ export const BookingVoicePage: React.FC<BookingVoicePageProps> = ({ voices }) =>
           {/* Booking & payment */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
             <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-slate-900">احجز هذا الصوت</h2>
-              <p className="text-[11px] text-slate-500">أدخل السيناريو لحساب المدة والتكلفة، ثم ادفع لتأكيد الحجز.</p>
+              <h2 className="text-base font-bold text-slate-900">{booked ? 'حجزك قيد المراجعة' : 'احجز هذا الصوت'}</h2>
+              <p className="text-[11px] text-slate-500">{booked ? 'تابع حالة حجزك من حسابك، وسنبلغك بكل جديد.' : 'أدخل السيناريو لحساب المدة والتكلفة، ثم ادفع لتأكيد الحجز.'}</p>
             </div>
             <BookingForm
+              onSubmittedChange={setBooked}
               voice={{ id: sample.id, name: sample.title, sampleName: sample.title, pricing: sample.pricing, quote: sample.quote, dialect: sample.dialect }}
             />
           </div>

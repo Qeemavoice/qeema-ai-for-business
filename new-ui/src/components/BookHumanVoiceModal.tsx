@@ -63,10 +63,12 @@ interface BookingFormProps {
   voice: BookableVoice;
   onCancel?: () => void;
   onDone?: () => void;
+  /** true once the booking is sent, false again when the form is closed (lets the page change its heading) */
+  onSubmittedChange?: (submitted: boolean) => void;
 }
 
 /** Booking + payment form, used inside the modal and on the per-sample booking page */
-export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDone }) => {
+export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDone, onSubmittedChange }) => {
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     scriptText: '',
@@ -104,6 +106,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
         customerName: formData.customerName, customerEmail: formData.customerEmail, customerWhatsapp: formData.customerWhatsapp
       });
       setSubmitted(true);
+      onSubmittedChange?.(true);
     } catch (err: any) {
       setFormError(err.message || 'تعذر إرسال طلب الحجز');
     } finally { setSending(false); }
@@ -117,7 +120,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
         </div>
         <h4 className="text-xl font-bold text-slate-900">تم استلام طلب الحجز بنجاح!</h4>
         <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-          شكراً لثقتك بقيمة فويس! استلمنا طلبك وسيتواصل معك فريقنا قريباً لتأكيد التفاصيل، ونضمن لك تسجيلاً احترافياً بجودة عالية يليق بمشروعك.
+          شكراً لثقتك بقيمة فويس! سيقوم فريق إدارة الجودة في منصة قيمة بمراجعة الحجز مع ضمان التسجيل بجودة احترافية تليق بمشروعك.
         </p>
         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 max-w-xs mx-auto text-xs space-y-1.5 text-right">
           <div className="flex justify-between"><span className="text-slate-500">مدة العمل:</span><strong>{durationMinutes} دقيقة</strong></div>
@@ -127,6 +130,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
           <button
             onClick={() => {
               setSubmitted(false);
+              onSubmittedChange?.(false);
               onDone?.();
             }}
             className="px-8 py-2.5 rounded-xl bg-brand-ink text-white text-xs font-bold hover:bg-brand-ink/90 transition-colors cursor-pointer"
