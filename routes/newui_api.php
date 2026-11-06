@@ -65,7 +65,6 @@ Route::middleware('qv.user')->group(function () {
         Route::get('generations', 'ClientController@generations');
         Route::get('generations/{id}', 'ClientController@generation');
         Route::delete('generations/{id}', 'ClientController@deleteGeneration');
-        Route::post('tts/diacritize', 'ClientController@diacritize')->middleware('throttle:20,1');
     });
     // plans and top-up: open to every client (the Rowad price applies to members inside the early window)
     Route::get('credits', 'ClientController@credits');

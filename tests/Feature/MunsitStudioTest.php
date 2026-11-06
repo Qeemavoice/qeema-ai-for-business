@@ -45,10 +45,5 @@ class MunsitStudioTest extends TestCase
         // the generated file answers byte ranges (Safari and iOS need 206 to play it)
         $audio = $res->json('generation.audioUrl');
         $this->get($audio, ['Range' => 'bytes=0-3'])->assertStatus(206)->assertHeader('Content-Range', 'bytes 0-3/7');
-
-        // «شكّل النص»
-        Http::fake(['*/tashkil/diacritize' => Http::response(['data' => ['diacritized_text' => 'مَرْحَبًا']])]);
-        $api->postJson('/api/v1/tts/diacritize', ['text' => 'مرحبا'])->assertOk()->assertJsonPath('text', 'مَرْحَبًا');
-        $api->postJson('/api/v1/tts/diacritize', ['text' => ''])->assertStatus(400);
     }
 }

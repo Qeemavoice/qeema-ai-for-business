@@ -120,13 +120,6 @@ class MunsitTts
         return $response;
     }
 
-    /** Arabic diacritics for the studio's «تشكيل النص» button */
-    public function diacritizeText(string $text): string
-    {
-        if (!$this->isConfigured()) throw new RuntimeException('Munsit is not configured.', 503);
-        return $this->diacritize($text);
-    }
-
     private function diacritize(string $text): string
     {
         $response = Http::asJson()

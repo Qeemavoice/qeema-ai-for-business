@@ -51,20 +51,6 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
       if (first) setVoiceId(first.id);
     }
   };
-  // «شكّل النص»: the box shows the diacritized text, with undo
-  const [diacritizing, setDiacritizing] = useState(false);
-  const [undoText, setUndoText] = useState<string | null>(null);
-  const diacritizeNow = async () => {
-    setDiacritizing(true); setError('');
-    try {
-      const out = await api.diacritize(text);
-      setUndoText(text); setText(out);
-    } catch (e: any) {
-      setError(e?.message || 'تعذر تشكيل النص الآن');
-    } finally {
-      setDiacritizing(false);
-    }
-  };
   const [emotion, setEmotion] = useState('none');
   const [speed, setSpeed] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -187,17 +173,6 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               </select>
               <span className="block text-[11px] text-slate-500">اختيار اللهجة يعرض أصواتها في القائمة ويختار صوتاً منها.</span>
             </label>
-            <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
-              <span className="block text-sm font-bold text-slate-900">تشكيل النص قبل النطق</span>
-              <span className="block text-[11px] text-slate-500">يضيف الحركات إلى نصك لتراجعه قبل التوليد. مناسب للفصحى.</span>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={diacritizeNow} disabled={diacritizing || !text.trim()} className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5">
-                  {diacritizing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  {diacritizing ? 'جارٍ التشكيل...' : 'شكّل النص'}
-                </button>
-                {undoText !== null && <button type="button" onClick={() => { setText(undoText); setUndoText(null); }} className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold">تراجع</button>}
-              </div>
-            </div>
             <label className="space-y-1.5">
               <span className="block text-sm font-bold text-slate-900">المشاعر والأداء</span>
               <select value={emotion} onChange={e => setEmotion(e.target.value)} className={select}>
@@ -208,7 +183,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               <span className="flex items-center justify-between text-sm font-bold text-slate-900">السرعة <span className="font-mono text-xs text-slate-500">×{speed.toFixed(2)}</span></span>
               <input type="range" min={0.7} max={1.2} step={0.05} value={speed} onChange={e => setSpeed(Number(e.target.value))} className="w-full accent-brand" />
             </label>
-            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">المشاعر تعمل مع أصوات منصّت؛ السرعة والتشكيل تعمل مع كل الأصوات.</p>}
+            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">المشاعر تعمل مع أصوات منصّت؛ السرعة تعمل مع كل الأصوات.</p>}
           </div>
 
           <button

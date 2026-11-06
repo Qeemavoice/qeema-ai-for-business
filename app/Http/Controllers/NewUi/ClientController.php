@@ -56,8 +56,7 @@ class ClientController extends Controller
             'pitch' => (float) ($s['pitch'] ?? 0), 'format' => ($s['format'] ?? '') === 'wav' ? 'wav' : 'mp3',
             // Munsit controls (ignored by the other engines)
             'emotion' => in_array($s['emotion'] ?? '', ['happy', 'excited', 'calm', 'serious', 'sad', 'fearful', 'angry'], true) ? $s['emotion'] : 'none',
-            'dialect' => in_array($s['dialect'] ?? '', ['emirati', 'fusha'], true) ? $s['dialect'] : 'auto',
-            'diacritize' => (bool) ($s['diacritize'] ?? false)];
+            'dialect' => in_array($s['dialect'] ?? '', ['emirati', 'fusha'], true) ? $s['dialect'] : 'auto'];
         $settings['speed'] = max(0.7, min(1.2, $settings['speed']));
         try {
             $synth = Tts::synthesize($text, (array) $voice, $settings);
@@ -89,21 +88,6 @@ class ClientController extends Controller
         $g = DB::table('qv_generations')->where('id', $id)->first();
         return response()->json(['success' => true, 'generation' => self::generationRow($g), 'newBalanceCredits' => Accounts::balance($cu->id),
             'message' => "تم توليد الصوت بنجاح واستهلاك {$required} نقطة."]);
-    }
-
-    /** «تشكيل النص»: the text back with Arabic diacritics (Munsit), shown in the studio before generating */
-    public function diacritize(Request $r)
-    {
-        $text = trim((string) $r->input('text', ''));
-        if ($text === '') return response()->json(['error' => 'اكتب النص أولاً'], 400);
-        if (mb_strlen($text) > 5000) return response()->json(['error' => 'الحد الأقصى للتشكيل 5,000 حرف'], 400);
-        if (!Tts::munsitEnabled()) return response()->json(['error' => 'خدمة التشكيل غير متاحة حالياً'], 503);
-        try {
-            return response()->json(['text' => app(\App\Services\MunsitTts::class)->diacritizeText($text)]);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['error' => 'تعذر تشكيل النص الآن، حاول بعد قليل'], 502);
-        }
     }
 
     public function generations(Request $r)
