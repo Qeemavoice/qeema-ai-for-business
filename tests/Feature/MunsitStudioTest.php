@@ -41,5 +41,14 @@ class MunsitStudioTest extends TestCase
         $this->assertEquals(1.2, $res->json('generation.settings.speed'));      // clamped to Munsit's range
         $this->assertSame($before - mb_strlen('مرحبا بكم'), $res->json('newBalanceCredits'));
         Http::assertSent(fn ($req) => str_contains($req->url(), 'text-to-speech') && $req['dialect'] === 'fusha' && str_starts_with($req['text'], '[excited]'));
+
+        // the generated file answers byte ranges (Safari and iOS need 206 to play it)
+        $audio = $res->json('generation.audioUrl');
+        $this->get($audio, ['Range' => 'bytes=0-3'])->assertStatus(206)->assertHeader('Content-Range', 'bytes 0-3/7');
+
+        // «شكّل النص»
+        Http::fake(['*/tashkil/diacritize' => Http::response(['data' => ['diacritized_text' => 'مَرْحَبًا']])]);
+        $api->postJson('/api/v1/tts/diacritize', ['text' => 'مرحبا'])->assertOk()->assertJsonPath('text', 'مَرْحَبًا');
+        $api->postJson('/api/v1/tts/diacritize', ['text' => ''])->assertStatus(400);
     }
 }

@@ -15,7 +15,6 @@ interface StudioVoice { id: string; name: string; dialect: string; gender: strin
 const ar = arLabel;
 
 const EMOTIONS = [['none', 'النبرة الطبيعية'], ['happy', 'سعيد'], ['excited', 'حماسي'], ['calm', 'هادئ'], ['serious', 'جاد'], ['sad', 'حزين'], ['fearful', 'خائف'], ['angry', 'غاضب']];
-const STEERING = [['auto', 'تلقائي حسب النص والصوت'], ['emirati', 'إماراتي'], ['fusha', 'فصحى']];
 
 export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void }> = ({ voices, onGenerated }) => {
   const munsit: StudioVoice[] = useMunsitVoices().map(v => ({ ...v, munsit: true }));
@@ -43,8 +42,29 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   const voice = all.find(v => v.id === voiceId) || all[0];
 
   const [text, setText] = useState('مرحباً بك في قيمة فويس، حيث يتحول النص العربي إلى صوت واضح وطبيعي.');
-  const [steering, setSteering] = useState('auto');
-  const [diacritize, setDiacritize] = useState(false);
+  // Munsit picks the dialect through the voice; «emirati» and «fusha» are also sent as a hint
+  const steering = ['emirati', 'fusha'].includes(dialectFilter) ? dialectFilter : 'auto';
+  const pickDialect = (d: string) => {
+    setDialectFilter(d === 'auto' ? 'all' : d);
+    if (d !== 'auto' && voice?.dialect !== d) {
+      const first = all.find(v => v.dialect === d);
+      if (first) setVoiceId(first.id);
+    }
+  };
+  // «شكّل النص»: the box shows the diacritized text, with undo
+  const [diacritizing, setDiacritizing] = useState(false);
+  const [undoText, setUndoText] = useState<string | null>(null);
+  const diacritizeNow = async () => {
+    setDiacritizing(true); setError('');
+    try {
+      const out = await api.diacritize(text);
+      setUndoText(text); setText(out);
+    } catch (e: any) {
+      setError(e?.message || 'تعذر تشكيل النص الآن');
+    } finally {
+      setDiacritizing(false);
+    }
+  };
   const [emotion, setEmotion] = useState('none');
   const [speed, setSpeed] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -75,7 +95,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
     if (!voice) return;
     setBusy(true); setError(''); setNotice('');
     try {
-      const res = await api.createGeneration({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, diacritize, speed } });
+      const res = await api.createGeneration({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, speed } });
       setResult(res.generation);
       setNotice(res.message || 'تم توليد الصوت بنجاح.');
       onGenerated?.(res.newBalanceCredits);
@@ -160,19 +180,24 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="space-y-1.5">
-              <span className="block text-sm font-bold text-slate-900">توجيه اللهجة عند التوليد</span>
-              <select value={steering} onChange={e => setSteering(e.target.value)} className={select}>
-                {STEERING.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              <span className="block text-sm font-bold text-slate-900">اللهجة</span>
+              <select value={dialectFilter === 'all' ? 'auto' : dialectFilter} onChange={e => pickDialect(e.target.value)} className={select}>
+                <option value="auto">تلقائي حسب النص والصوت</option>
+                {dialects.map(d => <option key={d} value={d}>{ar(d)} ({all.filter(v => v.dialect === d).length})</option>)}
               </select>
-              <span className="block text-[11px] text-slate-500">اللهجات الأخرى تُختار عبر صوت يدعمها.</span>
+              <span className="block text-[11px] text-slate-500">اختيار اللهجة يعرض أصواتها في القائمة ويختار صوتاً منها.</span>
             </label>
-            <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 cursor-pointer">
-              <input type="checkbox" checked={diacritize} onChange={e => setDiacritize(e.target.checked)} className="mt-1 h-4 w-4 accent-brand" />
-              <span>
-                <span className="block text-sm font-bold text-slate-900">تشكيل النص قبل النطق</span>
-                <span className="block text-[11px] text-slate-500">مناسب للفصحى؛ راجع النتيجة للهجات العامية.</span>
-              </span>
-            </label>
+            <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+              <span className="block text-sm font-bold text-slate-900">تشكيل النص قبل النطق</span>
+              <span className="block text-[11px] text-slate-500">يضيف الحركات إلى نصك لتراجعه قبل التوليد. مناسب للفصحى.</span>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={diacritizeNow} disabled={diacritizing || !text.trim()} className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5">
+                  {diacritizing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {diacritizing ? 'جارٍ التشكيل...' : 'شكّل النص'}
+                </button>
+                {undoText !== null && <button type="button" onClick={() => { setText(undoText); setUndoText(null); }} className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-bold">تراجع</button>}
+              </div>
+            </div>
             <label className="space-y-1.5">
               <span className="block text-sm font-bold text-slate-900">المشاعر والأداء</span>
               <select value={emotion} onChange={e => setEmotion(e.target.value)} className={select}>
@@ -183,7 +208,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               <span className="flex items-center justify-between text-sm font-bold text-slate-900">السرعة <span className="font-mono text-xs text-slate-500">×{speed.toFixed(2)}</span></span>
               <input type="range" min={0.7} max={1.2} step={0.05} value={speed} onChange={e => setSpeed(Number(e.target.value))} className="w-full accent-brand" />
             </label>
-            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">التشكيل والمشاعر وتوجيه اللهجة تعمل مع أصوات منصّت؛ السرعة تعمل مع كل الأصوات.</p>}
+            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">المشاعر تعمل مع أصوات منصّت؛ السرعة والتشكيل تعمل مع كل الأصوات.</p>}
           </div>
 
           <button

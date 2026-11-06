@@ -100,8 +100,7 @@ class VoicesController extends Controller
             Storage::put($path . '.bin', $synth['audio']);
             Storage::put($path . '.mime', $synth['mime']);
         }
-        return response(Storage::get($path . '.bin'))
-            ->header('Content-Type', Storage::get($path . '.mime'))->header('Cache-Control', 'public, max-age=3600');
+        return self::audioFile($path, Storage::get($path . '.mime'), 'public, max-age=3600');
     }
 
     /** Uploaded sample stored as a data URL in the dashboard, served as audio. */
@@ -119,7 +118,13 @@ class VoicesController extends Controller
         $path = self::AUDIO_DISK_DIR . "/{$id}";
         if (!Storage::exists($path . '.bin')) return response()->json(['error' => 'الملف غير موجود'], 404);
         $mime = Storage::exists($path . '.mime') ? Storage::get($path . '.mime') : 'audio/mpeg';
-        return response(Storage::get($path . '.bin'))->header('Content-Type', $mime)->header('Cache-Control', 'private, max-age=86400');
+        return self::audioFile($path, $mime, 'private, max-age=86400');
+    }
+
+    /** A stored audio file with byte-range support (206): Safari and iOS refuse to play audio without it */
+    private static function audioFile(string $path, string $mime, string $cache)
+    {
+        return response()->file(Storage::path($path . '.bin'), ['Content-Type' => trim($mime), 'Cache-Control' => $cache]);
     }
 
     public static function storeAudio(string $id, string $bytes, string $mime): void

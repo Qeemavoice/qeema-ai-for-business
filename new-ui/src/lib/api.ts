@@ -184,6 +184,14 @@ export const api = {
     return res.json();
   },
 
+  /** «شكّل النص» in the TTS studio: the text back with Arabic diacritics */
+  async diacritize(text: string): Promise<string> {
+    const res = await fetch('/api/v1/tts/diacritize', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ text }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'تعذر تشكيل النص الآن');
+    return d.text;
+  },
+
   async deleteGeneration(id: string): Promise<{ success: boolean }> {
     const res = await fetch(`/api/v1/generations/${id}`, {
       method: 'DELETE',

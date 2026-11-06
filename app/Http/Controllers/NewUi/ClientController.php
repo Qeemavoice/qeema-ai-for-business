@@ -91,6 +91,21 @@ class ClientController extends Controller
             'message' => "تم توليد الصوت بنجاح واستهلاك {$required} نقطة."]);
     }
 
+    /** «تشكيل النص»: the text back with Arabic diacritics (Munsit), shown in the studio before generating */
+    public function diacritize(Request $r)
+    {
+        $text = trim((string) $r->input('text', ''));
+        if ($text === '') return response()->json(['error' => 'اكتب النص أولاً'], 400);
+        if (mb_strlen($text) > 5000) return response()->json(['error' => 'الحد الأقصى للتشكيل 5,000 حرف'], 400);
+        if (!Tts::munsitEnabled()) return response()->json(['error' => 'خدمة التشكيل غير متاحة حالياً'], 503);
+        try {
+            return response()->json(['text' => app(\App\Services\MunsitTts::class)->diacritizeText($text)]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['error' => 'تعذر تشكيل النص الآن، حاول بعد قليل'], 502);
+        }
+    }
+
     public function generations(Request $r)
     {
         $ctx = Accounts::context($r);
