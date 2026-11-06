@@ -33,7 +33,7 @@ export const TemplateRequestModal: React.FC<{ template: VoiceTemplate; onClose: 
               <span className="w-10 h-10 rounded-xl bg-brand-ink text-white flex items-center justify-center shrink-0"><Mic className="w-4 h-4" /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold text-slate-900 truncate">{v.sampleName || v.name}</span>
-                <span className="block text-xs text-slate-500 truncate">{[v.talentName, v.accent].filter(Boolean).join(' · ')}</span>
+                <span className="block text-xs text-slate-500 truncate">{v.accent}</span>
               </span>
               {v.pricing && <span className="text-xs font-bold text-brand-text whitespace-nowrap">{v.pricing}</span>}
               <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-brand-ink text-white whitespace-nowrap">احجز هذا الصوت</span>

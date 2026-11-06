@@ -53,7 +53,10 @@ class PublicController extends Controller
     /** Old booking-page slug ({id}-{title}), kept identical for SEO; the React page matches it by the id prefix */
     public static function voiceSlug(Voice $v): string
     {
-        return slugify($v->id . ' ' . self::tr($v, 'title'));
+        // the clip name only: a title that carries the narrator's name is left out (site rule)
+        $actor = $v->voiceOver;
+        $clip = \App\Services\NewUi\Library::safeClip(self::tr($v, 'title'), $actor ? \App\Services\NewUi\Accounts::name($actor) : '', '');
+        return slugify($v->id . ($clip !== 'عينة صوتية' ? ' ' . $clip : ''));
     }
 
     public static function articleItem(Article $a): array

@@ -47,7 +47,7 @@ class SitemapController extends Controller
         $stories = array_values(array_filter(Store::list('stories'), fn ($s) => ($s['status'] ?? '') === 'published'));
         foreach ($stories ?: ($seo['stories'] ?? []) as $s) $add('/ar/our-works/' . (is_array($s) ? $s['id'] : $s), 0.6, 'monthly');
         // Library voices (old `voices` table): /ar/booking/{id}-{title}, as the old sitemap listed them
-        foreach (Voice::where('voice_status_id', VoiceStatus::ACCEPTED)->orderByDesc('id')->get() as $v) {
+        foreach (Voice::with('voiceOver')->where('voice_status_id', VoiceStatus::ACCEPTED)->orderByDesc('id')->get() as $v) {
             $add('/ar/booking/' . PublicController::voiceSlug($v), 0.5, 'weekly', Store::day(Store::created($v)));
         }
 

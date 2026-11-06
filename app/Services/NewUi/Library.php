@@ -22,6 +22,21 @@ class Library
         self::$cache = null;
     }
 
+    /** The clip name a client may see: never the narrator's name, even when a clip was titled with it */
+    public static function safeClip(?string $clip, ?string $narrator, ?string $category = ''): string
+    {
+        $clip = trim((string) $clip); $narrator = trim((string) $narrator);
+        if ($clip !== '' && ($narrator === '' || mb_strpos($clip, $narrator) === false)) return $clip;
+        return trim((string) $category) ?: 'عينة صوتية';
+    }
+
+    /** Clip name of any voice row (also hidden/removed ones), never the narrator's name */
+    public static function clipName(?string $id): string
+    {
+        $v = ctype_digit((string) $id) ? Voice::withoutGlobalScopes()->find((int) $id) : null;
+        return $v ? self::tr($v, 'title') : '';
+    }
+
     private static function tr($model, string $field): string
     {
         if (!$model) return '';
@@ -136,6 +151,6 @@ class Library
     public static function publicItems(): array
     {
         return array_map(fn ($v) => array_merge(array_filter($v, fn ($k) => $k[0] !== '_', ARRAY_FILTER_USE_KEY),
-            ['name' => $v['sampleName'] ?: ($v['category'] ?: 'عينة صوتية'), 'talentName' => '']), self::all());
+            ['name' => self::safeClip($v['sampleName'], $v['talentName'], $v['category']), 'sampleName' => self::safeClip($v['sampleName'], $v['talentName'], $v['category']), 'talentName' => '']), self::all());
     }
 }

@@ -165,15 +165,16 @@ class Bookings
         ];
     }
 
-    /** What the client may see: no payout, no contact details */
+    /** What the client may see: no payout, no contact details, and NEVER the narrator's name (strict site rule: clients see the clip name only) */
     public static function clientView(Order $o, ?array $voice = null): array
     {
         $v = self::view($o, null, $voice);
         $r = $v['review'];
+        $clip = Library::safeClip($v['sampleName'] ?: Library::clipName($v['sampleId']), $v['talentName'], $voice['category'] ?? '');
         return [
             'id' => $v['id'], 'status' => $v['status'], 'scriptText' => $v['scriptText'], 'notes' => $v['notes'], 'usageLicense' => $v['usageLicense'],
             'deadlineDays' => $v['deadlineDays'], 'delivery' => $v['delivery'], 'priceUsd' => $v['priceUsd'], 'createdAt' => $v['createdAt'], 'updatedAt' => $v['updatedAt'],
-            'talentName' => $v['talentName'], 'sampleId' => $v['sampleId'], 'sampleName' => $v['sampleName'], 'dialect' => $v['dialect'],
+            'sampleId' => $v['sampleId'], 'sampleName' => $clip, 'dialect' => $v['dialect'],
             'charCount' => $v['charCount'], 'durationMinutes' => $v['durationMinutes'], 'deliverableAudioUrl' => $v['deliverableAudioUrl'],
             'review' => $r ? ['rating' => $r['rating'], 'text' => $r['text'], 'createdAt' => $r['createdAt'], 'status' => $r['status']] : null,
         ];
