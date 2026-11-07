@@ -80,7 +80,7 @@ export const HomeSubView: React.FC<HomeSubViewProps> = ({
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in" style={{ direction: 'rtl' }}>
       {/* 1. The same studio as the TTS page (/ar/text-to-speech); without studio access the old quick box opens the studio tab */}
-      {canUseStudio ? <TtsStudioPanel voices={voices} onGenerated={onGenerated} /> : (
+      {canUseStudio ? <TtsStudioPanel voices={voices} onGenerated={onGenerated} showHistory={false} /> : (
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-4 space-y-4">
         {/* Top Tools Tabs */}
         <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs font-bold text-slate-600 border-b border-slate-100">

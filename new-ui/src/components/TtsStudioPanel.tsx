@@ -21,7 +21,7 @@ const VoiceCode: React.FC<{ code: string }> = ({ code }) => (
 
 const EMOTIONS = [['none', 'النبرة الطبيعية'], ['happy', 'سعيد'], ['excited', 'حماسي'], ['calm', 'هادئ'], ['serious', 'جاد'], ['sad', 'حزين'], ['fearful', 'خائف'], ['angry', 'غاضب']];
 
-export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void; initialText?: string; initialVoiceId?: string }> = ({ voices, onGenerated, initialText, initialVoiceId }) => {
+export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void; initialText?: string; initialVoiceId?: string; showHistory?: boolean }> = ({ voices, onGenerated, initialText, initialVoiceId, showHistory = true }) => {
   const munsit: StudioVoice[] = useMunsitVoices().map(v => ({ ...v, munsit: true }));
   const all: StudioVoice[] = useMemo(() => [
     ...voices.filter(v => v.type === 'ai' && v.isActive !== false).map(v => ({
@@ -254,7 +254,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
 
 
       {/* My recordings */}
-      {history.length > 0 && (
+      {showHistory && history.length > 0 && (
         <div className="space-y-3">
           <div>
             <h2 className="text-lg font-black text-slate-950">تسجيلاتي</h2>

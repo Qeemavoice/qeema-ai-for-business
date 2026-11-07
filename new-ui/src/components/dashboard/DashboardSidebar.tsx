@@ -78,7 +78,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     { key: 'home' as DashboardNavKey, label: 'الرئيسية', icon: Home, badge: undefined },
     { key: 'voices' as DashboardNavKey, label: 'مكتبة الأصوات', icon: Mic2, badge: undefined },
     { key: 'human-bookings' as DashboardNavKey, label: 'حجوزاتي (معلقون بشريون)', icon: Users2, badge: undefined },
-    { key: 'studio' as DashboardNavKey, label: 'استوديو التوليد', icon: Sliders, badge: undefined },
+    { key: 'studio' as DashboardNavKey, label: 'استوديو التوليد TTS', icon: Sliders, badge: undefined },
     { key: 'flows' as DashboardNavKey, label: 'التدفقات وسير العمل', icon: GitFork, badge: undefined },
     { key: 'projects' as DashboardNavKey, label: 'المشاريع والقوالب', icon: LayoutTemplate, badge: undefined },
     { key: 'assets' as DashboardNavKey, label: 'أصولي والتراخيص', icon: FileAudio, badge: undefined },

@@ -924,7 +924,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               
               {/* Text & Value Proposition */}
-              <div className="max-w-2xl space-y-3">
+              <div className="max-w-2xl lg:max-w-none min-w-0 space-y-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100/80 text-brand-text text-xs font-bold border border-orange-200">
                   <Mic2 className="w-3.5 h-3.5" />
                   <span>سوق الأصوات البشرية الاحترافي للشركات والوكالات</span>
@@ -934,7 +934,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                   أصوات بشرية حقيقية لمشاريعك
                 </h2>
 
-                <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-slate-600 leading-relaxed xl:whitespace-nowrap">
                   اختر من أصوات معلقين محترفين وموثقين بمختلف اللهجات والأساليب، واحصل على الصوت المناسب لعلامتك التجارية.
                 </p>
 
