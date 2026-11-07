@@ -72,6 +72,8 @@ export interface User {
 
 export interface Voice {
   id: string;
+  /** Qeema voice code shown to clients (QV-101…) */
+  code?: string;
   type: VoiceType;
   name: string;
   nameEn?: string;
@@ -107,6 +109,7 @@ export interface Voice {
 
 export interface Generation {
   id: string;
+  voiceCode?: string;
   companyId: string;
   userId: string;
   voiceId: string;

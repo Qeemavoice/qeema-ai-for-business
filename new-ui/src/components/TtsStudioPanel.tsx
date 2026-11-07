@@ -10,9 +10,14 @@ import { arLabel, useMunsitVoices } from '../lib/studioVoices';
  * through /api/v1/generations, so credits, history and narrator earnings stay on our ledger.
  * Layout: text, voice dropdown and controls on the right, the audio preview on the left.
  */
-interface StudioVoice { id: string; name: string; dialect: string; gender: string; style: string; description: string; previewUrl: string; munsit: boolean }
+interface StudioVoice { id: string; code: string; name: string; dialect: string; gender: string; style: string; description: string; previewUrl: string; munsit: boolean }
 
 const ar = arLabel;
+
+/** The voice's Qeema code (QV-101…): the id clients quote to support */
+const VoiceCode: React.FC<{ code: string }> = ({ code }) => (
+  <span dir="ltr" className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-500">{code}</span>
+);
 
 const EMOTIONS = [['none', 'النبرة الطبيعية'], ['happy', 'سعيد'], ['excited', 'حماسي'], ['calm', 'هادئ'], ['serious', 'جاد'], ['sad', 'حزين'], ['fearful', 'خائف'], ['angry', 'غاضب']];
 
@@ -20,7 +25,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   const munsit: StudioVoice[] = useMunsitVoices().map(v => ({ ...v, munsit: true }));
   const all: StudioVoice[] = useMemo(() => [
     ...voices.filter(v => v.type === 'ai' && v.isActive !== false).map(v => ({
-      id: v.id, name: v.name.replace(/\s*AI\b/g, '').trim(), dialect: v.dialectLabel || '', gender: v.gender, style: v.styleLabel || '',
+      id: v.id, code: v.code || '', name: v.name.replace(/\s*AI\b/g, '').trim(), dialect: v.dialectLabel || '', gender: v.gender, style: v.styleLabel || '',
       description: '', previewUrl: `/api/v1/voices/${v.id}/preview`, munsit: false,
     })),
     ...munsit,
@@ -129,7 +134,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               <span className="w-10 h-10 shrink-0 rounded-xl bg-slate-900 text-brand font-black flex items-center justify-center">{voice?.name.charAt(0).toUpperCase() || '?'}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[11px] text-slate-500">الصوت</span>
-                <span className="block text-sm font-bold text-slate-900 truncate">{voice?.name || 'اختر صوتاً'}</span>
+                <span className="flex items-center gap-2 text-sm font-bold text-slate-900 min-w-0"><span className="truncate">{voice?.name || 'اختر صوتاً'}</span>{voice?.code && <VoiceCode code={voice.code} />}</span>
                 {voice && <span className="block text-[11px] text-slate-500 truncate">{[ar(voice.dialect), voice.gender === 'female' ? 'نسائي' : 'رجالي', ar(voice.style)].filter(Boolean).join(' · ')}</span>}
               </span>
               <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
@@ -150,7 +155,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               >
                 <span className="w-10 h-10 shrink-0 rounded-xl bg-slate-900 text-brand font-black flex items-center justify-center">{v.name.charAt(0).toUpperCase()}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold text-slate-900 truncate">{v.name}</span>
+                  <span className="flex items-center gap-2 text-sm font-bold text-slate-900 min-w-0"><span className="truncate">{v.name}</span>{v.code && <VoiceCode code={v.code} />}</span>
                   <span className="block text-[11px] text-slate-500 truncate">{[ar(v.dialect), v.gender === 'female' ? 'نسائي' : 'رجالي', ar(v.style)].filter(Boolean).join(' · ')}</span>
                 </span>
                 {v.previewUrl && (
@@ -190,7 +195,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               <input type="range" min={0} max={1} step={0.05} value={stability} onChange={e => setStability(Number(e.target.value))} className="w-full accent-brand" aria-label="ثبات الأداء" />
               <span className="flex justify-between text-[11px] text-slate-500"><span>متنوّع</span><span>ثابت</span></span>
             </label>
-            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">المشاعر تعمل مع أصوات منصّت؛ السرعة والثبات تعمل مع كل الأصوات.</p>}
+            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">المشاعر غير متاحة لهذا الصوت؛ السرعة والثبات تعمل مع كل الأصوات.</p>}
           </div>
 
           <button
@@ -259,7 +264,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
             {history.map(g => (
               <div key={g.id} className="rounded-2xl border border-slate-200 bg-white p-3 space-y-2">
                 <div className="flex items-center justify-between gap-2 text-xs">
-                  <strong className="text-slate-900 truncate">{g.voiceName}</strong>
+                  <span className="flex items-center gap-2 min-w-0"><strong className="text-slate-900 truncate">{g.voiceName}</strong>{g.voiceCode && <VoiceCode code={g.voiceCode} />}</span>
                   <a href={g.audioUrl} download={`qeema-voice-${g.id}`} className="text-brand-text font-bold flex items-center gap-1 shrink-0"><Download className="w-3.5 h-3.5" /> تنزيل</a>
                 </div>
                 <p className="text-[11px] text-slate-500 line-clamp-2">{g.text}</p>

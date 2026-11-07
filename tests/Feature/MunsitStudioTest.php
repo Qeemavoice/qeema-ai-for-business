@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-/** Our studio with the Munsit catalogue: voices listed as «munsit:<id>», generation charged on our credits ledger with his settings */
+/** Our studio with the Munsit catalogue: voices listed by their Qeema code (never Munsit's id), generation charged on our credits ledger with his settings */
 class MunsitStudioTest extends TestCase
 {
     use RefreshDatabase;
@@ -24,7 +24,8 @@ class MunsitStudioTest extends TestCase
             '*/voices/public' => Http::response(['data' => [['voice_id' => 'v-1', 'name' => 'Turki - Najdi', 'dialect' => ['najdi'], 'gender' => 'male']]]),
             '*/text-to-speech/*' => Http::response('RIFFwav', 200, ['Content-Type' => 'audio/wav']),
         ]);
-        $this->getJson('/api/v1/tts/munsit-voices')->assertOk()->assertJsonPath('voices.0.id', 'munsit:v-1')->assertJsonPath('voices.0.dialect', 'najdi');
+        $list = $this->getJson('/api/v1/tts/munsit-voices')->assertOk()->assertJsonPath('voices.0.id', 'QV-101')->assertJsonPath('voices.0.code', 'QV-101')->assertJsonPath('voices.0.dialect', 'najdi');
+        $this->assertStringNotContainsString('v-1', $list->getContent());   // Munsit's own voice id stays on the server
 
         foreach ([1 => 'admin', 2 => 'client'] as $id => $slug) DB::table('user_types')->insert(['id' => $id, 'name' => $slug, 'slug' => $slug]);
         foreach (range(1, 4) as $id) DB::table('user_statuses')->insert(['id' => $id, 'name' => 'status ' . $id]);
@@ -34,9 +35,11 @@ class MunsitStudioTest extends TestCase
         $api = $this->withHeader('Authorization', 'Bearer ' . Accounts::issueToken($u))->withHeader('Accept', 'application/json');
 
         $before = Accounts::balance($u->id);
-        $res = $api->postJson('/api/v1/generations', ['voiceId' => 'munsit:v-1', 'text' => 'مرحبا بكم',
+        $res = $api->postJson('/api/v1/generations', ['voiceId' => 'QV-101', 'text' => 'مرحبا بكم',
             'settings' => ['emotion' => 'excited', 'dialect' => 'fusha', 'speed' => 3, 'stability' => 0]])->assertOk();
         $this->assertSame('munsit', $res->json('generation.provider'));
+        $this->assertSame('QV-101', $res->json('generation.voiceCode'));
+        $this->assertSame('QV-101', $res->json('generation.voiceId'));
         $this->assertSame('excited', $res->json('generation.settings.emotion'));
         $this->assertEquals(1.2, $res->json('generation.settings.speed'));      // clamped to Munsit's range
         $this->assertSame($before - mb_strlen('مرحبا بكم'), $res->json('newBalanceCredits'));

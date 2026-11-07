@@ -9,6 +9,7 @@ import { DIALECT_AR } from './AdminTtsView';
 import { arLabel, useMunsitVoices } from '../../lib/studioVoices';
 
 interface TtsVoice {
+  code?: string;
   id: string; name: string; gender: 'male' | 'female'; dialect: string; dialectLabel: string; styleLabel: string;
   provider: 'elevenlabs' | 'qeema_acoustic'; providerVoiceId?: string; previewUrl: string; avatar?: string;
   isActive: boolean; narratorId?: string; narratorSharePercent?: number; createdAt: string;
@@ -85,7 +86,7 @@ export const AdminTtsVoicesView: React.FC = () => {
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2.5">
                       {v.avatar ? <img src={v.avatar} alt="" className="w-9 h-9 rounded-xl object-cover border border-slate-200" /> : <span className="w-9 h-9 rounded-xl bg-brand-ink text-white flex items-center justify-center font-black">{v.name.charAt(0)}</span>}
-                      <span><span className="font-bold text-slate-900 block">{v.name}</span><span className="text-[10px] text-slate-400">{v.gender === 'male' ? 'رجالي' : 'نسائي'} • {v.styleLabel}</span></span>
+                      <span><span className="font-bold text-slate-900 block">{v.name}</span><span className="text-[10px] text-slate-400"><span dir="ltr" className="font-mono font-bold text-slate-500">{v.code}</span> • {v.gender === 'male' ? 'رجالي' : 'نسائي'} • {v.styleLabel}</span></span>
                     </div>
                   </td>
                   <td className="py-3 px-4 text-slate-600">{v.dialectLabel || DIALECT_AR[v.dialect] || v.dialect}</td>
@@ -127,7 +128,7 @@ export const AdminTtsVoicesView: React.FC = () => {
               <tbody className="divide-y divide-slate-100">
                 {munsit.map(v => (
                   <tr key={v.id} className="hover:bg-slate-50/60">
-                    <td className="py-3 px-4"><span className="font-bold text-slate-900 block">{v.name}</span><span className="text-[10px] text-slate-400">{v.gender === 'female' ? 'نسائي' : 'رجالي'}</span></td>
+                    <td className="py-3 px-4"><span className="font-bold text-slate-900 block">{v.name}</span><span className="text-[10px] text-slate-400"><span dir="ltr" className="font-mono font-bold text-slate-500">{v.code}</span> • {v.gender === 'female' ? 'نسائي' : 'رجالي'}</span></td>
                     <td className="py-3 px-4 text-slate-600">{arLabel(v.dialect)}</td>
                     <td className="py-3 px-4 text-slate-600">{arLabel(v.style)}</td>
                     <td className="py-3 px-4 min-w-[170px]">{v.previewUrl ? <SamplePlayer url={v.previewUrl} compact /> : <span className="text-slate-300">-</span>}</td>

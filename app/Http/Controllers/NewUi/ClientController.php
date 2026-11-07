@@ -22,7 +22,8 @@ class ClientController extends Controller
     public static function generationRow(object $g): array
     {
         return [
-            'id' => $g->id, 'companyId' => 'c' . $g->user_id, 'userId' => (string) $g->actor_user_id, 'voiceId' => $g->voice_id, 'voiceName' => $g->voice_name,
+            'id' => $g->id, 'companyId' => 'c' . $g->user_id, 'userId' => (string) $g->actor_user_id, // Munsit voices are known to the client by their code only (as in the studio list)
+            'voiceId' => str_starts_with((string) $g->voice_id, 'munsit:') ? Tts::code($g->voice_id) : $g->voice_id, 'voiceCode' => Tts::code($g->voice_id), 'voiceName' => $g->voice_name,
             'voiceType' => $g->voice_type, 'dialect' => $g->dialect, 'text' => $g->text, 'textChars' => (int) $g->text_chars,
             'settings' => $g->settings ? (json_decode($g->settings, true) ?: []) : [], 'provider' => $g->provider, 'model' => $g->model,
             'audioUrl' => "/api/v1/storage/audio/{$g->id}", 'storagePath' => (string) $g->audio_path, 'durationSeconds' => (float) $g->duration_seconds,
@@ -40,7 +41,7 @@ class ClientController extends Controller
         if ($chars < 2) return response()->json(['error' => 'النص قصير جداً. يرجى إدخال كلمتين على الأقل.'], 400);
         if ($chars > 5000) return response()->json(['error' => 'الحد الأقصى للتوليد في المرة الواحدة هو 5,000 حرف.'], 400);
         $voiceId = (string) $r->input('voiceId', '');
-        $voice = str_starts_with($voiceId, 'munsit:') ? Tts::munsitVoiceRow($voiceId) : VoicesController::voiceRow($voiceId);
+        $voice = Tts::munsitVoiceRow($voiceId) ?: VoicesController::voiceRow($voiceId);
         if (!$voice) return response()->json(['error' => 'الصوت المحدد غير موجود'], 404);
         if (!$voice->is_active) return response()->json(['error' => 'هذا الصوت غير متاح حالياً'], 400);
 

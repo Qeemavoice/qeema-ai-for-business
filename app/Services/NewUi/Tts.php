@@ -46,28 +46,60 @@ class Tts
         return !is_array($saved['enabled'] ?? null) || in_array('munsit', $saved['enabled'], true);
     }
 
-    /** Munsit catalogue for the studio: ids are prefixed «munsit:» so they never clash with qv_tts_voices */
-    public static function munsitVoices(): array
+    /**
+     * Short public code of a studio voice (QV-101, QV-102…), fixed once given, kept in qv_kv «tts-voice-codes».
+     * Clients see and use this code; the provider and its voice id stay on the server.
+     */
+    public static function code(string $id): string
+    {
+        $codes = (array) Store::get('tts-voice-codes', []);
+        if (!isset($codes[$id])) {
+            // ponytail: read-then-write, two voices first seen at the same instant could share a number; add a lock if voices get added in bulk
+            $codes[$id] = max([100, ...array_map('intval', array_values($codes))]) + 1;
+            Store::set('tts-voice-codes', $codes);
+        }
+        return 'QV-' . $codes[$id];
+    }
+
+    /** Internal voice id of a «QV-123» code, or null */
+    public static function idFromCode(string $code): ?string
+    {
+        if (!preg_match('/^QV-(\d+)$/i', trim($code), $m)) return null;
+        $id = array_search((int) $m[1], array_map('intval', (array) Store::get('tts-voice-codes', [])), true);
+        return $id === false ? null : (string) $id;
+    }
+
+    /** Raw Munsit catalogue (provider ids), [] when Munsit is off or down */
+    private static function munsitCatalogue(): array
     {
         if (!self::munsitEnabled()) return [];
         try {
-            return array_map(fn ($v) => [
-                'id' => 'munsit:' . $v['id'], 'name' => $v['name'], 'provider' => 'munsit', 'gender' => $v['gender'],
-                'dialect' => $v['dialect'], 'dialects' => $v['dialects'], 'description' => $v['description'], 'style' => $v['style'],
-                'previewUrl' => $v['previewUrl'],
-            ], app(\App\Services\MunsitTts::class)->voices());
+            return app(\App\Services\MunsitTts::class)->voices();
         } catch (\Throwable $e) {
             report($e);
             return [];
         }
     }
 
-    /** A «munsit:<id>» studio voice as a qv_tts_voices-like row (no narrator) */
+    /** Munsit voices for the studio: the id is the Qeema code, never Munsit's own voice id */
+    public static function munsitVoices(): array
+    {
+        return array_map(function ($v) {
+            $code = self::code('munsit:' . $v['id']);
+            return ['id' => $code, 'code' => $code, 'name' => $v['name'], 'gender' => $v['gender'],
+                'dialect' => $v['dialect'], 'dialects' => $v['dialects'], 'description' => $v['description'], 'style' => $v['style'],
+                'previewUrl' => $v['previewUrl']];
+        }, self::munsitCatalogue());
+    }
+
+    /** A Munsit studio voice (by its code or «munsit:<id>») as a qv_tts_voices-like row (no narrator); null for any other voice */
     public static function munsitVoiceRow(string $id): ?object
     {
-        foreach (self::munsitVoices() as $v) {
-            if ($v['id'] === $id) {
-                return (object) ['id' => $v['id'], 'name' => $v['name'], 'provider' => 'munsit', 'provider_voice_id' => substr($v['id'], 7),
+        $key = str_starts_with($id, 'munsit:') ? $id : self::idFromCode($id);
+        if (!$key || !str_starts_with($key, 'munsit:')) return null;
+        foreach (self::munsitCatalogue() as $v) {
+            if ('munsit:' . $v['id'] === $key) {
+                return (object) ['id' => $key, 'name' => $v['name'], 'provider' => 'munsit', 'provider_voice_id' => $v['id'],
                     'gender' => $v['gender'], 'dialect' => $v['dialect'], 'is_active' => 1, 'narrator_id' => null];
             }
         }

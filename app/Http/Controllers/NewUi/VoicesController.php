@@ -26,7 +26,7 @@ class VoicesController extends Controller
     public static function publicVoice(object $v, bool $withSecrets = false): array
     {
         $out = [
-            'id' => $v->id, 'type' => 'ai', 'name' => $v->name, 'nameEn' => $v->name_en, 'gender' => $v->gender, 'language' => 'ar',
+            'id' => $v->id, 'code' => Tts::code($v->id), 'type' => 'ai', 'name' => $v->name, 'nameEn' => $v->name_en, 'gender' => $v->gender, 'language' => 'ar',
             'dialect' => $v->dialect, 'dialectLabel' => (string) $v->dialect_label, 'style' => $v->style, 'styleLabel' => (string) $v->style_label,
             'useCases' => $v->use_cases ? (json_decode($v->use_cases, true) ?: []) : ['ads', 'corporate', 'social_media'],
             'provider' => $v->provider, 'previewUrl' => $v->preview_url ? "/api/v1/voices/{$v->id}/preview" : '',
@@ -44,7 +44,7 @@ class VoicesController extends Controller
 
     public static function voiceRow(string $id): ?object
     {
-        return DB::table('qv_tts_voices')->where('id', $id)->first();
+        return DB::table('qv_tts_voices')->where('id', Tts::idFromCode($id) ?? $id)->first();
     }
 
     /** Munsit voices for the studio (empty when Munsit is not set up) */
@@ -143,8 +143,8 @@ class VoicesController extends Controller
         if (mb_strlen($text) < 2) return response()->json(['error' => 'يرجى إدخال النص المطلوب تحويله إلى صوت'], 400);
         if (mb_strlen($text) > self::TRIAL_MAX_CHARS) return response()->json(['error' => 'التجربة المجانية حتى ' . self::TRIAL_MAX_CHARS . ' حرفاً.'], 400);
         $vid = (string) $r->input('voiceId', '');
-        $voice = (str_starts_with($vid, 'munsit:') ? \App\Services\NewUi\Tts::munsitVoiceRow($vid) : null)
-            ?: DB::table('qv_tts_voices')->where('is_active', 1)->where('id', $vid)->first()
+        $voice = \App\Services\NewUi\Tts::munsitVoiceRow($vid)
+            ?: DB::table('qv_tts_voices')->where('is_active', 1)->where('id', Tts::idFromCode($vid) ?? $vid)->first()
             ?: DB::table('qv_tts_voices')->where('is_active', 1)->orderByDesc('is_featured')->first();
         if (!$voice && ($m = \App\Services\NewUi\Tts::munsitVoices())) $voice = \App\Services\NewUi\Tts::munsitVoiceRow($m[0]['id']);
         if (!$voice) return response()->json(['error' => 'لا توجد أصوات متاحة حالياً'], 503);
