@@ -16,7 +16,7 @@ interface Props {
 }
 
 /** «تغيير كلمة المرور» for the signed-in admin */
-const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [cur, setCur] = useState('');
   const [next, setNext] = useState('');
   const [again, setAgain] = useState('');

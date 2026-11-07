@@ -22,6 +22,7 @@ import { VoiceLibraryView, buildSampleSlug } from './VoiceLibraryView';
 import { useNavigate } from 'react-router-dom';
 import { TtsStudioPanel } from './TtsStudioPanel';
 import { BillingTab } from './dashboard/BillingTab';
+import { ProfileView } from './dashboard/ProfileView';
 import { 
   ProjectsSubView, 
   AssetsSubView, 
@@ -413,6 +414,8 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
           )}
 
           {activeNav === 'usage' && <UsageView />}
+
+          {activeNav === 'profile' && <ProfileView />}
 
           {activeNav === 'billing' && (
             <BillingTab

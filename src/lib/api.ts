@@ -129,6 +129,18 @@ export const api = {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'تعذر تغيير كلمة المرور');
   },
+  /** «البيانات الشخصية» */
+  async getProfile(): Promise<{ name: string; email: string; mobile: string; country: string }> {
+    const res = await fetch('/api/v1/auth/profile', { headers: getHeaders() });
+    if (!res.ok) throw new Error('تعذر تحميل البيانات');
+    return res.json();
+  },
+  async updateProfile(p: { name: string; mobile: string; country: string }): Promise<User> {
+    const res = await fetch('/api/v1/auth/profile', { method: 'PUT', headers: getHeaders(), body: JSON.stringify(p) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر حفظ البيانات');
+    return data.user;
+  },
   async logout() {
     await fetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => {});
     setToken('');
