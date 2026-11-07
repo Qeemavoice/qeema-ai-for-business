@@ -16,7 +16,7 @@ Vue.component('admin-login', {
             this.form.disabledButton = true;
             // showLoading();
             this.form.validation = null;
-            axios.post(BASE_URL  + '/dashboard/auth', {
+            axios.post(BASE_URL  + '/old-admin/auth', {
                 email: this.email,
                 password: this.password,
                 remember: this.remember,

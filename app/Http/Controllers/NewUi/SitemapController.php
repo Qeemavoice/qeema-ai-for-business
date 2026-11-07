@@ -63,7 +63,7 @@ class SitemapController extends Controller
 
     public function robots()
     {
-        $txt = "User-agent: *\nAllow: /\nDisallow: /ar/admin\nDisallow: /ar/dashboard\nDisallow: /ar/account\nDisallow: /ar/talent-\n"
+        $txt = "User-agent: *\nAllow: /\nDisallow: /ar/admin\nDisallow: /ar/dashboard\nDisallow: /ar/old-admin\nDisallow: /ar/account\nDisallow: /ar/talent-\n"
             . "Disallow: /ar/claim\nDisallow: /claim/\nDisallow: /ar/generate\nDisallow: /api/\nDisallow: /ar/clients\nDisallow: /ar/voice-actors\n\n"
             . 'Sitemap: ' . self::SITE . "/sitemap.xml\n";
         return response($txt)->header('Content-Type', 'text/plain; charset=utf-8');

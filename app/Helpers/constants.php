@@ -3,7 +3,7 @@
  * Admin Panel
  */
 
-define("ADMIN_PREFIX", 'dashboard');
+define("ADMIN_PREFIX", 'old-admin');
 define("ADMIN_NAMESPACE", 'AdminPanel');
 define("ADMIN_ROUTE", 'admin');
 define("ADMIN_VIEWS_DIR", 'admin_panel');

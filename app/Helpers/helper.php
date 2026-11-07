@@ -664,7 +664,7 @@ if (!function_exists('active_link_sidebar')) {
         $currentURL = 'dashboard';
 
 
-        if ($segment2)
+        if ($segment2 && $segment2 !== ADMIN_PREFIX)
             $currentURL = $segment2;
 
         if ($segment3)
@@ -707,7 +707,7 @@ if (!function_exists('arrow_down_url_sidebar')) {
         $segment5 = request()->segment(5);
         $currentURL = 'dashboard';
 
-        if ($segment2)
+        if ($segment2 && $segment2 !== ADMIN_PREFIX)
             $currentURL = $segment2;
 
         if ($segment3)

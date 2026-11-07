@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 /*
  | Pages of the new Qeema Voice UI (React site in new-ui/, built into public/new-ui).
  | Registered BEFORE routes/app.php so these paths are served by the new site; every old Laravel page
- | the new UI does not replace (old client/voice-actor dashboards, chat, admin panel at /ar/dashboard/...)
+ | the new UI does not replace (old client/voice-actor dashboards, chat, admin panel at /ar/old-admin/...)
  | keeps working as before.
  */
 
@@ -14,6 +14,9 @@ Route::get('robots.txt', 'SitemapController@robots');
 
 // Old URLs that carried SEO value: permanent redirects to their new page
 Route::permanentRedirect('/ar/careers', '/ar/jobs');
+// /ar/dashboard is the new client dashboard's address (served at /ar/account); the old back office moved to /ar/old-admin
+Route::redirect('/ar/dashboard', '/ar/account');
+Route::get('/ar/dashboard/{any}', fn () => redirect('/ar/account'))->where('any', '.*');
 Route::permanentRedirect('/ar/booking', '/ar/voices');   // target of the old /booking/... rules in public/.htaccess
 Route::permanentRedirect('/ar/voice-templates', '/ar/voice-models');
 Route::get('/ar/voices/{slug}', fn () => redirect('/ar/voices', 301))->where('slug', '.+');
