@@ -18,6 +18,9 @@ use Illuminate\Support\Str;
 /** Signed-in clients: TTS generations, credits, usage, billing, bookings, projects, team (port of generations/credits/usage/billing/clientBookings.ts). */
 class ClientController extends Controller
 {
+    /** Months a paid top-up stays valid */
+    public const TOPUP_VALID_MONTHS = 12;
+
     // ---------- generations ----------
     public static function generationRow(object $g): array
     {
@@ -140,7 +143,8 @@ class ClientController extends Controller
         // ponytail: no payment gateway yet, credits are added on request; connect Stripe here before launch
         $new = Accounts::addCredits($ctx['companyUser']->id, $ctx['user']->id, $q['chars'], 'purchase',
             "شحن رصيد: باقة {$plan['nameAr']} ({$q['price']} USD عبر {$method}){$gift}", 'pay-' . round(microtime(true) * 1000),
-            ['source' => 'topup', 'meta' => ['kind' => 'topup', 'planId' => $plan['id'], 'priceUsd' => $q['price'], 'listPriceUsd' => $q['listPrice'],
+            // paid credit is valid 12 months from the top-up (شروط الاستخدام ← الباقات والرصيد)
+            ['source' => 'topup', 'expiresAt' => now()->addMonths(self::TOPUP_VALID_MONTHS), 'meta' => ['kind' => 'topup', 'planId' => $plan['id'], 'priceUsd' => $q['price'], 'listPriceUsd' => $q['listPrice'],
                 'offer' => $q['offer'], 'bonusChars' => $q['bonusChars']]]);
         return response()->json(['success' => true, 'addedCredits' => $q['chars'], 'bonusCredits' => $q['bonusChars'], 'priceUsd' => $q['price'],
             'offer' => $q['offer'], 'newBalanceCredits' => $new,

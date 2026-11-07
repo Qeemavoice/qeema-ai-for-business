@@ -33,7 +33,7 @@ export const SitePageView: React.FC<{ pageKey: SitePageKey; badge: string }> = (
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight">{page.title}</h1>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed">{page.intro}</p>
-          <p className="text-xs text-slate-400 font-mono">آخر تحديث: {page.updatedAt}</p>
+          <p className="text-xs text-slate-400 font-mono">آخر تحديث: {String(page.updatedAt).slice(0, 10)}</p>
         </div>
       </section>
 
