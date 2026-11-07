@@ -76,8 +76,10 @@ class AuthController extends Controller
             $token = \Illuminate\Support\Facades\Password::broker()->createToken($user);
             $site = rtrim((string) (config('rowad.site_url') ?: config('app.url')), '/');
             $link = $site . '/ar/reset-password?' . http_build_query(['token' => $token, 'email' => $user->email]);
-            \App\Services\NewUi\Mailer::trySend($user->email, 'تعيين كلمة مرور جديدة لحسابك في قيمة فويس',
+            $sent = \App\Services\NewUi\Mailer::trySend($user->email, 'تعيين كلمة مرور جديدة لحسابك في قيمة فويس',
                 "مرحباً،\n\nوصلنا طلب لتعيين كلمة مرور جديدة لحسابك في قيمة فويس.\nاضغط الرابط التالي واختر كلمة المرور الجديدة (صالح لمدة ساعة):\n\n{$link}\n\nإذا لم تطلب ذلك فتجاهل هذه الرسالة، ولن يتغير شيء في حسابك.\n\nفريق قيمة فويس");
+            // a send failure is shown (instead of the usual answer) so the person knows no link is coming
+            if (!$sent) return response()->json(['error' => 'تعذر إرسال رابط تعيين كلمة المرور الآن. حاول بعد قليل أو تواصل معنا على info@qeemavoice.com'], 503);
         }
         return response()->json(['success' => true, 'message' => 'إذا كان هذا البريد مسجلاً لدينا فستصلك خلال دقائق رسالة فيها رابط لتعيين كلمة مرور جديدة.']);
     }
