@@ -28,14 +28,20 @@ const STYLE_INFO: Record<string, { desc: string; audioUrl: string }> = {
   'ديني': { desc: 'إلقاء ديني بخشوع ونطق فصيح سليم.', audioUrl: '/stories/media-makkah-moazamoon.m4a' },
 };
 
-export const buildVoiceStyleItems = (categories: string[]): VoiceStyleItem[] => {
-  const items = categories.map((title, i) => ({
+export const buildVoiceStyleItems = (categories: string[]): VoiceStyleItem[] =>
+  withVariants(categories.map(title => ({
     key: title,
     title,
     desc: STYLE_INFO[title]?.desc || `تعليق صوتي ${title} احترافي بأصوات بشرية معتمدة.`,
     audioUrl: STYLE_INFO[title]?.audioUrl || '/stories/food-mcdonalds-saudi.mp3',
-    variant: i % 4,                    // neighbours never share a look
-  }));
+  })));
+
+/** The player's items from «أصوات المشغّل» in the admin dashboard */
+export const playerSampleItems = (rows: { id: string; title: string; desc?: string; audioUrl: string }[]): VoiceStyleItem[] =>
+  withVariants(rows.map(r => ({ key: r.id, title: r.title, desc: r.desc || '', audioUrl: r.audioUrl })));
+
+const withVariants = (rows: Omit<VoiceStyleItem, 'variant'>[]): VoiceStyleItem[] => {
+  const items = rows.map((r, i) => ({ ...r, variant: i % 4 }));   // neighbours never share a look
   const n = items.length;
   if (n > 2 && n % 4) {                 // the ring wraps: the last item also touches the first
     const taken = [items[n - 2].variant, items[0].variant, items[1].variant];

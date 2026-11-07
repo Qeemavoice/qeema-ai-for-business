@@ -39,6 +39,7 @@ Route::get('page-texts', 'PublicController@pageTexts');
 Route::get('site-lists', 'PublicController@siteLists');
 Route::get('site-status', 'PublicController@siteStatus');
 Route::get('voice-templates', 'PublicController@voiceTemplates');
+Route::get('player-samples', 'PublicController@playerSamples');
 Route::get('human-voices', 'PublicController@humanVoices');
 Route::get('human-voices/{id}/reviews', 'PublicController@voiceReviews');
 Route::post('contact', 'PublicController@contact');

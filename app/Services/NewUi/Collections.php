@@ -28,7 +28,7 @@ class Collections
     public static function has(string $name): bool
     {
         return in_array($name, ['articles', 'faqs', 'guides', 'pages', 'dialects', 'categories', 'messages', 'newsletter', 'jobPostings',
-            'stories', 'pageTexts', 'voiceTemplates', 'services', 'feedback', 'jobs', 'admins', 'humanVoices'], true);
+            'stories', 'pageTexts', 'voiceTemplates', 'services', 'feedback', 'jobs', 'admins', 'humanVoices', 'playerSamples'], true);
     }
 
     private static function tr(string $v): array

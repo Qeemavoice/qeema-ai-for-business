@@ -43,8 +43,12 @@ class AuthController extends Controller
         if (!$name) return response()->json(['error' => 'اكتب الاسم الكامل'], 400);
         if (!preg_match(self::EMAIL_RE, $email)) return response()->json(['error' => 'البريد الإلكتروني غير صحيح'], 400);
         if (mb_strlen($password) < 8) return response()->json(['error' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'], 400);
+        // narrators give a WhatsApp number with the country code (+9665XXXXXXXX), kept in the old `mobile` column
+        $whatsapp = preg_replace('/[^\d+]/', '', (string) $r->input('whatsapp', ''));
+        if ($type === 'talent' && !preg_match('/^\+\d{1,4}[1-9]\d{5,13}$/', $whatsapp)) return response()->json(['error' => 'اكتب رقم الواتساب صحيحاً مع مقدمة الدولة'], 400);
         if (Accounts::findByEmail($email)) return response()->json(['error' => 'هذا البريد مسجّل مسبقاً، سجّل الدخول بدلاً من ذلك'], 409);
         $user = Accounts::createAccount($name, $email, $password, $type);
+        if ($type === 'talent') $user->forceFill(['mobile' => $whatsapp])->save();
         $company = trim((string) $r->input('company', ''));
         if ($company) Accounts::saveAccount($user, ['industry' => 'Corporate Business']);
         event(new Registered($user));   // «روّاد قيمة»: activates an invite opened before signing up

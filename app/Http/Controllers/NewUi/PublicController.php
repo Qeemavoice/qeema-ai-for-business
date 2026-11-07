@@ -167,6 +167,14 @@ class PublicController extends Controller
         return response()->json(['items' => $items]);
     }
 
+    /** «أصوات المشغّل»: the samples of the home page player, from the dashboard (empty = the site's built-in list) */
+    public function playerSamples()
+    {
+        $items = array_values(array_filter(Store::list('playerSamples'), fn ($t) => ($t['status'] ?? '') === 'published' && !empty($t['audioUrl'])));
+        usort($items, fn ($a, $b) => ((int) ($a['order'] ?? 999)) <=> ((int) ($b['order'] ?? 999)));
+        return response()->json(['items' => $items]);
+    }
+
     public function humanVoices()
     {
         return response()->json(['commissionPercent' => Plans::commissionPercent(), 'items' => Library::publicItems()]);

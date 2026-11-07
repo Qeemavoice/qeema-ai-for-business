@@ -8,7 +8,7 @@ export type AdminTab =
   | 'overview' | 'bookings' | 'financials' | 'transactions' | 'tts' | 'ttsVoices' | 'stories'
   | 'companies' | 'narrators' | 'samples' | 'reviews' | 'rowad'
   | 'messages' | 'feedback' | 'newsletter' | 'jobs'
-  | 'articles' | 'faqs' | 'guides' | 'pages' | 'pageTexts' | 'voiceTemplates'
+  | 'articles' | 'faqs' | 'guides' | 'pages' | 'pageTexts' | 'voiceTemplates' | 'playerSamples'
   | 'voices' | 'plans' | 'services' | 'dialects' | 'categories'
   | 'admins' | 'audit' | 'settings'
   | 'page-privacy' | 'page-terms' | 'page-about'
@@ -76,6 +76,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { id: 'guides', label: 'الأدلة', icon: BookOpen, desc: 'الأدلة المجانية والمدفوعة' },
       { id: 'stories', label: 'قصص النجاح', icon: Trophy, desc: 'قصص العملاء المعروضة في صفحة أعمالنا /ar/our-works' },
       { id: 'voiceTemplates', label: 'نماذج الإنتاج الصوتي', icon: LayoutTemplate, desc: 'النماذج الجاهزة وروابطها في لوحة العميل وصفحة النماذج' },
+      { id: 'playerSamples', label: 'أصوات المشغّل', icon: AudioLines, desc: 'العينات التي تُسمع في مشغّل الصفحة الرئيسية' },
       { id: 'pageTexts', label: 'نصوص الصفحات', icon: Heading1, desc: 'العنوان والفقرة التعريفية أعلى الصفحات العامة' },
       {
         label: 'الصفحات', icon: Files,

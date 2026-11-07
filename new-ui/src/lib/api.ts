@@ -111,7 +111,7 @@ export const api = {
     return res.json();
   },
 
-  signup: (data: { name: string; email: string; password: string; company?: string; accountType: 'client' | 'talent' }) => authCall('signup', data),
+  signup: (data: { name: string; email: string; password: string; company?: string; whatsapp?: string; accountType: 'client' | 'talent' }) => authCall('signup', data),
   login: (email: string, password: string) => authCall('login', { email, password }),
   loginWithGoogle: (accessToken: string, accountType: 'client' | 'talent') => authCall('google', { accessToken, accountType }),
   /** «نسيت كلمة المرور؟»: emails a link to /ar/reset-password; returns the message to show */

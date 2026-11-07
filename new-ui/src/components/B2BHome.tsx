@@ -27,7 +27,7 @@ import { MessageCircle,
 } from 'lucide-react';
 import { ActiveView, Voice } from '../types';
 import type { OrbMode, OrbState } from './VoiceOrb';
-import { VoiceStyleCarousel, buildVoiceStyleItems } from './VoiceStyleCarousel';
+import { VoiceStyleCarousel, buildVoiceStyleItems, playerSampleItems } from './VoiceStyleCarousel';
 import { PRODUCT_TABS } from './ProductSwitcher';
 import { useSiteLists } from '../lib/siteLists';
 import { useNavigate } from 'react-router-dom';
@@ -154,7 +154,10 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const activePreset = HERO_PRESETS[activeTab] || HERO_PRESETS.ai;
   const siteCategories = useSiteLists().categories;
-  const styleItems = React.useMemo(() => buildVoiceStyleItems(siteCategories), [siteCategories]);
+  // samples from «أصوات المشغّل» in the admin dashboard; the built-in list until any is published there
+  const [playerRows, setPlayerRows] = useState<any[]>([]);
+  useEffect(() => { fetch('/api/v1/player-samples').then(r => r.ok ? r.json() : { items: [] }).then(d => setPlayerRows(d.items || [])).catch(() => {}); }, []);
+  const styleItems = React.useMemo(() => playerRows.length ? playerSampleItems(playerRows) : buildVoiceStyleItems(siteCategories), [playerRows, siteCategories]);
   const [styleIndex, setStyleIndex] = useState(0);
   const sampleUrl = activeTab === 'tts' || !styleItems.length ? activePreset.audioUrl : styleItems[styleIndex % styleItems.length].audioUrl;
 

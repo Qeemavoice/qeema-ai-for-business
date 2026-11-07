@@ -62,4 +62,15 @@ class PasswordResetTest extends TestCase
         $this->postJson('/api/v1/auth/password', ['currentPassword' => 'old-pass-123', 'newPassword' => 'new-pass-123'], $h)->assertOk();
         $this->assertTrue(Hash::check('new-pass-123', $u->fresh()->password));
     }
+
+    public function test_narrator_signup_needs_a_whatsapp_number()
+    {
+        $this->account();
+        DB::table('user_types')->insert(['id' => 3, 'name' => 'voice_actor', 'slug' => 'voice_actor']);
+        $base = ['name' => 'معلق', 'email' => 'narrator@example.test', 'password' => 'pass-12345', 'accountType' => 'talent'];
+        $this->postJson('/api/v1/auth/signup', $base)->assertStatus(400);
+        $this->postJson('/api/v1/auth/signup', $base + ['whatsapp' => '+966 0'])->assertStatus(400);
+        $this->postJson('/api/v1/auth/signup', $base + ['whatsapp' => '+966 55 123 4567'])->assertOk();
+        $this->assertSame('+966551234567', Accounts::findByEmail('narrator@example.test')->mobile);
+    }
 }
