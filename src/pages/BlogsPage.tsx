@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { 
   BookOpen, 
@@ -6,6 +6,7 @@ import {
   Calendar, 
   Clock, 
   ArrowLeft, 
+  ChevronLeft, 
   Sparkles, 
   Tag, 
   User 
@@ -25,6 +26,14 @@ export const BlogsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [params, setParams] = useSearchParams();
+  // the category row scrolls sideways on small screens: an arrow on its left shows there are more categories
+  const catsRef = useRef<HTMLDivElement>(null);
+  const [moreCats, setMoreCats] = useState(false);
+  const checkCats = () => {
+    const el = catsRef.current;
+    if (el) setMoreCats(el.scrollWidth - el.clientWidth - Math.abs(el.scrollLeft) > 4);
+  };
+  useEffect(() => { checkCats(); window.addEventListener('resize', checkCats); return () => window.removeEventListener('resize', checkCats); }, []);
 
   const categories = [
     { id: 'all', label: 'كافة المقالات' },
@@ -68,13 +77,8 @@ export const BlogsPage: React.FC = () => {
       </div>
 
       {/* Hero Header */}
-      <section className="py-12 border-b border-slate-200 bg-white">
+      <section className="pt-4 pb-12 border-b border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 text-brand-text text-xs font-bold">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>المعرفة والأبحاث الصوتية</span>
-          </div>
-          
           {/* Strict Single H1 */}
           <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight">
             {pageText.title}
@@ -97,7 +101,8 @@ export const BlogsPage: React.FC = () => {
               <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-3" />
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto w-full pb-2 sm:pb-0 scrollbar-none">
+            <div className="relative w-full min-w-0">
+            <div ref={catsRef} onScroll={checkCats} className="flex items-center gap-2 overflow-x-auto w-full pb-2 sm:pb-0 no-scrollbar">
               {categories.map(cat => (
                 <button
                   key={cat.id}
@@ -111,6 +116,19 @@ export const BlogsPage: React.FC = () => {
                   {cat.label}
                 </button>
               ))}
+            </div>
+            {moreCats && (
+              <button
+                type="button"
+                aria-label="المزيد من التصنيفات"
+                onClick={() => catsRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
+                className="absolute left-0 top-0 bottom-2 sm:bottom-0 flex items-center pl-0.5 pr-6 bg-gradient-to-r from-white via-white/90 to-transparent cursor-pointer"
+              >
+                <span className="w-7 h-7 rounded-full bg-brand-ink text-white flex items-center justify-center shadow-md">
+                  <ChevronLeft className="w-4 h-4" />
+                </span>
+              </button>
+            )}
             </div>
           </div>
         </div>

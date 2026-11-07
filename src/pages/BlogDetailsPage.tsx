@@ -119,7 +119,11 @@ export const BlogDetailsPage: React.FC = () => {
     );
   }
 
-  const related = getRelatedArticles(article.slug, 3);
+  // related articles come from the real articles (the dashboard's), same category first; built-in samples only if there are none
+  const realOthers = dashPosts.filter(p => p.slug !== article.slug);
+  const related = realOthers.length
+    ? [...realOthers.filter(p => p.category === article.category), ...realOthers.filter(p => p.category !== article.category)].slice(0, 3)
+    : getRelatedArticles(article.slug, 3);
   const midpoint = Math.max(1, Math.floor(article.content.length / 2));
   const firstHalf = article.content.slice(0, midpoint);
   const secondHalf = article.content.slice(midpoint);

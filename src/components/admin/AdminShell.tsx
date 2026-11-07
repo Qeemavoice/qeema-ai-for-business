@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronLeft, ChevronsRight, ChevronsLeft, Home, User } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronsRight, ChevronsLeft, Home, User, LogOut, KeyRound, X } from 'lucide-react';
+import { api } from '../../lib/api';
 import { ADMIN_NAV, AdminTab, findNavMeta } from './adminNav';
 
 interface Props {
@@ -9,11 +10,55 @@ interface Props {
   badges?: Partial<Record<AdminTab, number>>;
   actions?: React.ReactNode;
   children: React.ReactNode;
+  userName?: string;
+  userEmail?: string;
+  onLogout?: () => void;
 }
 
+/** «تغيير كلمة المرور» for the signed-in admin */
+const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [cur, setCur] = useState('');
+  const [next, setNext] = useState('');
+  const [again, setAgain] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (next !== again) return setMsg({ ok: false, text: 'كلمتا المرور الجديدتان غير متطابقتين' });
+    setBusy(true); setMsg(null);
+    try { await api.changePassword(cur, next); setMsg({ ok: true, text: 'تم تغيير كلمة المرور.' }); setCur(''); setNext(''); setAgain(''); }
+    catch (err: any) { setMsg({ ok: false, text: err.message }); }
+    finally { setBusy(false); }
+  };
+  const field = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand';
+  return (
+    <div className="fixed inset-0 z-[60] bg-slate-950/50 flex items-center justify-center p-4" onClick={onClose}>
+      <form onSubmit={submit} onClick={e => e.stopPropagation()} className="w-full max-w-sm bg-white rounded-2xl p-6 space-y-3 text-right" dir="rtl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-black text-slate-900">تغيير كلمة المرور</h3>
+          <button type="button" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer" aria-label="إغلاق"><X className="w-4 h-4" /></button>
+        </div>
+        <input type="password" autoComplete="current-password" placeholder="كلمة المرور الحالية" value={cur} onChange={e => setCur(e.target.value)} className={field} required />
+        <input type="password" autoComplete="new-password" placeholder="كلمة المرور الجديدة (8 أحرف على الأقل)" value={next} onChange={e => setNext(e.target.value)} className={field} minLength={8} required />
+        <input type="password" autoComplete="new-password" placeholder="أعد كتابة كلمة المرور الجديدة" value={again} onChange={e => setAgain(e.target.value)} className={field} minLength={8} required />
+        {msg && <p className={`text-xs font-bold ${msg.ok ? 'text-emerald-600' : 'text-red-600'}`}>{msg.text}</p>}
+        <button type="submit" disabled={busy} className="w-full py-2.5 rounded-xl bg-brand-ink text-white text-sm font-bold disabled:opacity-60 cursor-pointer">{busy ? '...' : 'حفظ'}</button>
+      </form>
+    </div>
+  );
+};
+
 /** Old admin layout: dark right sidebar with grouped, collapsible items + light top bar. */
-export const AdminShell: React.FC<Props> = ({ activeTab, onSelect, badges = {}, actions, children }) => {
+export const AdminShell: React.FC<Props> = ({ activeTab, onSelect, badges = {}, actions, children, userName, userEmail, onLogout }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const close = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const meta = findNavMeta(activeTab);
 
@@ -112,7 +157,27 @@ export const AdminShell: React.FC<Props> = ({ activeTab, onSelect, badges = {}, 
           </Link>
           <div className="flex items-center gap-3">
             {actions}
-            <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center" title="حساب المشرف"><User className="w-5 h-5" /></div>
+            <div className="relative" ref={menuRef}>
+              <button type="button" onClick={() => setMenuOpen(o => !o)} className="w-9 h-9 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-500 flex items-center justify-center cursor-pointer" title="حساب المشرف" aria-haspopup="menu" aria-expanded={menuOpen}>
+                <User className="w-5 h-5" />
+              </button>
+              {menuOpen && (
+                <div role="menu" className="absolute left-0 top-11 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 p-1.5 z-50">
+                  {(userName || userEmail) && (
+                    <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                      {userName && <div className="text-xs font-bold text-slate-900 truncate">{userName}</div>}
+                      {userEmail && <div className="text-[11px] text-slate-500 truncate font-mono" dir="ltr">{userEmail}</div>}
+                    </div>
+                  )}
+                  <button role="menuitem" type="button" onClick={() => { setMenuOpen(false); setPwOpen(true); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
+                    <KeyRound className="w-4 h-4" /> تغيير كلمة المرور
+                  </button>
+                  <button role="menuitem" type="button" onClick={() => { setMenuOpen(false); onLogout?.(); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer">
+                    <LogOut className="w-4 h-4" /> تسجيل الخروج
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -131,6 +196,7 @@ export const AdminShell: React.FC<Props> = ({ activeTab, onSelect, badges = {}, 
           <div className="px-6 pb-16 space-y-6">{children}</div>
         </main>
       </div>
+      {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
     </div>
   );
 };

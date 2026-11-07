@@ -123,6 +123,12 @@ export const api = {
   },
   /** New password from the emailed link; signs the user in */
   resetPassword: (email: string, token: string, password: string) => authCall('reset', { email, token, password }),
+  /** Change the signed-in account's password (needs the current one) */
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const res = await fetch('/api/v1/auth/password', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ currentPassword, newPassword }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر تغيير كلمة المرور');
+  },
   async logout() {
     await fetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => {});
     setToken('');

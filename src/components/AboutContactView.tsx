@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { openTalentSignup } from '../lib/talentJoin';
 import { 
   Building2, 
-  Mail, 
-  MapPin, 
+  Mail,  
   ShieldCheck, 
   CheckCircle2, 
   Sparkles, 
@@ -162,14 +161,6 @@ export const AboutContactView: React.FC<AboutContactViewProps> = ({
 
               <div className="space-y-4 text-xs">
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-brand-text shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold block text-white">المقر الرئيسي:</span>
-                    <span className="text-slate-400">الرياض، المملكة العربية السعودية • دبي، الإمارات</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
                   <Mail className="w-4 h-4 text-brand-text shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold block text-white">البريد الإلكتروني المعتمد:</span>
@@ -180,7 +171,7 @@ export const AboutContactView: React.FC<AboutContactViewProps> = ({
             </div>
 
             <div className="pt-6 border-t border-slate-800 space-y-3">
-              <span className="text-xs text-slate-300 font-bold block">هل أنت معلق صوتي وترغب بالانضمام لسوق قيمة؟</span>
+              <span className="text-xs text-slate-300 font-bold block">هل أنت معلق صوتي وترغب بالانضمام لمنصة قيمة؟</span>
               <button
                 onClick={openTalentSignup}
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-orange text-white text-xs font-bold transition-all shadow-md shadow-brand/25 cursor-pointer"
@@ -312,7 +303,7 @@ export const AboutContactView: React.FC<AboutContactViewProps> = ({
         </div>
         <div className="space-y-1">
           <h3 className="text-xl sm:text-2xl font-black text-white">
-            هل أنت معلق صوتي وترغب بالانضمام لسوق قيمة؟
+            هل أنت معلق صوتي وترغب بالانضمام لمنصة قيمة؟
           </h3>
           <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
             انضم إلى شبكة نخبة الأصوات المعتمدة في الوطن العربي واستقبل طلبات المشاريع والعقود المؤسسية مباشرة.
