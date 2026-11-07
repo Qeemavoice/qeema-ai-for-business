@@ -277,6 +277,19 @@ class AdminController extends Controller
         return $out;
     }
 
+    /** «إرسال رسالة تجريبية»: sends a test e-mail to the signed-in admin with the saved SMTP settings and says why it failed */
+    public function smtpTest(Request $r)
+    {
+        $to = (string) Accounts::currentUser($r)->email;
+        try {
+            \App\Services\NewUi\Mailer::send($to, 'رسالة تجريبية من قيمة فويس', "هذه رسالة تجريبية للتأكد من إعدادات البريد في لوحة الإدارة.\nإذا وصلتك فرسائل «نسيت كلمة المرور» والتحقق ستصل أيضاً.");
+            return response()->json(['ok' => true, 'to' => $to]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['error' => 'لم تُرسل الرسالة: ' . mb_substr($e->getMessage(), 0, 300)], 422);
+        }
+    }
+
     public function settingsGet()
     {
         return response()->json(['settings' => $this->settingsWithLegacy(), 'integrations' => $this->publicIntegrations()]);

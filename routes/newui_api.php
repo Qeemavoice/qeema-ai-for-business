@@ -132,6 +132,7 @@ Route::prefix('admin')->middleware('qv.admin')->group(function () {
     Route::get('generations', 'AdminController@generations');
     Route::get('settings', 'AdminController@settingsGet');
     Route::post('settings', 'AdminController@settingsPost');
+    Route::post('settings/smtp-test', 'AdminController@smtpTest')->middleware('throttle:password');
     Route::get('reviews', 'AdminController@reviews');
     Route::post('reviews/{bookingId}', 'AdminController@reviewStatus');
     Route::get('collections/{name}', 'CollectionsController@index');
