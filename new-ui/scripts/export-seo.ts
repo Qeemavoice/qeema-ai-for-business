@@ -44,7 +44,7 @@ console.log(`seo.json: ${Object.keys(routes).length} routes -> ${out}`);
 const outDir = path.dirname(out);
 const hostPublic = path.resolve(outDir, '..');
 if (path.basename(outDir) === 'new-ui' && fs.existsSync(path.join(hostPublic, 'index.php'))) {
-  for (const dir of ['assets', 'stories', 'logo-motion', 'qv-chat', 'guides']) {
+  for (const dir of ['assets', 'stories', 'logo-motion', 'qv-chat', 'guides', 'voice-models']) {
     const src = path.resolve(__dirname, '..', 'public', dir);
     if (fs.existsSync(src)) fs.cpSync(src, path.join(hostPublic, dir), { recursive: true });
   }

@@ -191,7 +191,7 @@ class AuthController extends Controller
     public function profileGet(Request $r)
     {
         $u = Accounts::currentUser($r);
-        return response()->json(['name' => Accounts::name($u), 'email' => (string) $u->email, 'mobile' => (string) ($u->mobile ?? ''),
+        return response()->json(['name' => Accounts::name($u), 'email' => (string) $u->email, 'mobile' => (string) ($u->mobile ?? ''), 'avatar' => $u->image ? $u->image_url : null,
             'country' => (string) (Accounts::account($u)['country'] ?? '')]);
     }
 
@@ -207,6 +207,35 @@ class AuthController extends Controller
         $u->forceFill(['full_name' => ['ar' => $name, 'en' => $name], 'mobile' => $mobile ?: null])->save();
         if ($country !== '') Accounts::saveAccount($u, ['country' => $country]);
         return response()->json(['user' => Accounts::publicUser($u->fresh())]);
+    }
+
+    /** Profile photo: jpg/png/webp up to 2 MB, saved in public/uploads/users like the old site's photos */
+    public function avatarPut(Request $r)
+    {
+        $u = Accounts::currentUser($r);
+        $f = $r->file('image');
+        if (!$f || !$f->isValid() || $f->getSize() > 2 * 1024 * 1024) return response()->json(['error' => 'اختر صورة لا يزيد حجمها عن 2 ميغابايت'], 400);
+        $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'][$f->getMimeType()] ?? null;
+        if (!$ext || !@getimagesize($f->getRealPath())) return response()->json(['error' => 'الصورة يجب أن تكون JPG أو PNG أو WEBP'], 400);
+        $name = 'qv-' . $u->id . '-' . \Illuminate\Support\Str::random(8) . '.' . $ext;
+        $f->move(public_path(DIR_UPLOAD . '/' . \App\Models\User::DIR_IMAGE_UPLOADS), $name);
+        $this->dropOwnAvatar($u);
+        $u->forceFill(['image' => $name])->save();
+        return response()->json(['user' => Accounts::publicUser($u)]);
+    }
+
+    public function avatarDelete(Request $r)
+    {
+        $u = Accounts::currentUser($r);
+        $this->dropOwnAvatar($u);
+        $u->forceFill(['image' => null])->save();
+        return response()->json(['user' => Accounts::publicUser($u)]);
+    }
+
+    /** Delete the previous photo only when this page uploaded it (old-site photos stay untouched) */
+    private function dropOwnAvatar($u): void
+    {
+        if ($u->image && str_starts_with($u->image, 'qv-' . $u->id . '-')) @unlink(public_path(DIR_UPLOAD . '/' . \App\Models\User::DIR_IMAGE_UPLOADS . '/' . basename($u->image)));
     }
 
     public function favoritesGet(Request $r)

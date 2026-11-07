@@ -76,6 +76,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 }) => {
   const [isCompanyMenuOpen, setIsCompanyMenuOpen] = React.useState(false);
   const canUseNew = useRowad().canUse;
+  // a client has one workspace; switching is for admins opening clients' workspaces
+  const canSwitch = availableCompanies.length > 1;
 
   const mainNavItems = [
     { key: 'home' as DashboardNavKey, label: 'الرئيسية', icon: Home, badge: undefined },
@@ -86,6 +88,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     { key: 'projects' as DashboardNavKey, label: 'المشاريع والقوالب', icon: LayoutTemplate, badge: undefined },
     { key: 'assets' as DashboardNavKey, label: 'أصولي والتراخيص', icon: FileAudio, badge: undefined },
     { key: 'billing' as DashboardNavKey, label: 'الباقة والفوترة', icon: CreditCard, badge: undefined },
+    { key: 'team' as DashboardNavKey, label: 'فريق العمل', icon: UserPlus, badge: undefined },
     { key: 'profile' as DashboardNavKey, label: 'البيانات الشخصية', icon: UserCircle, badge: undefined },
   ];
 
@@ -100,7 +103,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       {/* 1. Workspace Header / Switcher */}
       <div className="p-3.5 border-b border-slate-100 relative">
         <button
-          onClick={() => setIsCompanyMenuOpen(!isCompanyMenuOpen)}
+          onClick={() => canSwitch && setIsCompanyMenuOpen(!isCompanyMenuOpen)}
           className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200/80 group text-right"
         >
           <div className="flex items-center gap-2.5 min-w-0">
@@ -121,11 +124,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               </div>
             )}
           </div>
-          {!isCollapsed && <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 group-hover:text-slate-600 transition-colors" />}
+          {!isCollapsed && canSwitch && <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 group-hover:text-slate-600 transition-colors" />}
         </button>
 
         {/* Company Dropdown Menu */}
-        {isCompanyMenuOpen && !isCollapsed && (
+        {isCompanyMenuOpen && canSwitch && !isCollapsed && (
           <div className="absolute top-full right-3.5 left-3.5 mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl p-1.5 z-50 animate-fade-in space-y-1">
             <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400">تبديل مساحة العمل</div>
             {availableCompanies.map((comp) => (

@@ -77,6 +77,21 @@ class PasswordResetTest extends TestCase
         $this->getJson('/api/v1/auth/profile', $h)->assertJsonPath('mobile', '+966555123456')->assertJsonPath('country', 'الإمارات');
     }
 
+    public function test_signed_in_account_uploads_a_profile_photo()
+    {
+        $u = $this->account();
+        $u->forceFill(['password' => Hash::make('old-pass-123')])->save();
+        $h = ['Authorization' => 'Bearer ' . $this->postJson('/api/v1/auth/login', ['email' => $u->email, 'password' => 'old-pass-123'])->json('token')];
+        $this->post('/api/v1/auth/avatar', ['image' => \Illuminate\Http\UploadedFile::fake()->create('x.pdf', 10, 'application/pdf')], $h + ['Accept' => 'application/json'])->assertStatus(400);
+        $avatar = $this->post('/api/v1/auth/avatar', ['image' => \Illuminate\Http\UploadedFile::fake()->image('me.png', 64, 64)], $h + ['Accept' => 'application/json'])
+            ->assertOk()->json('user.avatar');
+        $file = public_path('uploads/users/' . $u->fresh()->image);
+        $this->assertStringContainsString('/uploads/users/qv-' . $u->id . '-', $avatar);
+        $this->assertFileExists($file);
+        $this->deleteJson('/api/v1/auth/avatar', [], $h)->assertOk()->assertJsonPath('user.avatar', null);
+        $this->assertFileDoesNotExist($file);
+    }
+
     public function test_narrator_signup_needs_a_whatsapp_number()
     {
         $this->account();

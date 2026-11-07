@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Camera, Trash2 } from 'lucide-react';
+import { UserAvatar } from '../UserAvatar';
 import { api, ACCOUNT_CHANGED_EVENT } from '../../lib/api';
 import { ChangePasswordModal } from '../admin/AdminShell';
 
@@ -10,8 +11,34 @@ export const ProfileView: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pwOpen, setPwOpen] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
-  useEffect(() => { api.getProfile().then(p => { setForm(p); setLoaded(true); }).catch(e => setMsg({ ok: false, text: e.message })); }, []);
+  /** Square-crop and shrink to 400px JPEG in the browser, so phone photos fit the 2 MB limit */
+  const shrink = (file: File) => new Promise<Blob>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(img.width, img.height), c = document.createElement('canvas');
+      c.width = c.height = Math.min(400, s);
+      c.getContext('2d')!.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      c.toBlob(b => (b ? resolve(b) : reject(new Error('تعذر قراءة الصورة'))), 'image/jpeg', 0.88);
+    };
+    img.onerror = () => reject(new Error('الملف ليس صورة صالحة'));
+    img.src = URL.createObjectURL(file);
+  });
+
+  const changePhoto = async (file?: File | null, remove = false) => {
+    setPhotoBusy(true); setMsg(null);
+    try {
+      const u = remove ? await api.deleteAvatar() : await api.uploadAvatar(await shrink(file!));
+      setAvatar(u.avatar || null);
+      window.dispatchEvent(new Event(ACCOUNT_CHANGED_EVENT));
+    } catch (err: any) { setMsg({ ok: false, text: err.message }); }
+    finally { setPhotoBusy(false); }
+  };
+
+  useEffect(() => { api.getProfile().then(p => { setForm({ name: p.name, email: p.email, mobile: p.mobile, country: p.country }); setAvatar(p.avatar || null); setLoaded(true); }).catch(e => setMsg({ ok: false, text: e.message })); }, []);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +60,16 @@ export const ProfileView: React.FC = () => {
         <p className="text-xs text-slate-500 mt-1">حدّث اسمك ورقم جوالك وبلدك. البريد الإلكتروني لا يتغير لأنه وسيلة الدخول.</p>
       </div>
       <form onSubmit={save} className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-6 space-y-4 text-right">
+        <div className="flex items-center gap-4 pb-2">
+          <UserAvatar user={loaded ? { id: '', email: form.email, name: form.name, avatar: avatar || undefined } as any : null} className="w-20 h-20 text-2xl" />
+          <div className="flex flex-wrap gap-2">
+            <label className={`px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer ${photoBusy || !loaded ? 'opacity-60 pointer-events-none' : ''}`}>
+              <Camera className="w-4 h-4" /> {photoBusy ? 'جارٍ الرفع...' : avatar ? 'تغيير الصورة' : 'إضافة صورة'}
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) changePhoto(f); }} />
+            </label>
+            {avatar && <button type="button" disabled={photoBusy} onClick={() => changePhoto(null, true)} className="px-3 py-2 rounded-xl text-red-600 hover:bg-red-50 text-xs font-bold flex items-center gap-1.5 cursor-pointer"><Trash2 className="w-4 h-4" /> إزالة</button>}
+          </div>
+        </div>
         <div><label className={label}>الاسم الكامل</label>
           <input className={field} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required minLength={2} maxLength={80} disabled={!loaded} /></div>
         <div><label className={label}>البريد الإلكتروني</label>

@@ -130,7 +130,21 @@ export const api = {
     if (!res.ok) throw new Error(data.error || 'تعذر تغيير كلمة المرور');
   },
   /** «البيانات الشخصية» */
-  async getProfile(): Promise<{ name: string; email: string; mobile: string; country: string }> {
+  /** Profile photo (already resized in the browser); returns the updated user */
+  async uploadAvatar(file: Blob): Promise<User> {
+    const fd = new FormData(); fd.append('image', file, 'avatar.jpg');
+    const res = await fetch('/api/v1/auth/avatar', { method: 'POST', headers: { Accept: 'application/json' }, body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر رفع الصورة');
+    return data.user;
+  },
+  async deleteAvatar(): Promise<User> {
+    const res = await fetch('/api/v1/auth/avatar', { method: 'DELETE', headers: getHeaders() });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر حذف الصورة');
+    return data.user;
+  },
+  async getProfile(): Promise<{ name: string; email: string; mobile: string; country: string; avatar?: string | null }> {
     const res = await fetch('/api/v1/auth/profile', { headers: getHeaders() });
     if (!res.ok) throw new Error('تعذر تحميل البيانات');
     return res.json();

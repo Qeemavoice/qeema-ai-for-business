@@ -26,6 +26,8 @@ Route::prefix('auth')->group(function () {
         Route::post('password', 'AuthController@changePassword')->middleware('throttle:password');
         Route::get('profile', 'AuthController@profileGet');
         Route::put('profile', 'AuthController@profilePut');
+        Route::post('avatar', 'AuthController@avatarPut')->middleware('throttle:password');
+        Route::delete('avatar', 'AuthController@avatarDelete');
     });
     Route::post('switch-company', 'AuthController@switchCompany')->middleware('qv.admin');
 });
