@@ -30,7 +30,10 @@ import type { OrbMode, OrbState } from './VoiceOrb';
 import { VoiceStyleCarousel, buildVoiceStyleItems } from './VoiceStyleCarousel';
 import { PRODUCT_TABS } from './ProductSwitcher';
 import { useSiteLists } from '../lib/siteLists';
-import { TextToSpeechPlayground } from './TextToSpeechPlayground';
+import { useNavigate } from 'react-router-dom';
+import { TtsStudioPanel } from './TtsStudioPanel';
+import { useRowad } from '../lib/rowad';
+import { ACCOUNT_CHANGED_EVENT } from '../lib/api';
 import { HumanVoicesSection } from './HumanVoicesSection';
 import { AIVoicesSection } from './AIVoicesSection';
 import { AI_VOICES_ENABLED } from '../../shared/features';
@@ -136,6 +139,10 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
 }) => {
   // Active category / product navigation state - يبدأ بالأصوات البشرية
   const [activeTab, setActiveTab] = useState<OrbMode>('human');
+  // «استوديو TTS» tab: the same studio as /ar/text-to-speech (free trial for visitors), up to the audio preview
+  const navigate = useNavigate();
+  const { canUse } = useRowad();
+  const studio = isLoggedIn && canUse;
 
   // Audio & Orb States
   const [isPlaying, setIsPlaying] = useState(false);
@@ -318,10 +325,12 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
             </div>
 
             {activeTab === 'tts' ? (
-              <div className="p-4 sm:p-6 animate-in fade-in duration-300">
-                <TextToSpeechPlayground
-                  onRequireAuth={isLoggedIn ? undefined : (onOpenSignup || onOpenLogin)}
-                  onExploreVoices={() => onNavigate('voice-library', { tab: 'ai' })}
+              <div className="p-4 sm:p-6 animate-in fade-in duration-300 text-right">
+                <TtsStudioPanel
+                  voices={voices}
+                  showHistory={false}
+                  onGenerated={() => window.dispatchEvent(new Event(ACCOUNT_CHANGED_EVENT))}
+                  trial={studio ? undefined : { onSignup: isLoggedIn ? () => navigate('/ar/waitlist') : (onOpenSignup || onOpenLogin || (() => navigate('/ar/text-to-speech'))) }}
                 />
               </div>
             ) : styleItems.length > 0 && (

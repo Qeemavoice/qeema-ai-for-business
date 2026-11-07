@@ -5,7 +5,8 @@ import React, { useEffect, useRef, useState } from 'react';
  * transparent renders (public/logo-motion). Still WebP when idle, animated WebP when live;
  * while a voice plays the glass breathes with the loudness (same smoothing as render_liquid.py).
  * Animated WebP, not video: transparent video (VP9/HEVC alpha) rendered invisible in some Chromium
- * builds. Assets from transparent.zip: 608px centre crop, 240px, 12fps, 3.5s ping-pong loop.
+ * builds. Assets from transparent.zip: 608px centre crop, 240px, 12fps, 3.5s ping-pong loop;
+ * «-hd» files: 1080px centre crop of the full renders, 480px, 12fps (scratch script mkanim.py).
  */
 export const LIQUID_VARIANTS = ['lilac', 'ember', 'garnet', 'grove'] as const;
 
@@ -92,14 +93,16 @@ export const LiquidLogo: React.FC<LiquidLogoProps> = ({ variant, size, live = fa
     return () => { cancelAnimationFrame(raf); v.style.filter = ''; v.style.transform = zoom !== 1 ? `scale(${zoom})` : ''; };
   }, [animate, audio, playing, look, zoom]);
 
-  const still = `/logo-motion/${look}.webp`;
+  // large marks (the players' hero) use the 480px renders; small icons keep the light 240px ones
+  const file = size * zoom > 120 ? `${look}-hd` : look;
+  const still = `/logo-motion/${file}.webp`;
   const inner: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'contain', transform: zoom !== 1 ? `scale(${zoom})` : undefined, pointerEvents: 'none' };
   return (
     <span className={`relative inline-block shrink-0 ${className}`} style={{ width: size, height: size }} aria-hidden="true">
       {/* the still stays until the animation (~1.7MB) has loaded, so the mark never disappears */}
       {(!animate || !animReady) && <img src={still} alt="" draggable={false} decoding="async" loading="lazy" style={{ ...inner, position: 'absolute', inset: 0 }} />}
       {animate && (
-        <img ref={imgRef} key={look} src={`/logo-motion/${look}-anim.webp`} alt="" draggable={false} decoding="async" onLoad={() => setLoadedLook(look)}
+        <img ref={imgRef} key={look} src={`/logo-motion/${file}-anim.webp`} alt="" draggable={false} decoding="async" onLoad={() => setLoadedLook(look)}
           style={{ ...inner, position: 'absolute', inset: 0, opacity: animReady ? 1 : 0, transition: 'transform .08s linear' }} />
       )}
     </span>
