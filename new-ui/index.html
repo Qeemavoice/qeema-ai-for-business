@@ -16,9 +16,7 @@
   <body class="bg-[#FBF9F6] text-[#0F172A] antialiased selection:bg-brand selection:text-white font-['IBM_Plex_Sans_Arabic',sans-serif]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- مساعد قيمة (شات اختيار الصوت). data-mock="true" = عرض تجريبي بدون خادم؛
-         احذفيه وأضيفي data-endpoint="https://<موقع-Laravel>/qv-chat" بعد تركيب الخادم -->
-    <script src="/qv-chat/qv-chat.js" data-position="right" data-mock="true" defer></script>
+    <!-- مساعد قيمة (public/qv-chat/qv-chat.js) is loaded by App.tsx on the admin dashboard only, for now -->
   </body>
 </html>
 

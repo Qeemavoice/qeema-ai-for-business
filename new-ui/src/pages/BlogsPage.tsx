@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { 
   BookOpen, 
   Search, 
@@ -24,6 +24,7 @@ export const BlogsPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [params, setParams] = useSearchParams();
 
   const categories = [
     { id: 'all', label: 'كافة المقالات' },
@@ -47,6 +48,13 @@ export const BlogsPage: React.FC = () => {
       post.tags.some(t => t.includes(searchQuery));
     return matchesCat && matchesSearch;
   });
+
+  // 30 articles a page; the page number lives in the address (?page=2) so it can be shared and the back button works
+  const PER_PAGE = 30;
+  const pageCount = Math.max(1, Math.ceil(filteredPosts.length / PER_PAGE));
+  const page = Math.min(pageCount, Math.max(1, Number(params.get('page')) || 1));
+  const shownPosts = filteredPosts.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const goToPage = (n: number) => { setParams(n > 1 ? { page: String(n) } : {}); window.scrollTo(0, 0); };
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20" dir="rtl">
@@ -83,7 +91,7 @@ export const BlogsPage: React.FC = () => {
                 type="text"
                 placeholder="ابحث في المقالات والدروس..."
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => { setSearchQuery(e.target.value); if (page > 1) setParams({}); }}
                 className="w-full pl-4 pr-10 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:border-brand focus:bg-white transition"
               />
               <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-3" />
@@ -93,7 +101,7 @@ export const BlogsPage: React.FC = () => {
               {categories.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => { setSelectedCategory(cat.id); if (page > 1) setParams({}); }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
                     selectedCategory === cat.id
                       ? 'bg-brand text-white shadow-xs'
@@ -123,7 +131,7 @@ export const BlogsPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPosts.map(post => (
+              {shownPosts.map(post => (
                 <article
                   key={post.id}
                   className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
@@ -176,6 +184,23 @@ export const BlogsPage: React.FC = () => {
                 </article>
               ))}
             </div>
+          )}
+
+          {pageCount > 1 && (
+            <nav aria-label="صفحات المدونة" className="mt-12 flex flex-wrap items-center justify-center gap-2">
+              {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
+                <button
+                  key={n}
+                  onClick={() => goToPage(n)}
+                  aria-current={n === page ? 'page' : undefined}
+                  className={`min-w-10 h-10 px-3 rounded-xl text-sm font-bold font-mono border transition cursor-pointer ${
+                    n === page ? 'bg-brand-ink text-white border-brand-ink' : 'bg-white text-slate-700 border-slate-200 hover:border-brand'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </nav>
           )}
         </div>
       </section>

@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { DashboardNavKey } from './DashboardSidebar';
 import { FeedbackModal } from './FeedbackModal';
-import { openAssistant } from '../../lib/assistantEvents';
+import { openAssistant, ASSISTANT_ON } from '../../lib/assistantEvents';
 import { Company, User, ActiveView } from '../../types';
 
 interface DashboardTopNavProps {
@@ -170,13 +170,13 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
           </button>
 
           {/* Ask: opens the "مساعد قيمة" chatbot */}
-          <button
+          {ASSISTANT_ON && <button
             onClick={() => openAssistant()}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-2xs"
           >
             <Sparkles className="w-3.5 h-3.5 text-brand-text" />
             <span>اسأل</span>
-          </button>
+          </button>}
 
           {/* Projects / Folder Icon Button */}
           <button

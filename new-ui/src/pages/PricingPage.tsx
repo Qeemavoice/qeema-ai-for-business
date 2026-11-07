@@ -164,7 +164,7 @@ export const PricingPage: React.FC = () => {
                 >
                   {/* Plan card */}
                   <div
-                    className={`rounded-3xl border p-6 min-h-[260px] flex flex-col justify-between ${
+                    className={`rounded-3xl border p-6 md:min-h-[260px] flex flex-col gap-5 justify-between ${
                       plan.featured
                         ? 'bg-brand-ink border-brand-ink text-white'
                         : 'bg-[#F2EFEA] border-[#E7E2DA] text-slate-950'

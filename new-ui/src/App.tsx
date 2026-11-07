@@ -89,6 +89,8 @@ function AppLayout({
 }) {
   const location = useLocation();
   const path = location.pathname;
+  // a new page opens at its top (the browser would keep the previous page's scroll position)
+  useEffect(() => { if (!location.hash) window.scrollTo(0, 0); }, [path]);
 
   // dashboards have their own top bar (avatar + account menu), so the site header would show the account twice
   const isWorkspaceDashboard = path === '/ar/dashboard' || path === '/ar/account' || path.startsWith('/ar/account/') ||
@@ -97,6 +99,14 @@ function AppLayout({
   const adminPathCfg = (window as any).__QV_CONFIG?.adminPath as string | undefined;
   const isAdminLogin = Boolean(adminPathCfg) && path === adminPathCfg && !currentUser;
   const hideChrome = isWorkspaceDashboard || isAdminLogin;
+  // مساعد قيمة is off on the public site for now; the admin dashboard loads it so it can be developed there
+  useEffect(() => {
+    if (!adminPathCfg || path !== adminPathCfg || !currentUser?.isPlatformAdmin || document.getElementById('qv-chat-script')) return;
+    const s = document.createElement('script');
+    s.id = 'qv-chat-script'; s.src = '/qv-chat/qv-chat.js'; s.defer = true;
+    s.dataset.position = 'right'; s.dataset.mock = 'true';
+    document.body.appendChild(s);
+  }, [path, adminPathCfg, currentUser?.isPlatformAdmin]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFFFF] text-[#0F172A] font-['IBM_Plex_Sans_Arabic','Cairo',sans-serif]">
