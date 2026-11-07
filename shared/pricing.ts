@@ -7,18 +7,26 @@
  */
 export const PLATFORM_COMMISSION_PERCENT = 30;
 
+/** The live rate from «الإعدادات ← العمولات» (the browser loads it from /api/v1/site-status); 30 until then. */
+let currentPct = PLATFORM_COMMISSION_PERCENT;
+export const commissionPercent = () => currentPct;
+export const setCommissionPercent = (n: unknown) => {
+  const v = Number(n);
+  if (n !== null && n !== undefined && n !== '' && Number.isFinite(v) && v >= 0 && v <= 100) currentPct = v;
+};
+
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Final price shown to the client (narrator price + commission). */
-export const finalPrice = (narratorPrice: number, commissionPct = PLATFORM_COMMISSION_PERCENT) =>
+export const finalPrice = (narratorPrice: number, commissionPct = currentPct) =>
   round2(narratorPrice * (1 + commissionPct / 100));
 
 /** Platform commission amount contained in a narrator price. */
-export const commissionAmount = (narratorPrice: number, commissionPct = PLATFORM_COMMISSION_PERCENT) =>
+export const commissionAmount = (narratorPrice: number, commissionPct = currentPct) =>
   round2(narratorPrice * (commissionPct / 100));
 
 /** Narrator share contained inside a final (client-facing) price. */
-export const narratorShareOf = (finalPriceUsd: number, commissionPct = PLATFORM_COMMISSION_PERCENT) =>
+export const narratorShareOf = (finalPriceUsd: number, commissionPct = currentPct) =>
   round2(finalPriceUsd / (1 + commissionPct / 100));
 
 /** "45.5" / "52" — no trailing zeros, Latin digits. */

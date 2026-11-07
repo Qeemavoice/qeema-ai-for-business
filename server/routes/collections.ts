@@ -117,7 +117,8 @@ export const publicHumanVoicesHandler = (_req: Request, res: Response) => {
   const pct = db.systemSettings.platformCommissionPercent;
   res.json({
     commissionPercent: pct,
-    items: libraryVoices().map(v => ({ ...v, finalPriceUsd: finalPrice(Number(v.narratorPriceUsd) || DEFAULT_PRICE_PER_MINUTE_USD, pct) }))
+    // public pages show the clip name only: never the narrator's name
+    items: libraryVoices().map(v => ({ ...v, name: v.sampleName || v.category || 'عينة صوتية', talentName: '', finalPriceUsd: finalPrice(Number(v.narratorPriceUsd) || DEFAULT_PRICE_PER_MINUTE_USD, pct) }))
   });
 };
 
