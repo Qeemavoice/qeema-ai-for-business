@@ -43,6 +43,7 @@ class AssistantController extends Controller
     {
         $message = trim((string) $r->input('message', ''));
         if ($message === '') return response()->json(['error' => 'الرسالة مطلوبة'], 400);
+        if (mb_strlen($message) > 1000) return response()->json(['error' => 'الرسالة طويلة، اختصرها إلى 1000 حرف'], 400);
         $key = (string) env('GEMINI_API_KEY', '');
         if (!$key || $key === 'MY_GEMINI_API_KEY') {
             return response()->json(['reply' => 'مرحباً بك في قيمة فويس. تصفح مكتبة الأصوات من /ar/voices أو اكتب لنا عبر صفحة تواصل معنا وسنساعدك في اختيار الصوت المناسب.', 'provider' => 'static']);

@@ -82,5 +82,9 @@ return [
 
     'payments_enabled' => env('PAYMENTS_ENABLED', env('APP_ENV') === 'production'),
 
+    // New UI: top-ups and plan changes add credit with no charge (no payment gateway yet), so only admins may use them
+    // unless this is switched on (tests). Turn it off for good once the gateway charges first.
+    'newui_grant_without_payment' => (bool) env('NEWUI_GRANT_WITHOUT_PAYMENT', false),
+
 
 ];

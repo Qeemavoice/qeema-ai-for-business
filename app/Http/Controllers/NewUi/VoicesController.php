@@ -89,10 +89,16 @@ class VoicesController extends Controller
     /** Listen sample: the uploaded file if any, otherwise one sentence synthesized once and cached. */
     public function preview(string $id)
     {
+        // Munsit voice (by its QV code): its sample, served from here so the client never sees the provider's address
+        if ($m = Tts::munsitVoiceRow($id)) {
+            return $m->preview_url ? (self::remoteAudio($m->preview_url) ?: response()->json(['error' => 'العينة غير متاحة'], 404))
+                : response()->json(['error' => 'العينة غير متاحة'], 404);
+        }
         $v = self::voiceRow($id);
         if (!$v || !$v->is_active) return response()->json(['error' => 'الصوت غير موجود'], 404);
         if ($v->preview_url) {
-            return Str::startsWith($v->preview_url, 'data:') ? $this->file($id) : redirect($v->preview_url);
+            if (Str::startsWith($v->preview_url, 'data:')) return $this->file($id);
+            return self::remoteAudio($v->preview_url) ?: response()->json(['error' => 'العينة غير متاحة'], 404);
         }
         $path = self::AUDIO_DISK_DIR . "/preview-{$id}";
         if (!Storage::exists($path . '.bin')) {
@@ -119,6 +125,28 @@ class VoicesController extends Controller
         if (!Storage::exists($path . '.bin')) return response()->json(['error' => 'الملف غير موجود'], 404);
         $mime = Storage::exists($path . '.mime') ? Storage::get($path . '.mime') : 'audio/mpeg';
         return self::audioFile($path, $mime, 'private, max-age=86400');
+    }
+
+    /**
+     * A sample hosted elsewhere (provider CDN), copied here once and served from our address, so the page never
+     * shows where it comes from. Null when it cannot be fetched. Only http(s), at most 15 MB.
+     */
+    private static function remoteAudio(string $url)
+    {
+        if (!preg_match('#^https?://#i', $url)) return null;
+        $path = self::AUDIO_DISK_DIR . '/remote-' . sha1($url);
+        if (!Storage::exists($path . '.bin')) {
+            try {
+                $res = \Illuminate\Support\Facades\Http::timeout(20)->get($url);
+            } catch (\Throwable $e) {
+                return null;
+            }
+            if (!$res->successful() || strlen($res->body()) > 15 * 1024 * 1024) return null;
+            $mime = strtok((string) $res->header('Content-Type'), ';') ?: 'audio/mpeg';
+            if (!Str::startsWith($mime, 'audio/')) $mime = Str::endsWith(parse_url($url, PHP_URL_PATH) ?: '', '.wav') ? 'audio/wav' : 'audio/mpeg';
+            self::storeAudio('remote-' . sha1($url), $res->body(), $mime);
+        }
+        return self::audioFile($path, Storage::get($path . '.mime'), 'public, max-age=86400');
     }
 
     /** A stored audio file with byte-range support (206): Safari and iOS refuse to play audio without it */

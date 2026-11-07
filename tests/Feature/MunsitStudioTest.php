@@ -37,7 +37,10 @@ class MunsitStudioTest extends TestCase
         $before = Accounts::balance($u->id);
         $res = $api->postJson('/api/v1/generations', ['voiceId' => 'QV-101', 'text' => 'مرحبا بكم',
             'settings' => ['emotion' => 'excited', 'dialect' => 'fusha', 'speed' => 3, 'stability' => 0]])->assertOk();
-        $this->assertSame('munsit', $res->json('generation.provider'));
+        $this->assertSame('munsit', DB::table('qv_generations')->value('provider'));   // recorded for the admins...
+        $this->assertNull($res->json('generation.provider'));                          // ...never sent to the client
+        $this->assertNull($res->json('generation.costUsd'));
+        $this->assertSame('WAV', $res->json('generation.format'));
         $this->assertSame('QV-101', $res->json('generation.voiceCode'));
         $this->assertSame('QV-101', $res->json('generation.voiceId'));
         $this->assertSame('excited', $res->json('generation.settings.emotion'));

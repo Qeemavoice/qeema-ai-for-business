@@ -144,6 +144,13 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('password', fn (Request $request) => Limit::perMinute(10)->by('password|' . $request->ip())
             ->response(fn () => response()->json(['error' => 'محاولات كثيرة، حاول بعد دقيقة'], 429)));
 
+        // sign-in / sign-up: 10 attempts a minute per IP (stops password guessing)
+        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(10)->by('login|' . $request->ip())
+            ->response(fn () => response()->json(['error' => 'محاولات دخول كثيرة، حاول بعد دقيقة'], 429)));
+        // assistant chat: 20 messages a minute per IP (each one may call the AI model)
+        RateLimiter::for('assistant', fn (Request $request) => Limit::perMinute(20)->by('assistant|' . $request->ip())
+            ->response(fn () => response()->json(['error' => 'رسائل كثيرة، حاول بعد دقيقة'], 429)));
+
         RateLimiter::for('rowad', function (Request $request) {
             // only attempts that carry a code count (the redirect to the clean /ar/early does not)
             if ($request->isMethod('GET') && !$request->filled('code')) return Limit::none();

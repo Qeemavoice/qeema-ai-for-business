@@ -65,7 +65,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   const [result, setResult] = useState<Generation | null>(null);
   const [notice, setNotice] = useState('');
   // ElevenLabs answers MP3; Munsit and the internal engine answer WAV
-  const format = result?.provider === 'elevenlabs' ? 'MP3' : 'WAV';
+  const format = result?.format || 'WAV';
   const [history, setHistory] = useState<Generation[]>([]);
   const loadHistory = () => api.getGenerations().then(d => setHistory(d.generations.slice(0, 6))).catch(() => {});
   useEffect(() => { loadHistory(); }, []);

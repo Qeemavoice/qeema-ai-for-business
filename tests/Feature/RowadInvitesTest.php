@@ -20,6 +20,7 @@ class RowadInvitesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['services.newui_grant_without_payment' => true]);   // these tests buy plans; the gateway block has its own test
         // lookup rows the users table points to (the old site's seeders are commented out)
         foreach ([1 => 'admin', 2 => 'client', 3 => 'voice_actor', 4 => 'client_and_voice_actor'] as $id => $slug) {
             DB::table('user_types')->insert(['id' => $id, 'name' => $slug, 'slug' => $slug]);

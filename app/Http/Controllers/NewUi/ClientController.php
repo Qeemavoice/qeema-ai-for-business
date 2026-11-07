@@ -32,9 +32,10 @@ class ClientController extends Controller
             'id' => $g->id, 'companyId' => 'c' . $g->user_id, 'userId' => (string) $g->actor_user_id, // Munsit voices are known to the client by their code only (as in the studio list)
             'voiceId' => str_starts_with((string) $g->voice_id, 'munsit:') ? Tts::code($g->voice_id) : $g->voice_id, 'voiceCode' => Tts::code($g->voice_id), 'voiceName' => $g->voice_name,
             'voiceType' => $g->voice_type, 'dialect' => $g->dialect, 'text' => $g->text, 'textChars' => (int) $g->text_chars,
-            'settings' => $g->settings ? (json_decode($g->settings, true) ?: []) : [], 'provider' => $g->provider, 'model' => $g->model,
+            // the client sees the file format, never the TTS provider, its model or what the call cost us
+            'settings' => $g->settings ? (json_decode($g->settings, true) ?: []) : [], 'format' => $g->mime === 'audio/mpeg' ? 'MP3' : 'WAV',
             'audioUrl' => "/api/v1/storage/audio/{$g->id}", 'storagePath' => (string) $g->audio_path, 'durationSeconds' => (float) $g->duration_seconds,
-            'status' => $g->status, 'creditsConsumed' => (int) $g->credits_consumed, 'costUsd' => (float) $g->cost_usd, 'createdAt' => Store::iso(Store::created($g, 'created_at')),
+            'status' => $g->status, 'creditsConsumed' => (int) $g->credits_consumed, 'createdAt' => Store::iso(Store::created($g, 'created_at')),
         ];
     }
 
@@ -134,9 +135,18 @@ class ClientController extends Controller
             'transactions' => Accounts::transactions($ctx['companyUser']->id)]);
     }
 
+    /** No payment gateway yet: a top-up or plan change would hand out credit for free, so only admins may do it for now */
+    private static function paymentBlocked(array $ctx)
+    {
+        if (Accounts::isAdmin($ctx['user']) || config('services.newui_grant_without_payment')) return null;
+        return response()->json(['error' => 'الدفع الإلكتروني غير متاح بعد. تواصل معنا عبر واتساب أو البريد لتفعيل باقتك أو شحن رصيدك.',
+            'suggestedAction' => 'contact_sales'], 402);
+    }
+
     public function topup(Request $r)
     {
         $ctx = Accounts::context($r);
+        if ($blocked = self::paymentBlocked($ctx)) return $blocked;
         $plan = Plans::find((string) $r->input('packId', ''));
         if (!$plan || !$plan['priceUsd'] || !$plan['monthlyCredits']) return response()->json(['error' => 'الباقة المختارة غير متاحة'], 400);
         $method = (string) $r->input('paymentMethod', 'card');
@@ -185,6 +195,7 @@ class ClientController extends Controller
     public function changePlan(Request $r)
     {
         $ctx = Accounts::context($r);
+        if ($blocked = self::paymentBlocked($ctx)) return $blocked;
         $plan = Plans::find((string) $r->input('planId', ''));
         if (!$plan) return response()->json(['error' => 'الخطة غير متوفرة'], 404);
         if (!empty($plan['isCustom'])) return response()->json(['error' => 'باقة الشركات بتسعير مخصص، تواصل مع فريق المبيعات لتفعيلها'], 400);
@@ -255,12 +266,17 @@ class ClientController extends Controller
         $oid = Bookings::orderId($id);
         $o = $oid ? Bookings::query()->where('customer_id', $ctx['companyUser']->id)->find($oid) : null;
         if (!$o) return response()->json(['error' => 'طلب الحجز غير موجود'], 404);
+        // a review is about a recording the client received
+        if (!in_array(Bookings::status($o, Bookings::meta($o->id)), ['delivered', 'approved'], true)) {
+            return response()->json(['error' => 'يمكنك تقييم الحجز بعد استلام التسجيل'], 400);
+        }
         $rating = (int) $r->input('rating');
         if ($rating < 1 || $rating > 5) return response()->json(['error' => 'التقييم من 1 إلى 5'], 400);
         $review = ['rating' => $rating, 'text' => mb_substr(trim((string) $r->input('text', '')), 0, 1000), 'author' => Accounts::name($ctx['user']),
             'createdAt' => now()->toIso8601String(), 'status' => 'pending'];
         Bookings::saveMeta($o->id, ['review' => json_encode($review, JSON_UNESCAPED_UNICODE)]);
-        return response()->json(['success' => true, 'review' => $review]);
+        // the dashboard swaps the booking in its list with this one (it read `booking`, which was missing)
+        return response()->json(['success' => true, 'review' => $review, 'booking' => Bookings::clientView($o->fresh())]);
     }
 
     public function feedback(Request $r)

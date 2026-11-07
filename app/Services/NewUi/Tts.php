@@ -88,7 +88,7 @@ class Tts
             $code = self::code('munsit:' . $v['id']);
             return ['id' => $code, 'code' => $code, 'name' => $v['name'], 'gender' => $v['gender'],
                 'dialect' => $v['dialect'], 'dialects' => $v['dialects'], 'description' => $v['description'], 'style' => $v['style'],
-                'previewUrl' => $v['previewUrl']];
+                'previewUrl' => $v['previewUrl'] ? "/api/v1/voices/{$code}/preview" : ''];   // served by us (VoicesController::preview)
         }, self::munsitCatalogue());
     }
 
@@ -100,7 +100,7 @@ class Tts
         foreach (self::munsitCatalogue() as $v) {
             if ('munsit:' . $v['id'] === $key) {
                 return (object) ['id' => $key, 'name' => $v['name'], 'provider' => 'munsit', 'provider_voice_id' => $v['id'],
-                    'gender' => $v['gender'], 'dialect' => $v['dialect'], 'is_active' => 1, 'narrator_id' => null];
+                    'gender' => $v['gender'], 'dialect' => $v['dialect'], 'is_active' => 1, 'narrator_id' => null, 'preview_url' => $v['previewUrl']];
             }
         }
         return null;

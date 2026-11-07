@@ -125,8 +125,10 @@ export interface Generation {
     pitch?: number;
     format?: string;
   };
-  provider: string;
-  model: string;
+  /** admin views only: the client API sends the file format, never the provider or model */
+  provider?: string;
+  model?: string;
+  format?: 'MP3' | 'WAV';
   audioUrl: string;
   durationSeconds: number;
   status: 'pending' | 'processing' | 'completed' | 'failed';

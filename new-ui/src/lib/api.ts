@@ -223,7 +223,7 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error('فشل شحن الرصيد');
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'فشل شحن الرصيد');
     return res.json();
   },
 
@@ -254,7 +254,7 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify({ planId })
     });
-    if (!res.ok) throw new Error('فشل تغيير الباقة');
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'فشل تغيير الباقة');
     return res.json();
   },
 

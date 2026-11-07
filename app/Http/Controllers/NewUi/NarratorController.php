@@ -120,6 +120,8 @@ class NarratorController extends Controller
                 $out[$k] = array_values(array_filter((array) $v, fn ($i) => is_array($i) && self::ownerOf($k, $i, $st) === $id));
             }
         }
+        // the team's internal notes about the narrator stay with the admins (a save keeps them: see protect())
+        $out['narrators'] = array_map(fn ($n) => array_diff_key($n, ['adminNotes' => 1]), $out['narrators']);
         return $out;
     }
 
@@ -308,12 +310,17 @@ class NarratorController extends Controller
     {
         $t = $this->otpTarget($r, self::state());
         if (isset($t['error'])) return response()->json(['error' => $t['error']], $t['status']);
+        // one code a minute per address, so the endpoint cannot flood a narrator's inbox
+        if (!Cache::add('qv-otp-sent:' . sha1($t['key']), 1, now()->addMinute())) {
+            return response()->json(['error' => 'أُرسل رمز قبل قليل، انتظر دقيقة ثم أعد المحاولة'], 429);
+        }
         $code = (string) random_int(100000, 999999);
         Cache::put('qv-otp:' . sha1($t['key']), ['hash' => hash('sha256', $code), 'attempts' => 0], now()->addMinutes(self::OTP_MINUTES));
         try {
             Mailer::send($t['email'], 'رمز التحقق من قيمة فويس', "رمز التحقق الخاص بك: {$code}\nصالح لمدة " . self::OTP_MINUTES . " دقائق. إذا لم تطلب هذا الرمز فتجاهل الرسالة.");
         } catch (\Throwable $e) {
             Cache::forget('qv-otp:' . sha1($t['key']));
+            Cache::forget('qv-otp-sent:' . sha1($t['key']));   // nothing was sent: allow a retry
             return response()->json(['error' => 'تعذر إرسال رمز التحقق: إرسال البريد غير مفعّل على الخادم'], 503);
         }
         return response()->json(['success' => true, 'sentTo' => preg_replace('/^(.)[^@]*(@.*)$/u', '$1***$2', $t['email'])]);
@@ -445,7 +452,9 @@ class NarratorController extends Controller
     {
         $who = self::actorFor($r);
         if ($who !== 'all' && $who !== $id) return response()->json(['error' => 'غير مصرح'], 403);
-        $rows = DB::table('qv_tts_voices')->where('narrator_id', $id)->get()->map(fn ($v) => array_merge(VoicesController::publicVoice($v), ['narratorSharePercent' => (float) $v->narrator_share_percent]))->all();
+        // «sharePercent» is what the narrator dashboard reads (it showed «undefined%» without it)
+        $rows = DB::table('qv_tts_voices')->where('narrator_id', $id)->get()->map(fn ($v) => array_merge(VoicesController::publicVoice($v), ['narratorSharePercent' => (float) $v->narrator_share_percent,
+            'sharePercent' => (float) $v->narrator_share_percent]))->all();
         return response()->json(['voices' => $rows]);
     }
 

@@ -61,7 +61,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
       onPlanChanged(res.currentPlan, res.newBalanceCredits);
       await fetchBilling();
     } catch (err) {
-      console.error('Upgrade failed:', err);
+      alert((err as Error)?.message || 'تعذّر تغيير الباقة');
     } finally {
       setUpgrading(false);
     }

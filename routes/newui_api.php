@@ -13,9 +13,9 @@ Route::get('health', fn () => response()->json(['status' => 'ok', 'time' => now(
 // ---- auth ----
 Route::prefix('auth')->group(function () {
     Route::get('me', 'AuthController@me');
-    Route::post('signup', 'AuthController@signup');
-    Route::post('login', 'AuthController@login');
-    Route::post('google', 'AuthController@google');
+    Route::post('signup', 'AuthController@signup')->middleware('throttle:login');
+    Route::post('login', 'AuthController@login')->middleware('throttle:login');
+    Route::post('google', 'AuthController@google')->middleware('throttle:login');
     Route::post('forgot', 'AuthController@forgot')->middleware('throttle:password');
     Route::post('reset', 'AuthController@reset')->middleware('throttle:password');
     Route::post('claim', 'AuthController@claim');
@@ -104,7 +104,7 @@ Route::prefix('narrators')->group(function () {
 // ---- assistant widget ----
 Route::get('assistant/config', 'AssistantController@config');
 Route::get('assistant/signed-url', 'AssistantController@signedUrl');
-Route::post('assistant/chat', 'AssistantController@chat');
+Route::post('assistant/chat', 'AssistantController@chat')->middleware('throttle:assistant');
 
 // ---- admin dashboard (platform staff only) ----
 Route::prefix('admin')->middleware('qv.admin')->group(function () {
