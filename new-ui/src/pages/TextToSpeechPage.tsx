@@ -34,11 +34,10 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
   useSeo(STATIC_SEO_ROUTES['/ar/text-to-speech']);
   const navigate = useNavigate();
 
-  // Visitors (and Google) see the technology guide; signed-in users with access get the studio,
-  // signed-in users without it yet («روّاد قيمة» before the public launch) see the guide and can join the waitlist
+  // Everyone sees the full studio (as in the client dashboard). Use is what differs: accounts with access generate on
+  // their credit; visitors and accounts without access yet get the free trial (short text, once a day), then sign-up
   const { canUse, ready } = useRowad();
   const studio = isLoggedIn && canUse;
-  const activeTab = studio ? 'playground' : 'overview';
   if (isLoggedIn && !ready) return null;   // account still loading: don't flash the guide to a member
 
   return (
@@ -53,7 +52,7 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
       </div>
 
       {/* SEO Headline Header with Single Strict H1 */}
-      {studio && <header className="py-8 bg-white border-b border-slate-200">
+      <header className="py-8 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-2">
@@ -68,11 +67,10 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
             </div>
           </div>
         </div>
-      </header>}
+      </header>
 
       {/* Main Content Area */}
-      {activeTab === 'playground' ? (
-        <section className="py-8">
+      <section className="py-8">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             {/* The Restored Interactive Text-to-Speech Playground Console */}
@@ -90,7 +88,7 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
                 </div>
               </div>
 
-              <TtsStudioPanel voices={voices} onGenerated={onGenerated} />
+              <TtsStudioPanel voices={voices} onGenerated={onGenerated} trial={studio ? undefined : { onSignup: isLoggedIn ? () => navigate('/ar/waitlist') : onOpenSignup }} />
             </div>
 
 
@@ -145,16 +143,15 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
 
           </div>
         </section>
-      ) : (
-        <section className="py-6">
-          <TextToSpeechVisitorLanding
-            onOpenLogin={onOpenLogin}
-            onOpenSignup={onOpenSignup}
-            onGoogle={onGoogle}
-            onTryStudio={isLoggedIn ? () => navigate('/ar/waitlist') : onOpenSignup}
-          />
-        </section>
-      )}
+
+      {/* Under the studio: direction control and the voice library, the dialects, the FAQ (from the visitor guide) */}
+      <TextToSpeechVisitorLanding
+        variant="extras"
+        onOpenLogin={onOpenLogin}
+        onOpenSignup={onOpenSignup}
+        onGoogle={onGoogle}
+        onTryStudio={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      />
 
     </div>
   );

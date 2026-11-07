@@ -50,7 +50,7 @@ Route::get('tts/munsit-voices', 'VoicesController@munsitVoices');
 Route::get('voices/{id}/preview', 'VoicesController@preview');
 Route::get('voices/{id}/file', 'VoicesController@file');
 Route::get('voices/{id}', 'VoicesController@show');
-Route::post('tts/trial', 'VoicesController@trial')->middleware('qv.features');
+Route::post('tts/trial', 'VoicesController@trial');   // the visitors' free try (120 chars, once a day per IP): open before the launch too
 Route::get('storage/audio/{id}', 'VoicesController@audio');
 
 // ---- «روّاد قيمة» invites ----

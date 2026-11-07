@@ -42,9 +42,12 @@ interface TextToSpeechVisitorLandingProps {
   onGoogle: () => void;
   onOpenSignup: () => void;
   onTryStudio: () => void;
+  /** 'extras': only the sections shown under the studio on the TTS page (direction control, dialects, FAQ) */
+  variant?: 'full' | 'extras';
 }
 
 export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProps> = ({
+  variant = 'full',
   onOpenLogin,
   onGoogle,
   onOpenSignup,
@@ -247,10 +250,12 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
   // Cards come from «نماذج الإنتاج الصوتي» (managed from the dashboard), each linking to its model page
   const voiceCategoryCards = useVoiceTemplates().slice(0, 6);
 
+  const full = variant === 'full';
   const faqs = TTS_FAQS;
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-orange-500 selection:text-white" dir="rtl">
       
+      {full && (<>
       {/* 1. HERO SECTION (Image 2 - Top) */}
       <section className="relative pt-10 pb-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-white">
         <div className="max-w-7xl mx-auto">
@@ -425,6 +430,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
       </section>
 
 
+      </>)}
       {/* 2. EMOTIONALLY & CONTEXTUALLY AWARE SECTION (Image 2 - Middle) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto text-center space-y-4 mb-16">
@@ -545,6 +551,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      {full && (<>
       {/* 3. USE CASES SECTION (Image 2 bottom & Image 3 top) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-slate-50/60">
         <div className="max-w-7xl mx-auto">
@@ -595,6 +602,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
       {/* 4. MILLIONS OF WORDS COUNTER & DIALECTS (Image 3 middle) */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white text-center">
         <div className="max-w-7xl mx-auto space-y-16">
@@ -661,6 +669,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      {full && (<>
       {/* 6. TESTIMONIALS SECTION (Image 4 middle) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -703,6 +712,8 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
+      {full && (<>
       {/* 7. PRICING TABLE SECTION (Image 5 top) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-slate-50/50">
         <div className="max-w-7xl mx-auto space-y-10">
@@ -817,6 +828,8 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
+      {full && (<>
       {/* 10. EXPLORE VOICE CATEGORIES (Image 6 middle) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto space-y-10">
@@ -860,6 +873,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
       {/* 11. FAQ ACCORDION (Image 6 bottom) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-slate-50/50">
         <div className="max-w-4xl mx-auto space-y-10">
@@ -900,6 +914,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      {full && (<>
       {/* 12. BOTTOM CONVERSION BANNER */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-950 text-white text-center">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -926,6 +941,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
     </div>
   );
 };

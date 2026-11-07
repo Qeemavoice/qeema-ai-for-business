@@ -13,6 +13,8 @@ import { arLabel, useMunsitVoices } from '../lib/studioVoices';
 interface StudioVoice { id: string; code: string; name: string; dialect: string; gender: string; style: string; description: string; previewUrl: string; munsit: boolean }
 
 const ar = arLabel;
+/** server: VoicesController::TRIAL_MAX_CHARS */
+const TRIAL_MAX = 120;
 
 /** The voice's Qeema code (QV-101…): the id clients quote to support */
 const VoiceCode: React.FC<{ code: string }> = ({ code }) => (
@@ -21,7 +23,10 @@ const VoiceCode: React.FC<{ code: string }> = ({ code }) => (
 
 const EMOTIONS = [['none', 'النبرة الطبيعية'], ['happy', 'سعيد'], ['excited', 'حماسي'], ['calm', 'هادئ'], ['serious', 'جاد'], ['sad', 'حزين'], ['fearful', 'خائف'], ['angry', 'غاضب']];
 
-export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void; initialText?: string; initialVoiceId?: string; showHistory?: boolean }> = ({ voices, onGenerated, initialText, initialVoiceId, showHistory = true }) => {
+export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void; initialText?: string; initialVoiceId?: string; showHistory?: boolean;
+  /** visitors / accounts without the studio yet: the same studio on the free trial (short text, once a day), then sign-up */
+  trial?: { onSignup: () => void };
+}> = ({ voices, onGenerated, initialText, initialVoiceId, showHistory = true, trial }) => {
   const munsit: StudioVoice[] = useMunsitVoices().map(v => ({ ...v, munsit: true }));
   const all: StudioVoice[] = useMemo(() => [
     ...voices.filter(v => v.type === 'ai' && v.isActive !== false).map(v => ({
@@ -68,7 +73,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   const format = result?.format || 'WAV';
   const [history, setHistory] = useState<Generation[]>([]);
   const loadHistory = () => api.getGenerations().then(d => setHistory(d.generations.slice(0, 6))).catch(() => {});
-  useEffect(() => { loadHistory(); }, []);
+  useEffect(() => { if (!trial) loadHistory(); }, []);
 
   // one audio element for the voice previews
   const preview = useRef<HTMLAudioElement | null>(null);
@@ -86,7 +91,21 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
     const t = text.trim();
     if (!t) { setError('اكتب النص المراد تحويله إلى صوت أولاً.'); return; }
     if (!voice) return;
+    if (trial && t.length > TRIAL_MAX) { setError(`التجربة المجانية حتى ${TRIAL_MAX} حرفاً. أنشئ حساباً مجانياً واحصل على 5,000 حرف.`); return; }
     setBusy(true); setError(''); setNotice('');
+    if (trial) {
+      try {
+        const r = await fetch('/api/v1/tts/trial', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, speed, stability } }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { setError(d.error || 'تعذر توليد الصوت الآن.'); return; }
+        setResult({ id: 'trial-' + Date.now(), audioUrl: d.audioUrl, format: 'WAV' } as Generation);
+        setNotice('هذه تجربتك المجانية لليوم. أنشئ حساباً مجانياً لتحصل على 5,000 حرف.');
+      } catch {
+        setError('تعذر توليد الصوت الآن. حاول مرة أخرى بعد قليل.');
+      } finally { setBusy(false); }
+      return;
+    }
     try {
       const res = await api.createGeneration({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, speed, stability } });
       setResult(res.generation);
@@ -205,8 +224,14 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
             className="w-full flex items-center justify-center gap-2 rounded-2xl bg-brand hover:bg-brand-orange disabled:opacity-60 py-3.5 text-white font-bold shadow-md shadow-brand/25 transition"
           >
             {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5" />}
-            {busy ? 'جارٍ التوليد...' : 'توليد الصوت'}
+            {busy ? 'جارٍ التوليد...' : trial ? 'جرّب التوليد مجاناً' : 'توليد الصوت'}
           </button>
+          {trial && (
+            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+              تجربة مجانية: نص حتى {TRIAL_MAX} حرفاً مرة واحدة يومياً.{' '}
+              <button type="button" onClick={trial.onSignup} className="font-bold text-brand-text hover:underline">أنشئ حساباً مجانياً</button> واحصل على 5,000 حرف.
+            </p>
+          )}
         </div>
 
         {/* Audio preview: left */}

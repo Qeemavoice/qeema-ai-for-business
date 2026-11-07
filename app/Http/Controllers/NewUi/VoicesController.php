@@ -177,7 +177,12 @@ class VoicesController extends Controller
         if (!$voice && ($m = \App\Services\NewUi\Tts::munsitVoices())) $voice = \App\Services\NewUi\Tts::munsitVoiceRow($m[0]['id']);
         if (!$voice) return response()->json(['error' => 'لا توجد أصوات متاحة حالياً'], 503);
         try {
-            $synth = Tts::synthesize($text, (array) $voice, ['speed' => 1, 'stability' => 0.7, 'style' => 0.5, 'pitch' => 0]);
+            // the studio's controls, kept to the same ranges as a paid generation (ClientController::generate)
+            $s = (array) $r->input('settings', []);
+            $synth = Tts::synthesize($text, (array) $voice, ['speed' => max(0.7, min(1.2, (float) ($s['speed'] ?? 1) ?: 1.0)),
+                'stability' => is_numeric($s['stability'] ?? null) ? max(0.0, min(1.0, (float) $s['stability'])) : 0.5, 'style' => 0.5, 'pitch' => 0,
+                'emotion' => in_array($s['emotion'] ?? '', ['happy', 'excited', 'calm', 'serious', 'sad', 'fearful', 'angry'], true) ? $s['emotion'] : 'none',
+                'dialect' => in_array($s['dialect'] ?? '', ['emirati', 'fusha'], true) ? $s['dialect'] : 'auto']);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'تعذر توليد الصوت الآن، حاول بعد قليل.'], 500);
         }
