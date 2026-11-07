@@ -8,3 +8,6 @@ declare global {
 export const openAssistant = (text?: string) => {
   window.QeemaChat?.open(text);
 };
+
+// the chat is off on the public site for now; it loads only on the admin dashboard (App.tsx) while it is being developed
+export const ASSISTANT_ON = false;

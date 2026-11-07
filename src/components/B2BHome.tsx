@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { openAssistant } from '../lib/assistantEvents';
+import { openAssistant, ASSISTANT_ON } from '../lib/assistantEvents';
 import { MessageCircle, 
   Sparkles, 
   Building2, 
@@ -403,6 +403,7 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
       {/* ========================================================================= */}
       {/* 4. SECTION: CHATBOT (voice recommendation assistant)                     */}
       {/* ========================================================================= */}
+      {ASSISTANT_ON && (
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" dir="rtl">
         <div className="rounded-3xl bg-slate-950 text-white p-6 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 text-right">
@@ -420,6 +421,7 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
           </button>
         </div>
       </section>
+      )}
 
       {/* ========================================================================= */}
       {/* 5. SECTION: ENTERPRISE & B2B INFRASTRUCTURE                               */}

@@ -54,3 +54,13 @@ body { background-color: #FFFFFF; }
   .print-area, .print-area * { visibility: visible; }
   .print-area { position: absolute; inset: 0; width: 100%; }
 }
+
+/* horizontal rows that scroll on small screens without showing a scrollbar */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* voice card badges: one line on phones */
+@media (max-width: 639px) {
+  .voice-badges > * { padding-inline: 5px; font-size: 10px; }
+  .voice-badges > .group\/trust { display: none; } /* the «6y» trust badge; it stays on tablets and desktops */
+}

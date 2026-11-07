@@ -4,7 +4,6 @@ import { ArrowLeft } from 'lucide-react';
 import { useSeo } from '../seo/useSeo';
 import { STATIC_SEO_ROUTES } from '../seo/seoConfig';
 import { Breadcrumbs } from '../components/Breadcrumbs';
-import { openAssistant } from '../lib/assistantEvents';
 import { usePageText } from '../lib/pageTexts';
 
 export const BookingStepsPage: React.FC = () => {
@@ -73,13 +72,6 @@ export const BookingStepsPage: React.FC = () => {
           <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-2xl font-black text-slate-900">خطوات حجز الأصوات البشرية</h2>
-              <button
-                onClick={() => openAssistant()}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-ink hover:bg-brand-ink/90 text-white font-bold text-xs transition cursor-pointer"
-              >
-                <span>أو تحدث مع المساعد الذكي واحصل على ترشيحات صوتية فورية</span>
-                <ArrowLeft className="w-4 h-4" />
-              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {steps.map((s, idx) => (

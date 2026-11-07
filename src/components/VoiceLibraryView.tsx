@@ -48,7 +48,7 @@ import { Voice, DialectKey } from '../types';
 import { B2BProjectRequestModal } from './B2BProjectRequestModal';
 import { openTalentSignup } from '../lib/talentJoin';
 import { VoiceProfileDrawer } from './VoiceProfileDrawer';
-import { openAssistant } from '../lib/assistantEvents';
+import { openAssistant, ASSISTANT_ON } from '../lib/assistantEvents';
 
 export type { UnifiedVoiceItem } from '../data/humanVoices';
 import type { UnifiedVoiceItem } from '../data/humanVoices';
@@ -228,13 +228,13 @@ const FilterDropdown: React.FC<{
   <div className="relative shrink-0">
     <button
       onClick={onToggle}
-      className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap cursor-pointer shadow-2xs ${
+      className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all whitespace-nowrap cursor-pointer shadow-2xs ${
         value !== 'all' ? 'bg-brand-ink text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
       }`}
     >
-      <Globe2 className="w-3.5 h-3.5" />
+      <Globe2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
       <span>{label}: {options.find(o => o.key === value)?.label || 'الكل'}</span>
-      <ChevronDown className="w-3.5 h-3.5 text-slate-400 mr-0.5" />
+      <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
     </button>
     {open && (
       <div onMouseLeave={onClose} className="absolute right-0 mt-1 w-60 max-h-80 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-1.5 z-40 animate-in fade-in">
@@ -860,9 +860,6 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                 <div className="flex flex-col text-right">
                   <div className="flex items-center gap-1.5">
                     <span>أصوات بشرية</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded font-bold bg-amber-100 text-amber-900 border border-amber-300/60">
-                      معلقون معتمدون
-                    </span>
                   </div>
                 </div>
                 
@@ -979,11 +976,6 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
               
               {/* Text & Value Proposition */}
               <div className="max-w-2xl lg:max-w-none min-w-0 space-y-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100/80 text-brand-text text-xs font-bold border border-orange-200">
-                  <Mic2 className="w-3.5 h-3.5" />
-                  <span>سوق الأصوات البشرية الاحترافي للشركات والوكالات</span>
-                </div>
-
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
                   أصوات بشرية حقيقية لمشاريعك
                 </h2>
@@ -1023,6 +1015,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                   <span>احجز صوتاً لمشروعك</span>
                 </button>
 
+                {ASSISTANT_ON && (
                 <button
                   onClick={() => openAssistant()}
                   className="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs border border-slate-200/90 shadow-2xs transition-all cursor-pointer"
@@ -1030,6 +1023,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   <span>ساعدني في اختيار الصوت</span>
                 </button>
+                )}
               </div>
 
             </div>
@@ -1067,7 +1061,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
           <div className="flex items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-900">
-              {activeMainTab === 'human' ? 'مكتبة الأصوات البشرية المعتمدة' : 'استكشاف نماذج الأصوات (AI)'}
+              {activeMainTab === 'human' ? 'مكتبة الأصوات البشرية المعتمدة' : ''}
             </span>
             <span className="text-[11px] text-slate-500 hidden sm:inline">
               ({filteredVoices.length} صوت متاح)
@@ -1083,15 +1077,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                 <Plus className="w-3.5 h-3.5 text-brand-text" />
                 <span>+ انضم كمعلق صوتي</span>
               </button>
-            ) : (
-              <button
-                onClick={() => setShowCreateVoiceModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-brand-text" />
-                <span>+ Create Voice</span>
-              </button>
-            )}
+            ) : null}
 
             </div>
           </div>
@@ -1186,7 +1172,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
         {/* ========================================================================= */}
         {/* IMAGE 3 ROW 2: Language Button ⌵ | Category Pills from Image 2             */}
         {/* ========================================================================= */}
-        <div className="flex items-center gap-2 py-1 min-w-0">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 py-1 min-w-0">
           
           {/* Language, then dialect (Arabic dialects only) */}
           <FilterDropdown
@@ -1207,10 +1193,10 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
           />
 
           {/* Thin Vertical Divider | */}
-          <div className="h-6 w-px bg-slate-200 shrink-0 mx-0.5" />
+          <div className="hidden sm:block h-6 w-px bg-slate-200 shrink-0 mx-0.5" />
 
           {/* Category Pills from Image 2 (Horizontal Scrolling) */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 basis-full sm:basis-auto flex-1 min-w-0 overflow-x-auto no-scrollbar">
             {categoryFilters.map(cat => (
               <button
                 key={cat.key}
@@ -1218,7 +1204,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                   selectedCategory === cat.key
                     ? 'bg-brand-ink text-white font-bold shadow-2xs border border-slate-900'
-                    : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-800 font-semibold border border-slate-300'
                 }`}
               >
                 {cat.label}
@@ -1420,12 +1406,12 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                 </div>
 
                 {/* 2. Middle Section: Compact Metadata Badges (Single Horizontal Line) */}
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+                <div className="flex flex-nowrap sm:flex-wrap items-center gap-1 sm:gap-2 text-xs overflow-x-auto sm:overflow-visible no-scrollbar voice-badges">
                   
                   {/* Language & Flag */}
                   <div className="flex items-center gap-1 text-slate-700 text-[11px] font-medium whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200/60 shrink-0">
-                    <span>{voice.flag}</span>
-                    <span className="hidden md:inline">{voice.language || 'العربية'}</span>
+                    {voice.flag && <span>{voice.flag}</span>}
+                    <span>{(voice.language || 'العربية').replace(/^اللغة\s+/, '')}</span>
                   </div>
 
                   {/* Accent / Dialect */}
@@ -1773,6 +1759,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
         {/* ========================================================================= */}
         {/* 7. AI ASSISTANT CONCIERGE HELP SECTION (Helping users find HUMAN voices)  */}
         {/* ========================================================================= */}
+        {ASSISTANT_ON && (
         <div className="mt-8 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-700">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4 text-right">
@@ -1806,6 +1793,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
             </button>
           </div>
         </div>
+        )}
 
         {afterVoices}
 
@@ -1815,10 +1803,6 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
         <div className="mt-8 bg-orange-50/70 border border-orange-200/80 rounded-3xl p-6 sm:p-8 text-right">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-1.5 max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-100 text-brand-text text-[11px] font-bold">
-                <Briefcase className="w-3 h-3" />
-                <span>خدمة الشركات والمؤسسات</span>
-              </div>
               <h3 className="text-lg sm:text-xl font-black text-slate-900">
                 لديك مشروع كبير أو حملة إعلانية متكاملة؟
               </h3>
