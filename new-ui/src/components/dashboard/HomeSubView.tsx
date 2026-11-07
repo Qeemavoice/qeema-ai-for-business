@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Coins, Mic2, Clock, Volume2, ArrowLeft, Sliders } from 'lucide-react';
+import { Coins, Mic2, Clock, Volume2, ArrowLeft, Sliders, Library } from 'lucide-react';
 import { Voice, Generation, HumanBooking } from '../../types';
 import { DashboardNavKey } from './DashboardSidebar';
 import { useNavigate } from 'react-router-dom';
@@ -69,6 +69,12 @@ export const HomeSubView: React.FC<HomeSubViewProps> = ({ generations, onNavigat
           action="الباقة والفوترة" onClick={() => onNavigateTab('billing')}
         />
         <StatCard
+          icon={<Volume2 className="w-4 h-4 text-brand-text" />} label="توليداتي في TTS"
+          value={fmt(generations.length)}
+          note={generations.length ? `${fmt(ttsChars)} حرف مستخدم في التوليد.` : 'لم تولّد أي تسجيل بعد.'}
+          action="استوديو التوليد TTS" onClick={() => onNavigateTab('studio')}
+        />
+        <StatCard
           icon={<Mic2 className="w-4 h-4 text-brand-text" />} label="قيمة حجوزاتي (معلقون بشريون)"
           value={bookings === null ? dots : `$${fmt(Math.round(bookingsValue * 100) / 100)}`}
           note={bookings === null ? '' : live.length ? `${fmt(live.length)} ${live.length === 1 ? 'حجز' : 'حجوزات'} مع المعلقين.` : 'لا توجد حجوزات بعد. اختر صوتاً من مكتبة الأصوات.'}
@@ -80,15 +86,23 @@ export const HomeSubView: React.FC<HomeSubViewProps> = ({ generations, onNavigat
           note={toReview ? `${fmt(toReview)} ${toReview === 1 ? 'تسجيل وصلك وبانتظار' : 'تسجيلات وصلتك وبانتظار'} اعتمادك.` : 'قيد المراجعة أو التسجيل لدى المعلق.'}
           action="متابعة الحجوزات" onClick={() => onNavigateTab('human-bookings')}
         />
-        <StatCard
-          icon={<Volume2 className="w-4 h-4 text-brand-text" />} label="توليداتي في TTS"
-          value={fmt(generations.length)}
-          note={generations.length ? `${fmt(ttsChars)} حرف مستخدم في التوليد.` : 'لم تولّد أي تسجيل بعد.'}
-          action="استوديو التوليد TTS" onClick={() => onNavigateTab('studio')}
-        />
       </div>
 
-      {/* 2. A short way into the TTS studio (the full studio lives in «استوديو التوليد TTS») */}
+      {/* 2. Voice library: browse the human voices and book one */}
+      <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xs p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="flex items-start gap-4">
+          <span className="w-12 h-12 shrink-0 rounded-2xl bg-brand/10 text-brand-text flex items-center justify-center"><Library className="w-5 h-5" /></span>
+          <div className="space-y-1">
+            <h2 className="text-lg font-black text-slate-950">مكتبة الأصوات</h2>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-xl">استمع لعينات أكثر من 1000 معلق صوتي عربي، رجالي ونسائي، بالفصحى وكل اللهجات، واحجز الصوت المناسب لمشروعك.</p>
+          </div>
+        </div>
+        <button type="button" onClick={() => onNavigateTab('voices')} className="shrink-0 px-5 py-3 rounded-2xl bg-brand-ink hover:bg-brand-ink/90 text-white text-sm font-bold flex items-center justify-center gap-2 transition">
+          تصفح المكتبة <ArrowLeft className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* 3. A short way into the TTS studio (the full studio lives in «استوديو التوليد TTS») */}
       <div className="rounded-3xl bg-slate-950 text-white p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
         <div className="flex items-start gap-4">
           <span className="w-12 h-12 shrink-0 rounded-2xl bg-brand flex items-center justify-center"><Sliders className="w-5 h-5" /></span>
