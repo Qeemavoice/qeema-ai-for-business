@@ -65,6 +65,15 @@ import { setCommissionPercent } from '../shared/pricing';
 
 const ADMIN_DASHBOARD_PATH = '/ar/dashboard';
 
+// Every audio that starts playing is remembered, so leaving a page can stop it (samples kept playing after navigation).
+// ponytail: wraps HTMLMediaElement.play once for the whole app instead of a cleanup in each of the ~20 pages with players.
+const playingMedia = new Set<HTMLMediaElement>();
+if (typeof HTMLMediaElement !== 'undefined') {
+  const play = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) { playingMedia.add(this); return play.call(this); };
+}
+const stopAllMedia = () => { playingMedia.forEach(m => { if (!m.paused) m.pause(); }); playingMedia.clear(); };
+
 // Lazy loaded non-blocking widgets
 
 // Layout wrapper to control Header/Footer visibility on private workspaces
@@ -92,7 +101,7 @@ function AppLayout({
   const location = useLocation();
   const path = location.pathname;
   // a new page opens at its top (the browser would keep the previous page's scroll position)
-  useEffect(() => { if (!location.hash) window.scrollTo(0, 0); }, [path]);
+  useEffect(() => { stopAllMedia(); if (!location.hash) window.scrollTo(0, 0); }, [path]);
 
   // dashboards have their own top bar (avatar + account menu), so the site header would show the account twice
   const isWorkspaceDashboard = path === '/ar/dashboard' || path === '/ar/account' || path.startsWith('/ar/account/') ||
