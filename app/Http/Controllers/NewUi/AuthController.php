@@ -187,6 +187,28 @@ class AuthController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /** «البيانات الشخصية» of the signed-in account */
+    public function profileGet(Request $r)
+    {
+        $u = Accounts::currentUser($r);
+        return response()->json(['name' => Accounts::name($u), 'email' => (string) $u->email, 'mobile' => (string) ($u->mobile ?? ''),
+            'country' => (string) (Accounts::account($u)['country'] ?? '')]);
+    }
+
+    public function profilePut(Request $r)
+    {
+        $u = Accounts::currentUser($r);
+        $name = trim((string) $r->input('name', ''));
+        $mobile = preg_replace('/[\s-]/', '', (string) $r->input('mobile', ''));
+        $country = trim((string) $r->input('country', ''));
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 80) return response()->json(['error' => 'اكتب الاسم (حرفان إلى 80 حرفاً)'], 400);
+        if ($mobile !== '' && !preg_match('/^\+\d{1,4}[1-9]\d{5,13}$/', $mobile)) return response()->json(['error' => 'رقم الجوال غير صحيح، اكتبه مع رمز الدولة مثل +9665XXXXXXXX'], 400);
+        if (mb_strlen($country) > 60) return response()->json(['error' => 'اسم الدولة طويل'], 400);
+        $u->forceFill(['full_name' => ['ar' => $name, 'en' => $name], 'mobile' => $mobile ?: null])->save();
+        if ($country !== '') Accounts::saveAccount($u, ['country' => $country]);
+        return response()->json(['user' => Accounts::publicUser($u->fresh())]);
+    }
+
     public function favoritesGet(Request $r)
     {
         $u = Accounts::currentUser($r);

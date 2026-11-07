@@ -34,6 +34,7 @@ import {
   Mic2
 } from 'lucide-react';
 import { DashboardNavKey } from './DashboardSidebar';
+import { UserAvatar } from '../UserAvatar';
 import { FeedbackModal } from './FeedbackModal';
 import { openAssistant, ASSISTANT_ON } from '../../lib/assistantEvents';
 import { Company, User, ActiveView } from '../../types';
@@ -109,6 +110,8 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
         return { parent: 'الأصول', current: 'التراخيص' };
       case 'human-bookings':
         return { parent: 'السوق', current: 'المعلقين البشريين' };
+      case 'profile':
+        return { parent: 'حسابي', current: 'البيانات الشخصية' };
       case 'compliance':
         return { parent: 'الامتثال', current: 'التراخيص' };
       default:
@@ -204,13 +207,7 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
               className="relative cursor-pointer group p-0.5 rounded-full hover:ring-2 hover:ring-slate-300 transition-all flex items-center justify-center"
               title="الملف الشخصي ورصيد الحساب ومساحة العمل"
             >
-              <div className="w-8 h-8 rounded-full bg-linear-to-tr from-brand-ink to-slate-700 p-0.5 border border-slate-200 flex items-center justify-center overflow-hidden">
-                <img 
-                  src={currentUser?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"} 
-                  alt="User Avatar" 
-                  className="w-full h-full object-cover rounded-full"
-                />
-              </div>
+              <UserAvatar user={currentUser} className="w-8 h-8 text-sm" />
               <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
             </button>
 

@@ -63,6 +63,20 @@ class PasswordResetTest extends TestCase
         $this->assertTrue(Hash::check('new-pass-123', $u->fresh()->password));
     }
 
+    public function test_signed_in_account_edits_its_profile()
+    {
+        $u = $this->account();
+        $u->forceFill(['password' => Hash::make('old-pass-123')])->save();
+        $h = ['Authorization' => 'Bearer ' . $this->postJson('/api/v1/auth/login', ['email' => $u->email, 'password' => 'old-pass-123'])->json('token')];
+        $this->getJson('/api/v1/auth/profile')->assertStatus(401);
+        $this->getJson('/api/v1/auth/profile', $h)->assertOk()->assertJsonPath('email', $u->email);
+        $this->putJson('/api/v1/auth/profile', ['name' => 'x'], $h)->assertStatus(400);
+        $this->putJson('/api/v1/auth/profile', ['name' => 'سارة', 'mobile' => '0555'], $h)->assertStatus(400);
+        $this->putJson('/api/v1/auth/profile', ['name' => 'سارة أحمد', 'mobile' => '+966 555 123 456', 'country' => 'الإمارات'], $h)
+            ->assertOk()->assertJsonPath('user.name', 'سارة أحمد');
+        $this->getJson('/api/v1/auth/profile', $h)->assertJsonPath('mobile', '+966555123456')->assertJsonPath('country', 'الإمارات');
+    }
+
     public function test_narrator_signup_needs_a_whatsapp_number()
     {
         $this->account();

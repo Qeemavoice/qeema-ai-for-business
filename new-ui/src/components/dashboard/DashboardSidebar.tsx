@@ -21,8 +21,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
-  Bot
+  Bot,
+  UserCircle
 } from 'lucide-react';
+import { UserAvatar } from '../UserAvatar';
 import { Company, User } from '../../types';
 import { findPlan } from '../../../shared/plans';
 
@@ -40,7 +42,8 @@ export type DashboardNavKey =
   | 'compliance' 
   | 'team' 
   | 'billing'
-  | 'usage';
+  | 'usage'
+  | 'profile';
 
 interface DashboardSidebarProps {
   activeNav: DashboardNavKey;
@@ -83,6 +86,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     { key: 'projects' as DashboardNavKey, label: 'المشاريع والقوالب', icon: LayoutTemplate, badge: undefined },
     { key: 'assets' as DashboardNavKey, label: 'أصولي والتراخيص', icon: FileAudio, badge: undefined },
     { key: 'billing' as DashboardNavKey, label: 'الباقة والفوترة', icon: CreditCard, badge: undefined },
+    { key: 'profile' as DashboardNavKey, label: 'البيانات الشخصية', icon: UserCircle, badge: undefined },
   ];
 
 
@@ -239,9 +243,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {/* User Profile Mini Bar */}
         <div className="flex items-center justify-between p-1.5 rounded-xl hover:bg-white transition-colors">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-full bg-brand/20 text-brand-text font-bold text-xs flex items-center justify-center shrink-0 border border-brand/30">
-              {currentUser?.name?.charAt(0) || 'أ'}
-            </div>
+            <UserAvatar user={currentUser} className="w-7 h-7 text-xs" />
             {!isCollapsed && (
               <div className="min-w-0 text-right">
                 <div className="text-xs font-bold text-slate-900 truncate">

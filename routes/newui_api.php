@@ -24,6 +24,8 @@ Route::prefix('auth')->group(function () {
         Route::get('favorites', 'AuthController@favoritesGet');
         Route::put('favorites', 'AuthController@favoritesPut');
         Route::post('password', 'AuthController@changePassword')->middleware('throttle:password');
+        Route::get('profile', 'AuthController@profileGet');
+        Route::put('profile', 'AuthController@profilePut');
     });
     Route::post('switch-company', 'AuthController@switchCompany')->middleware('qv.admin');
 });
