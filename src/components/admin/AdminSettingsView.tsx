@@ -54,6 +54,7 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
   const [data, setData] = useState<any | null>(null);
   const [draft, setDraft] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
 
   const load = () => api.getAdminSettings().then(d => { setData(d); setDraft(structuredClone(d)); }).catch(() => setToast({ ok: false, text: 'تعذر تحميل الإعدادات' }));
@@ -209,6 +210,17 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
                   <option value="SSL">SSL</option><option value="TLS">TLS</option><option value="none">بدون</option>
                 </select>
               </Field>
+              <div className="sm:col-span-2 flex flex-wrap items-center gap-3 pt-1">
+                <button type="button" disabled={testing} onClick={async () => {
+                  setTesting(true);
+                  try { const to = await api.testSmtp(); setToast({ ok: true, text: `أُرسلت رسالة تجريبية إلى ${to}. تأكد من وصولها (وافحص مجلد الرسائل غير المرغوبة).` }); }
+                  catch (err: any) { setToast({ ok: false, text: err.message }); }
+                  finally { setTesting(false); }
+                }} className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50">
+                  {testing ? 'جارٍ الإرسال...' : 'إرسال رسالة تجريبية'}
+                </button>
+                <span className="text-[11px] text-slate-400">احفظ الإعدادات أولاً، ثم أرسل رسالة تجريبية إلى بريدك.</span>
+              </div>
             </div>
           )}
 

@@ -448,6 +448,13 @@ export const api = {
     return { ...data.settings, integrations: data.integrations };
   },
 
+  /** Sends a test e-mail to the signed-in admin with the saved SMTP settings; returns where it went */
+  async testSmtp(): Promise<string> {
+    const res = await fetch('/api/v1/admin/settings/smtp-test', { method: 'POST', headers: getHeaders() });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر إرسال الرسالة التجريبية');
+    return data.to;
+  },
   async saveAdminSettings(payload: { settings?: Record<string, any>; integrations?: Record<string, any> }): Promise<any> {
     const res = await fetch('/api/v1/admin/settings', { method: 'POST', headers: getHeaders(), body: JSON.stringify(payload) });
     const data = await res.json();
