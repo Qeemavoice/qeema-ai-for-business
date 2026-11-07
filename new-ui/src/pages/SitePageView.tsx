@@ -9,7 +9,8 @@ import { defaultSitePage, type SitePage, type SitePageKey } from '../data/sitePa
 /** CMS page content edited from the dashboard (الصفحات), with the built-in default as fallback. */
 export const useSitePage = (key: SitePageKey): SitePage => {
   const [page, setPage] = useState<SitePage>(() => defaultSitePage(key));
-  useEffect(() => { api.getSitePage(key).then(setPage).catch(() => {}); }, [key]);
+  // the route (slug) is fixed by the site, the CMS only edits the text; an empty CMS intro keeps the built-in one
+  useEffect(() => { api.getSitePage(key).then(p => p && setPage(d => ({ ...d, ...p, slug: d.slug, intro: p.intro || d.intro }))).catch(() => {}); }, [key]);
   return page;
 };
 

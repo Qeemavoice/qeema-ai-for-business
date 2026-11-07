@@ -20,7 +20,7 @@ import { DashboardTopNav } from './dashboard/DashboardTopNav';
 import { HomeSubView } from './dashboard/HomeSubView';
 import { VoiceLibraryView, buildSampleSlug } from './VoiceLibraryView';
 import { useNavigate } from 'react-router-dom';
-import { StudioSubView } from './dashboard/StudioSubView';
+import { TtsStudioPanel } from './TtsStudioPanel';
 import { BillingTab } from './dashboard/BillingTab';
 import { 
   ProjectsSubView, 
@@ -297,16 +297,21 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
             </div>
           )}
 
+          {/* Same studio as the site's /ar/text-to-speech page */}
           {activeNav === 'studio' && (
-            <StudioSubView
-              voices={voices}
-              initialText={studioInitialText}
-              initialVoiceId={studioInitialVoiceId}
-              generations={generations}
-              onGenerationComplete={handleGenerationComplete}
-              balanceCredits={balanceCredits}
-              onOpenTopUp={onOpenTopUp}
-            />
+            <div className="bg-[#FFFFFF] pb-10" dir="rtl">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+                <div className="border-b border-slate-200/80 pb-4">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">تحويل النص إلى صوت عربي</h1>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-2 max-w-2xl leading-relaxed">
+                    استمع لنصك بأصوات AI مرخّصة من معلقين عرب حقيقيين وبتقاسم الأرباح معهم، ثم احجز المعلق البشري نفسه للنسخة النهائية.
+                  </p>
+                </div>
+                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-7">
+                  <TtsStudioPanel key={`${studioInitialVoiceId}|${studioInitialText}`} voices={voices} onGenerated={onGenerated} initialText={studioInitialText || undefined} initialVoiceId={studioInitialVoiceId || undefined} />
+                </div>
+              </div>
+            </div>
           )}
 
           {activeNav === 'flows' && <FlowsSubView onNavigateTab={(tab) => goNav(tab)} />}

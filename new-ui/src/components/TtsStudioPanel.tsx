@@ -21,7 +21,7 @@ const VoiceCode: React.FC<{ code: string }> = ({ code }) => (
 
 const EMOTIONS = [['none', 'النبرة الطبيعية'], ['happy', 'سعيد'], ['excited', 'حماسي'], ['calm', 'هادئ'], ['serious', 'جاد'], ['sad', 'حزين'], ['fearful', 'خائف'], ['angry', 'غاضب']];
 
-export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void }> = ({ voices, onGenerated }) => {
+export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void; initialText?: string; initialVoiceId?: string }> = ({ voices, onGenerated, initialText, initialVoiceId }) => {
   const munsit: StudioVoice[] = useMunsitVoices().map(v => ({ ...v, munsit: true }));
   const all: StudioVoice[] = useMemo(() => [
     ...voices.filter(v => v.type === 'ai' && v.isActive !== false).map(v => ({
@@ -34,7 +34,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   const [dialectFilter, setDialectFilter] = useState('all');
   const dialects = useMemo(() => [...new Set(all.map(v => v.dialect).filter(Boolean))], [all]);
   const shown = dialectFilter === 'all' ? all : all.filter(v => v.dialect === dialectFilter);
-  const [voiceId, setVoiceId] = useState('');
+  const [voiceId, setVoiceId] = useState(initialVoiceId || '');
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -46,7 +46,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   }, [pickerOpen]);
   const voice = all.find(v => v.id === voiceId) || all[0];
 
-  const [text, setText] = useState('مرحباً بك في قيمة فويس، حيث يتحول النص العربي إلى صوت واضح وطبيعي.');
+  const [text, setText] = useState(initialText || 'مرحباً بك في قيمة فويس، حيث يتحول النص العربي إلى صوت واضح وطبيعي.');
   // Munsit picks the dialect through the voice; «emirati» and «fusha» are also sent as a hint
   const steering = ['emirati', 'fusha'].includes(dialectFilter) ? dialectFilter : 'auto';
   const pickDialect = (d: string) => {
