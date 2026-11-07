@@ -92,7 +92,7 @@ class Accounts
             'accountType' => $narratorId && (int) $u->user_type_id !== UserType::CLIENT ? 'talent' : 'client',
             'isPlatformAdmin' => self::isAdmin($u),
             // the admin dashboard's private address, for admins only
-            'adminPath' => self::isAdmin($u) ? '/' . config('services.newui_admin_path') : null,
+            'adminPath' => self::isAdmin($u) ? '/ar/dashboard' : null,
             'narratorId' => $narratorId,
             'savedVoiceIds' => self::account($u)['savedVoiceIds'],
         ];

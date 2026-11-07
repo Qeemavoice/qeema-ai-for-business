@@ -63,6 +63,8 @@ import { EarlyAccessPage, EarlyWelcomePage, WaitlistPage, ResetPasswordPage } fr
 import { setRowadFeatures, setPublicLaunchAt, markRowadReady } from './lib/rowad';
 import { setCommissionPercent } from '../shared/pricing';
 
+const ADMIN_DASHBOARD_PATH = '/ar/dashboard';
+
 // Lazy loaded non-blocking widgets
 
 // Layout wrapper to control Header/Footer visibility on private workspaces
@@ -97,16 +99,18 @@ function AppLayout({
     path.startsWith('/ar/talent-');
   // the admin login screen stands alone: no site header (its «إنشاء حساب» / Google sign-in) and no footer
   const adminPathCfg = (window as any).__QV_CONFIG?.adminPath as string | undefined;
-  const isAdminLogin = Boolean(adminPathCfg) && path === adminPathCfg && !currentUser;
+  // the admin dashboard answers at /ar/dashboard (and at the private address, if one is set)
+  const onAdminPage = path === ADMIN_DASHBOARD_PATH || (Boolean(adminPathCfg) && path === adminPathCfg);
+  const isAdminLogin = onAdminPage && !currentUser;
   const hideChrome = isWorkspaceDashboard || isAdminLogin;
   // مساعد قيمة is off on the public site for now; the admin dashboard loads it so it can be developed there
   useEffect(() => {
-    if (!adminPathCfg || path !== adminPathCfg || !currentUser?.isPlatformAdmin || document.getElementById('qv-chat-script')) return;
+    if (!onAdminPage || !currentUser?.isPlatformAdmin || document.getElementById('qv-chat-script')) return;
     const s = document.createElement('script');
     s.id = 'qv-chat-script'; s.src = '/qv-chat/qv-chat.js'; s.defer = true;
     s.dataset.position = 'right'; s.dataset.mock = 'true';
     document.body.appendChild(s);
-  }, [path, adminPathCfg, currentUser?.isPlatformAdmin]);
+  }, [onAdminPage, currentUser?.isPlatformAdmin]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFFFF] text-[#0F172A] font-['IBM_Plex_Sans_Arabic','Cairo',sans-serif]">
@@ -253,7 +257,7 @@ export default function App() {
   }, []);
   // the admin dashboard's private address: from the admin page's own config, or from a signed-in admin's account
   const adminPath = ((window as any).__QV_CONFIG?.adminPath as string | undefined) || currentUser?.adminPath || '';
-  const siteClosed = maintenance && !currentUser?.isPlatformAdmin && !(adminPath && window.location.pathname === adminPath);
+  const siteClosed = maintenance && !currentUser?.isPlatformAdmin && window.location.pathname !== ADMIN_DASHBOARD_PATH && !(adminPath && window.location.pathname === adminPath);
 
   return (
     <BrowserRouter>
@@ -422,11 +426,10 @@ export default function App() {
               </NewFeaturesGate>
             } 
           />
-          {/* the old back office lives at /ar/dashboard on the Laravel host; the client dashboard moved to /ar/account */}
-          <Route path="/ar/dashboard" element={<Navigate to="/ar/account" replace />} />
           <Route path="/ar/chatbot" element={<Navigate to="/ar/voices" replace />} />
-          {adminPath && <Route 
-            path={adminPath} 
+          {/* the admin dashboard: /ar/dashboard, and the private address too when one is set (old back office: /ar/old-admin) */}
+          {[ADMIN_DASHBOARD_PATH, ...(adminPath && adminPath !== ADMIN_DASHBOARD_PATH ? [adminPath] : [])].map(p => <React.Fragment key={p}><Route 
+            path={p} 
             element={
               <SignInGate user={currentUser} allow={u => Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة إدارة قيمة فويس" hint="ادخل بحساب الإدارة." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout} inlineLogin={completeAuth}>
               <AdminView
@@ -437,7 +440,7 @@ export default function App() {
               />
               </SignInGate>
             } 
-          />}
+          /></React.Fragment>)}
 
           {/* 404 Catch-All */}
           <Route path="*" element={<NotFoundPage />} />

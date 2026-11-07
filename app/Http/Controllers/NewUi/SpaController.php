@@ -110,7 +110,8 @@ class SpaController extends Controller
         ];
         // only the admin page itself is told its private address (every other page's source stays without it)
         $admin = config('services.newui_admin_path');
-        if (trim(request()->path(), '/') === $admin) $cfg['adminPath'] = '/' . $admin;
+        $path = trim(request()->path(), '/');
+        if ($path === $admin || $path === 'ar/dashboard') $cfg['adminPath'] = '/' . $path;
         $json = json_encode($cfg, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
         $robots = isset($cfg['adminPath']) ? "\n<meta name=\"robots\" content=\"noindex, nofollow\" />" : '';
         return str_replace('<head>', "<head>\n<script>window.__QV_CONFIG=" . $json . ";</script>" . $robots, $html);

@@ -44,9 +44,9 @@ class QaFixesTest extends TestCase
         $this->get('/api/v1/health')->assertHeader('X-Frame-Options', 'SAMEORIGIN')->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 
-    public function test_dashboard_goes_to_the_new_client_dashboard_and_old_admin_moved()
+    public function test_dashboard_is_the_admin_dashboard()
     {
-        $this->get('/ar/dashboard')->assertRedirect('/ar/account');
-        $this->get('/ar/dashboard/orders/5')->assertRedirect('/ar/account');
+        $this->get('/ar/dashboard')->assertOk()->assertSee('"adminPath":"/ar/dashboard"', false)->assertSee('noindex', false);
+        $this->get('/ar/dashboard/orders/5')->assertRedirect('/ar/dashboard');
     }
 }
