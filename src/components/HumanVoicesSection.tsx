@@ -35,8 +35,8 @@ const AGE_FROM_RANGE: Record<string, HumanVoiceDemoItem['ageRange']> = {
 /** Library sample -> home card (same voices and booking pages as the voice library). */
 const toCard = (v: UnifiedVoiceItem): HumanVoiceDemoItem & { sample: UnifiedVoiceItem } => ({
   id: v.id,
-  name: v.talentName || v.name,
-  talentName: v.talentName || v.name,
+  name: v.sampleName || v.name,   // clip name like the voice library; narrator names are never shown
+  talentName: '',
   sampleName: v.sampleName || v.name,
   voiceDescription: v.subtitle,
   gender: v.gender,

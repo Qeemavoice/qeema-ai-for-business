@@ -1,0 +1,304 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Play, Pause, Volume2, Download, RefreshCw, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
+import type { Generation, Voice } from '../types';
+import { api } from '../lib/api';
+import { arLabel, useMunsitVoices } from '../lib/studioVoices';
+
+/**
+ * Signed-in TTS studio: our voices plus the Munsit catalogue (the other developer's work),
+ * with his controls (dialect filter and steering, diacritics, emotion, speed). Generation goes
+ * through /api/v1/generations, so credits, history and narrator earnings stay on our ledger.
+ * Layout: text, voice dropdown and controls on the right, the audio preview on the left.
+ */
+interface StudioVoice { id: string; code: string; name: string; dialect: string; gender: string; style: string; description: string; previewUrl: string; munsit: boolean }
+
+const ar = arLabel;
+/** server: VoicesController::TRIAL_MAX_CHARS */
+const TRIAL_MAX = 120;
+
+/** The voice's Qeema code (QV-101…): the id clients quote to support */
+const VoiceCode: React.FC<{ code: string }> = ({ code }) => (
+  <span dir="ltr" className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-500">{code}</span>
+);
+
+const EMOTIONS = [['none', 'النبرة الطبيعية'], ['happy', 'سعيد'], ['excited', 'حماسي'], ['calm', 'هادئ'], ['serious', 'جاد'], ['sad', 'حزين'], ['fearful', 'خائف'], ['angry', 'غاضب']];
+
+export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalance: number) => void; initialText?: string; initialVoiceId?: string; showHistory?: boolean;
+  /** visitors / accounts without the studio yet: the same studio on the free trial (short text, once a day), then sign-up */
+  trial?: { onSignup: () => void };
+}> = ({ voices, onGenerated, initialText, initialVoiceId, showHistory = true, trial }) => {
+  const munsit: StudioVoice[] = useMunsitVoices().map(v => ({ ...v, munsit: true }));
+  const all: StudioVoice[] = useMemo(() => [
+    ...voices.filter(v => v.type === 'ai' && v.isActive !== false).map(v => ({
+      id: v.id, code: v.code || '', name: v.name.replace(/\s*AI\b/g, '').trim(), dialect: v.dialectLabel || '', gender: v.gender, style: v.styleLabel || '',
+      description: '', previewUrl: `/api/v1/voices/${v.id}/preview`, munsit: false,
+    })),
+    ...munsit,
+  ], [voices, munsit]);
+
+  const [dialectFilter, setDialectFilter] = useState('all');
+  const dialects = useMemo(() => [...new Set(all.map(v => v.dialect).filter(Boolean))], [all]);
+  const shown = dialectFilter === 'all' ? all : all.filter(v => v.dialect === dialectFilter);
+  const [voiceId, setVoiceId] = useState(initialVoiceId || '');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const close = (e: MouseEvent) => { if (!pickerRef.current?.contains(e.target as Node)) setPickerOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setPickerOpen(false); };
+    document.addEventListener('mousedown', close); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
+  }, [pickerOpen]);
+  const voice = all.find(v => v.id === voiceId) || all[0];
+
+  const [text, setText] = useState(initialText || '');
+  // Munsit picks the dialect through the voice; «emirati» and «fusha» are also sent as a hint
+  const steering = ['emirati', 'fusha'].includes(dialectFilter) ? dialectFilter : 'auto';
+  const pickDialect = (d: string) => {
+    setDialectFilter(d === 'auto' ? 'all' : d);
+    if (d !== 'auto' && voice?.dialect !== d) {
+      const first = all.find(v => v.dialect === d);
+      if (first) setVoiceId(first.id);
+    }
+  };
+  const [emotion, setEmotion] = useState('none');
+  const [speed, setSpeed] = useState(1);
+  // 0 = lively and varied, 1 = steady and even (Munsit «stability»)
+  const [stability, setStability] = useState(0.5);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<Generation | null>(null);
+  const [notice, setNotice] = useState('');
+  // ElevenLabs answers MP3; Munsit and the internal engine answer WAV
+  const format = result?.format || 'WAV';
+  const [history, setHistory] = useState<Generation[]>([]);
+  const loadHistory = () => api.getGenerations().then(d => setHistory(d.generations.slice(0, 6))).catch(() => {});
+  useEffect(() => { if (!trial) loadHistory(); }, []);
+
+  // one audio element for the voice previews
+  const preview = useRef<HTMLAudioElement | null>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  useEffect(() => () => preview.current?.pause(), []);
+  const togglePreview = (v: StudioVoice) => {
+    if (!preview.current) { preview.current = new Audio(); preview.current.onended = () => setPlayingId(null); }
+    if (playingId === v.id) { preview.current.pause(); setPlayingId(null); return; }
+    if (!v.previewUrl) return;
+    preview.current.src = v.previewUrl;
+    preview.current.play().then(() => setPlayingId(v.id)).catch(() => { setPlayingId(null); setError('تعذر تشغيل عينة الصوت. حاول مرة أخرى.'); });
+  };
+
+  const generate = async () => {
+    const t = text.trim();
+    if (!t) { setError('اكتب النص المراد تحويله إلى صوت أولاً.'); return; }
+    if (!voice) return;
+    if (trial && t.length > TRIAL_MAX) { setError(`التجربة المجانية حتى ${TRIAL_MAX} حرفاً. أنشئ حساباً مجانياً واحصل على 5,000 حرف.`); return; }
+    setBusy(true); setError(''); setNotice('');
+    if (trial) {
+      try {
+        const r = await fetch('/api/v1/tts/trial', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, speed, stability } }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { setError(d.error || 'تعذر توليد الصوت الآن.'); return; }
+        setResult({ id: 'trial-' + Date.now(), audioUrl: d.audioUrl, format: 'WAV' } as Generation);
+        setNotice('هذه تجربتك المجانية لليوم. أنشئ حساباً مجانياً لتحصل على 5,000 حرف.');
+      } catch {
+        setError('تعذر توليد الصوت الآن. حاول مرة أخرى بعد قليل.');
+      } finally { setBusy(false); }
+      return;
+    }
+    try {
+      const res = await api.createGeneration({ voiceId: voice.id, text: t, settings: { emotion, dialect: steering, speed, stability } });
+      setResult(res.generation);
+      setNotice(res.message || 'تم توليد الصوت بنجاح.');
+      onGenerated?.(res.newBalanceCredits);
+      loadHistory();
+    } catch (e: any) {
+      setError(e?.message || 'تعذر توليد الصوت الآن. حاول مرة أخرى بعد قليل.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const select = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/30';
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+        {/* Text, voice and controls: right */}
+        <div className="order-1 md:col-span-7 space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !busy) { e.preventDefault(); generate(); } }}
+              aria-label="النص المراد تحويله إلى صوت"
+              placeholder="اكتب النص المراد توليده هنا"
+              maxLength={5000}
+              className="w-full min-h-[170px] resize-y border-none bg-transparent text-base leading-relaxed text-slate-800 focus:outline-none"
+            />
+            <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+              <span>الحد الأقصى 5,000 حرف</span>
+              <span>{text.length} حرف<span className="hidden sm:inline text-slate-300"> · Ctrl + Enter للتوليد</span></span>
+            </div>
+          </div>
+
+          {/* Voices: a dropdown under the text box */}
+          <div ref={pickerRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setPickerOpen(o => !o)}
+              aria-expanded={pickerOpen}
+              className="w-full flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-right hover:border-slate-300 transition"
+            >
+              <span className="w-10 h-10 shrink-0 rounded-xl bg-slate-900 text-brand font-black flex items-center justify-center">{voice?.name.charAt(0).toUpperCase() || '?'}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px] text-slate-500">الصوت</span>
+                <span className="flex items-center gap-2 text-sm font-bold text-slate-900 min-w-0"><span className="truncate">{voice?.name || 'اختر صوتاً'}</span>{voice?.code && <VoiceCode code={voice.code} />}</span>
+                {voice && <span className="block text-[11px] text-slate-500 truncate">{[ar(voice.dialect), voice.gender === 'female' ? 'نسائي' : 'رجالي', ar(voice.style)].filter(Boolean).join(' · ')}</span>}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {voice?.description && <p className="mt-1.5 px-1 text-[11px] text-slate-500 leading-relaxed line-clamp-2" dir="auto">{voice.description}</p>}
+            {pickerOpen && (
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-2 space-y-2">
+                <select value={dialectFilter} onChange={e => setDialectFilter(e.target.value)} className={select} aria-label="تصفية حسب اللهجة المسجلة للصوت">
+                  <option value="all">كل اللهجات</option>
+                  {dialects.map(d => <option key={d} value={d}>{ar(d)}</option>)}
+                </select>
+                <div className="max-h-72 overflow-y-auto overscroll-contain space-y-1.5">
+            {shown.map(v => (
+              <div
+                key={v.id}
+                onClick={() => { setVoiceId(v.id); setPickerOpen(false); }}
+                className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer border transition ${voice?.id === v.id ? 'border-brand bg-white shadow-sm' : 'border-transparent bg-white/70 hover:bg-white'}`}
+              >
+                <span className="w-10 h-10 shrink-0 rounded-xl bg-slate-900 text-brand font-black flex items-center justify-center">{v.name.charAt(0).toUpperCase()}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2 text-sm font-bold text-slate-900 min-w-0"><span className="truncate">{v.name}</span>{v.code && <VoiceCode code={v.code} />}</span>
+                  <span className="block text-[11px] text-slate-500 truncate">{[ar(v.dialect), v.gender === 'female' ? 'نسائي' : 'رجالي', ar(v.style)].filter(Boolean).join(' · ')}</span>
+                </span>
+                {v.previewUrl && (
+                  <button type="button" onClick={e => { e.stopPropagation(); togglePreview(v); }} className="w-9 h-9 shrink-0 rounded-full bg-slate-950 text-white flex items-center justify-center" aria-label={playingId === v.id ? `إيقاف عينة ${v.name}` : `تشغيل عينة ${v.name}`}>
+                    {playingId === v.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                  </button>
+                )}
+              </div>
+            ))}
+            {!shown.length && <p className="p-4 text-center text-xs text-slate-500">لا توجد أصوات بهذه اللهجة.</p>}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="space-y-1.5">
+              <span className="block text-sm font-bold text-slate-900">اللهجة</span>
+              <select value={dialectFilter === 'all' ? 'auto' : dialectFilter} onChange={e => pickDialect(e.target.value)} className={select}>
+                <option value="auto">تلقائي حسب النص والصوت</option>
+                {dialects.map(d => <option key={d} value={d}>{ar(d)}</option>)}
+              </select>
+              <span className="block text-[11px] text-slate-500">اختيار اللهجة يعرض أصواتها في القائمة ويختار صوتاً منها.</span>
+            </label>
+            <label className="space-y-1.5">
+              <span className="block text-sm font-bold text-slate-900">المشاعر والأداء</span>
+              <select value={emotion} onChange={e => setEmotion(e.target.value)} className={select}>
+                {EMOTIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1.5">
+              <span className="flex items-center justify-between text-sm font-bold text-slate-900">السرعة <span className="font-mono text-xs text-slate-500">×{speed.toFixed(2)}</span></span>
+              <input type="range" min={0.7} max={1.2} step={0.05} value={speed} onChange={e => setSpeed(Number(e.target.value))} className="w-full accent-brand" />
+            </label>
+            <label className="space-y-1.5">
+              <span className="flex items-center justify-between text-sm font-bold text-slate-900">ثبات الأداء <span className="font-mono text-xs text-slate-500">{stability.toFixed(2)}</span></span>
+              <input type="range" min={0} max={1} step={0.05} value={stability} onChange={e => setStability(Number(e.target.value))} className="w-full accent-brand" aria-label="ثبات الأداء" />
+              <span className="flex justify-between text-[11px] text-slate-500"><span>متنوّع</span><span>ثابت</span></span>
+            </label>
+            {voice && !voice.munsit && <p className="sm:col-span-2 text-[11px] text-slate-500">المشاعر غير متاحة لهذا الصوت؛ السرعة والثبات تعمل مع كل الأصوات.</p>}
+          </div>
+
+          <button
+            type="button"
+            onClick={generate}
+            disabled={busy || !voice}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-brand hover:bg-brand-orange disabled:opacity-60 py-3.5 text-white font-bold shadow-md shadow-brand/25 transition"
+          >
+            {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5" />}
+            {busy ? 'جارٍ التوليد...' : trial ? 'جرّب التوليد مجاناً' : 'توليد الصوت'}
+          </button>
+          {trial && (
+            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+              تجربة مجانية: نص حتى {TRIAL_MAX} حرفاً مرة واحدة يومياً.{' '}
+              <button type="button" onClick={trial.onSignup} className="font-bold text-brand-text hover:underline">أنشئ حساباً مجانياً</button> واحصل على 5,000 حرف.
+            </p>
+          )}
+        </div>
+
+        {/* Audio preview: left */}
+        <div className="order-2 md:col-span-5">
+          <div className="md:sticky md:top-24">
+          <div className="rounded-3xl bg-slate-950 text-white overflow-hidden">
+            <div className="p-5 space-y-3 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="w-11 h-11 rounded-2xl bg-brand flex items-center justify-center"><Volume2 className="w-5 h-5" /></span>
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300">{format} بجودة كاملة</span>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">المعاينة الصوتية</h3>
+                <p className="text-xs text-slate-400 mt-1">استمع للنتيجة ونزّل الملف أو أعد التوليد بالإعدادات نفسها.</p>
+              </div>
+            </div>
+            <div className="p-5 space-y-3">
+              {result ? (
+                <audio key={result.id} src={result.audioUrl} controls autoPlay className="w-full" />
+              ) : (
+                <p className="rounded-xl bg-white/5 px-4 py-3 text-xs text-slate-400 text-center">اكتب النص واختر الصوت ثم اضغط «توليد الصوت» لتظهر المعاينة هنا.</p>
+              )}
+              <a
+                href={result?.audioUrl || undefined}
+                download={result ? `qeema-voice-${result.id}.${format.toLowerCase()}` : undefined}
+                aria-disabled={!result}
+                className={`flex items-center justify-center gap-2 rounded-2xl bg-white text-slate-950 py-3 text-sm font-bold ${result ? '' : 'opacity-40 pointer-events-none'}`}
+              >
+                <Download className="w-4 h-4" /> تنزيل {format}
+              </a>
+              <button type="button" onClick={generate} disabled={busy || !result} className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-600 py-3 text-sm font-bold disabled:opacity-40">
+                <RefreshCw className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} /> توليد نسخة جديدة
+              </button>
+              {(error || notice) && (
+                <p className={`flex items-center gap-2 rounded-xl px-4 py-3 text-xs ${error ? 'bg-red-500/10 text-red-300' : 'bg-emerald-400/10 text-emerald-300'}`} role="status">
+                  {error ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                  {error || notice}
+                </p>
+              )}
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+
+
+      {/* My recordings */}
+      {showHistory && history.length > 0 && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-lg font-black text-slate-950">تسجيلاتي</h2>
+            <p className="text-xs text-slate-500">آخر التسجيلات التي ولّدتها، جاهزة للاستماع والتنزيل.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {history.map(g => (
+              <div key={g.id} className="rounded-2xl border border-slate-200 bg-white p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="flex items-center gap-2 min-w-0"><strong className="text-slate-900 truncate">{g.voiceName}</strong>{g.voiceCode && <VoiceCode code={g.voiceCode} />}</span>
+                  <a href={g.audioUrl} download={`qeema-voice-${g.id}`} className="text-brand-text font-bold flex items-center gap-1 shrink-0"><Download className="w-3.5 h-3.5" /> تنزيل</a>
+                </div>
+                <p className="text-[11px] text-slate-500 line-clamp-2">{g.text}</p>
+                <audio src={g.audioUrl} controls preload="none" className="w-full h-9" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

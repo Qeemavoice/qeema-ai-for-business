@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { TTS_FAQS } from '../data/ttsFaqs';
 import { Link } from 'react-router-dom';
 import { useVoiceTemplates } from '../lib/voiceTemplates';
 import { 
@@ -33,7 +34,7 @@ import {
   Quote
 } from 'lucide-react';
 import { GlassyVoiceOrb } from './GlassyVoiceOrb';
-import { AI_VOICES_CATALOG } from '../data/aiVoicesCatalog';
+import { arLabel, useMunsitVoices } from '../lib/studioVoices';
 import { PLANS, SIGNUP_BONUS_CREDITS } from '../../shared/plans';
 
 interface TextToSpeechVisitorLandingProps {
@@ -41,9 +42,12 @@ interface TextToSpeechVisitorLandingProps {
   onGoogle: () => void;
   onOpenSignup: () => void;
   onTryStudio: () => void;
+  /** 'extras': only the sections shown under the studio on the TTS page (direction control, dialects, FAQ) */
+  variant?: 'full' | 'extras';
 }
 
 export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProps> = ({
+  variant = 'full',
   onOpenLogin,
   onGoogle,
   onOpenSignup,
@@ -75,14 +79,15 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
   ];
 
   // Voices list for console
-  // Studio voices from the dashboard; the built-in catalog shows only until the server answers.
+  // Studio voices from the dashboard, else the Munsit catalogue
   const [serverVoices, setServerVoices] = useState<{ id: string; name: string; flag: string; dialectLabel: string; previewUrl: string }[] | null>(null);
   useEffect(() => {
     fetch('/api/v1/voices?type=ai').then(r => (r.ok ? r.json() : null)).then(d => {
       if (d?.voices?.length) setServerVoices(d.voices.map((v: any) => ({ id: v.id, name: v.name, flag: v.flag || '', dialectLabel: v.dialectLabel || '', previewUrl: `/api/v1/voices/${v.id}/preview` })));
     }).catch(() => {});
   }, []);
-  const previewVoices = serverVoices || AI_VOICES_CATALOG;
+  const munsit = useMunsitVoices();
+  const previewVoices = serverVoices || munsit.slice(0, 12).map(v => ({ id: v.id, name: v.name, flag: '', dialectLabel: arLabel(v.dialect), previewUrl: v.previewUrl }));
 
   const handleTogglePlayVoice = (voiceId: string, previewUrl: string) => {
     if (playingVoiceId === voiceId) {
@@ -245,35 +250,12 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
   // Cards come from «نماذج الإنتاج الصوتي» (managed from the dashboard), each linking to its model page
   const voiceCategoryCards = useVoiceTemplates().slice(0, 6);
 
-  const faqs = [
-    {
-      q: 'كم عدد الأصوات المتاحة في استوديو التوليد؟',
-      a: 'توفر المنصة أصوات ذكاء اصطناعي عربية مبنية من أصوات معلقين بشريين حقيقيين، مقسمة حسب اللهجات (سعودي، مصري، شامي، خليجي، مغاربي، وفصحى)، إضافة إلى الإنجليزية الأمريكية والبريطانية والفرنسية، وتتوسع المكتبة باستمرار.'
-    },
-    {
-      q: 'ما هي حدود الباقة المجانية؟ وكم عدد الأحرف التي أحصل عليها؟',
-      a: 'تمنحك الباقة المجانية 5,000 حرف رصيداً ترحيبياً عند التسجيل (كل حرف = 1 نقطة)، وهو ما يعادل نحو 5 دقائق من التوليد الصوتي، لتجربة الأصوات المختلفة دون الحاجة لإدخال أي بطاقة ائتمانية.'
-    },
-    {
-      q: 'هل يمكنني استخدام الصوت المولد في الأغراض التجارية والإعلانات؟',
-      a: 'نعم! تمنحك جميع الباقات المدفوعة (مبتدئ، صانع محتوى، وباقات الشركات) ترخيصاً تجارياً شاملاً، يتيح لك نشر الصوتيات على يوتيوب، تيك توك، الإعلانات التلفزيونية، البودكاست، والكتب الصوتية المعروضة للبيع.'
-    },
-    {
-      q: 'هل تدعم المنصة التشكيل التلقائي للنصوص العربية لتجنب الأخطاء اللغوية؟',
-      a: 'نعم، تم تزويد محركنا الصوتي بمصحح سياقي ذكي يفهم علامات الإعراب وتشكيل الكلمات المعقدة تلقائياً وفق سياق الجملة، كما يمكنك أيضاً إدخال النص مشكولاً يدوياً لضمان نطق الحركات بدقة متناهية بنسبة 100%.'
-    },
-    {
-      q: 'ما هي صيغ الملفات الصوتية التي يمكنني تحميلها؟',
-      a: 'يمكنك تصدير الملفات بصيغة MP3 عالية النقاء، أو بصيغة WAV نقية غير مضغوطة بتردد استوديو 48kHz في الباقات المدفوعة للمشاريع الاحترافية والمونتاج.'
-    },
-    {
-      q: 'كيف تضمن منصة قيمة فويس أمان وخصوصية البيانات الصوتية؟',
-      a: 'نلتزم بأعلى معايير الأمان؛ تشفير تام للبيانات أثناء النقل والتخزين، ولا تُستخدم نصوصك أو تسجيلاتك لتدريب أي نماذج.'
-    }
-  ];
+  const full = variant === 'full';
+  const faqs = TTS_FAQS;
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-orange-500 selection:text-white" dir="rtl">
       
+      {full && (<>
       {/* 1. HERO SECTION (Image 2 - Top) */}
       <section className="relative pt-10 pb-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-white">
         <div className="max-w-7xl mx-auto">
@@ -447,6 +429,8 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+
+      </>)}
       {/* 2. EMOTIONALLY & CONTEXTUALLY AWARE SECTION (Image 2 - Middle) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto text-center space-y-4 mb-16">
@@ -567,6 +551,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      {full && (<>
       {/* 3. USE CASES SECTION (Image 2 bottom & Image 3 top) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-slate-50/60">
         <div className="max-w-7xl mx-auto">
@@ -617,6 +602,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
       {/* 4. MILLIONS OF WORDS COUNTER & DIALECTS (Image 3 middle) */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white text-center">
         <div className="max-w-7xl mx-auto space-y-16">
@@ -683,6 +669,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      {full && (<>
       {/* 6. TESTIMONIALS SECTION (Image 4 middle) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto space-y-12">
@@ -725,6 +712,8 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
+      {full && (<>
       {/* 7. PRICING TABLE SECTION (Image 5 top) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-slate-50/50">
         <div className="max-w-7xl mx-auto space-y-10">
@@ -839,6 +828,8 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
+      {full && (<>
       {/* 10. EXPLORE VOICE CATEGORIES (Image 6 middle) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto space-y-10">
@@ -882,6 +873,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
       {/* 11. FAQ ACCORDION (Image 6 bottom) */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-slate-50/50">
         <div className="max-w-4xl mx-auto space-y-10">
@@ -922,6 +914,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      {full && (<>
       {/* 12. BOTTOM CONVERSION BANNER */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-950 text-white text-center">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -948,6 +941,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         </div>
       </section>
 
+      </>)}
     </div>
   );
 };

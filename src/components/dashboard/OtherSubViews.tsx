@@ -285,7 +285,7 @@ export const HumanBookingsSubView: React.FC<HumanBookingsSubViewProps> = ({ onBo
 
   useEffect(() => {
     api.getMyBookings().then(d => {
-      setBookings(d.bookings); setCustomer(d.company);
+      setBookings(d.bookings); setCustomer(d.company || { name: "" });
       // Open the project that needs attention first (being recorded, else the newest)
       setOpenId((d.bookings.find(b => b.status === 'in_studio') || d.bookings[0])?.id || null);
     }).catch(() => setBookings([]));
@@ -335,7 +335,7 @@ export const HumanBookingsSubView: React.FC<HumanBookingsSubViewProps> = ({ onBo
         {shown.map(b => {
           const st = BOOKING_STATUS[b.status] || BOOKING_STATUS.pending;
           const open = openId === b.id;
-          const title = b.sampleName || b.talentName;
+          const title = b.sampleName || 'عينة صوتية'; // never the narrator's name (site rule)
           return (
             <div key={b.id} className={`bg-white rounded-3xl border transition-shadow ${open ? 'border-brand-ink/30 shadow-md' : 'border-slate-200/90 shadow-2xs'}`}>
               {/* Summary row */}
@@ -378,7 +378,7 @@ export const HumanBookingsSubView: React.FC<HumanBookingsSubViewProps> = ({ onBo
 
                   {/* Details entered when booking */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    <Detail label="الصوت" value={`${title}${b.sampleName ? ` - ${b.talentName}` : ''}`} />
+                    <Detail label="الصوت" value={title} />
                     <Detail label="اللهجة" value={b.dialect} />
                     <Detail label="مدة المشروع" value={`${b.durationMinutes} دقيقة`} />
                     <Detail label="عدد الحروف" value={(b.charCount ?? 0).toLocaleString('en-US')} />

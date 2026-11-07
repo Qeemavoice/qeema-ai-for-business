@@ -66,12 +66,16 @@ export interface User {
   accountType?: 'client' | 'talent';
   /** Platform staff: may open the admin dashboard */
   isPlatformAdmin?: boolean;
+  /** the admin dashboard's private address (admins only) */
+  adminPath?: string | null;
   /** Narrator record of a talent account */
   narratorId?: string;
 }
 
 export interface Voice {
   id: string;
+  /** Qeema voice code shown to clients (QV-101…) */
+  code?: string;
   type: VoiceType;
   name: string;
   nameEn?: string;
@@ -107,6 +111,7 @@ export interface Voice {
 
 export interface Generation {
   id: string;
+  voiceCode?: string;
   companyId: string;
   userId: string;
   voiceId: string;
@@ -122,8 +127,10 @@ export interface Generation {
     pitch?: number;
     format?: string;
   };
-  provider: string;
-  model: string;
+  /** admin views only: the client API sends the file format, never the provider or model */
+  provider?: string;
+  model?: string;
+  format?: 'MP3' | 'WAV';
   audioUrl: string;
   durationSeconds: number;
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -217,7 +224,7 @@ export interface HumanBooking {
   priceUsd: number;
   talentPayoutUsd: number;
   paymentModel: 'direct_escrow_100';
-  status: 'pending' | 'in_studio' | 'delivered' | 'approved';
+  status: 'pending' | 'in_studio' | 'delivered' | 'approved' | 'canceled';
   deliverableAudioUrl?: string;
   review?: { rating: number; text: string; author: string; createdAt: string; status: 'pending' | 'approved' | 'rejected' };
   /** Library sample the client booked (for publishing approved reviews on its page) */
@@ -399,6 +406,25 @@ export interface VoiceSample {
   format?: string;
   sizeMb?: number;
   reviewedAt?: string;
+  createdAt: string;
+}
+
+/** A narrator's voice in «مكتبة الأصوات» (read-only; server: NarratorController::libraryVoices) */
+export interface LibraryVoice {
+  id: string;
+  narratorId: string;
+  title: string;
+  category: string;
+  dialect: string;
+  language: string;
+  gender: 'male' | 'female';
+  audioUrl: string;
+  /** the narrator's own price per minute for this voice (0 = not set, the narrator's rate applies) */
+  narratorPriceUsd: number;
+  /** what the client pays per minute (narrator price + platform commission) */
+  finalPriceUsd: number;
+  bookingsCount: number;
+  listensCount: number;
   createdAt: string;
 }
 

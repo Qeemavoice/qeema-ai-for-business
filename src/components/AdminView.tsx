@@ -60,6 +60,8 @@ import { AI_VOICES_ENABLED } from '../../shared/features';
 import { AdminPageEditor } from './admin/AdminPageEditor';
 import { AdminGuidesView } from './admin/AdminGuidesView';
 import { AdminReviewsView } from './admin/AdminReviewsView';
+import { AdminRowadView } from './admin/AdminRowadView';
+import { AdminBookingDetail } from './admin/AdminBookingDetail';
 import { AdminJobsView } from './admin/AdminJobsView';
 import { AdminVoicesView } from './admin/AdminVoicesView';
 import { AdminSettingsView, type SettingsSection } from './admin/AdminSettingsView';
@@ -70,7 +72,7 @@ import type { AdminTab } from './admin/adminNav';
 import { ExcelButton } from './admin/adminUi';
 import { exportToExcel } from '../lib/exportExcel';
 import { fmtNum, fmtDate, fmtTime, fmtDateTime } from '../lib/format';
-import { PLATFORM_COMMISSION_PERCENT } from '../../shared/pricing';
+import { commissionPercent } from '../../shared/pricing';
 
 interface AdminViewProps {
   voices: Voice[];
@@ -93,6 +95,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const showAiVoices = AI_VOICES_ENABLED && voicesSection === 'ai';
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [overview, setOverview] = useState<any>(null);
+  // bookings page figures (server: AdminController::bookings, canceled orders excluded)
+  const [bookingSummary, setBookingSummary] = useState<{ bookingsCount: number; revenueUsd: number; narratorEarningsUsd: number; platformEarningsUsd: number; repeatCustomers: number; customers: number } | null>(null);
   const [bookings, setBookings] = useState<HumanBooking[]>([]);
   const [payouts, setPayouts] = useState<TalentPayout[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +120,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   // Script Preview Modal
   const [selectedBookingForScript, setSelectedBookingForScript] = useState<HumanBooking | null>(null);
+  // the booking page (replaces the list while open)
+  const [openBookingId, setOpenBookingId] = useState<string | null>(null);
+  useEffect(() => { setOpenBookingId(null); }, [activeTab]);
 
   // Deliver Booking Modal
   const [deliveringBooking, setDeliveringBooking] = useState<HumanBooking | null>(null);
@@ -164,6 +171,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       setOverview(overviewData);
       setBookings(bookingsData.bookings || []);
+      setBookingSummary(bookingsData.summary || null);
       setPayouts(payoutsData.payouts || []);
 
       if (overviewData.companies?.[0] && !grantingCompanyId) {
@@ -398,7 +406,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
     return matchesStatus && matchesSearch;
   });
 
-  const BOOKING_STATUS_AR: Record<HumanBooking['status'], string> = { pending: 'بانتظار المراجعة', in_studio: 'استوديو التسجيل', delivered: 'تم التسليم', approved: 'معتمد ومكتمل' };
+  const BOOKING_STATUS_AR: Record<HumanBooking['status'], string> = { pending: 'بانتظار المراجعة', in_studio: 'استوديو التسجيل', delivered: 'تم التسليم', approved: 'معتمد ومكتمل', canceled: 'ملغي' };
   const exportBookings = () => exportToExcel<HumanBooking>('bookings', 'الحجوزات', [
     { header: 'رقم الحجز', value: 'id', width: 14 },
     { header: 'العميل', value: 'companyName', width: 26 },
@@ -596,28 +604,40 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </span>
                 <span className="text-xs font-bold text-slate-500">USD</span>
               </div>
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-emerald-600">
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
                 <TrendingUp className="w-3.5 h-3.5" />
-                <span>+28% نمو الطلبات هذا الشهر</span>
+                <span>
+                  {(() => {
+                    const c = overview?.bookingCounts;
+                    if (!c) return 'بدون الطلبات الملغاة';
+                    const growth = c.lastMonth ? Math.round(((c.thisMonth - c.lastMonth) / c.lastMonth) * 100) : null;
+                    return `هذا الشهر ${fmtNum(c.thisMonth)} طلب · الشهر الماضي ${fmtNum(c.lastMonth)}${growth !== null ? ` (${growth > 0 ? '+' : ''}${growth}%)` : ''}`;
+                  })()}
+                </span>
               </div>
             </div>
 
             <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">صافي عمولة المنصة (30% فوق سعر المعلق)</span>
+                <span className="text-xs font-semibold text-slate-500">طلبات حجز الأصوات</span>
                 <span className="p-2 bg-orange-50 text-brand-text rounded-xl">
                   <Percent className="w-4 h-4" />
                 </span>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-black font-mono text-brand-text">
-                  ${fmtNum(overview?.platformBookingMarginUsd)}
+                  {fmtNum(overview?.bookingCounts?.total ?? bookings.length)}
                 </span>
-                <span className="text-xs font-bold text-slate-500">USD</span>
+                <span className="text-xs font-bold text-slate-500">طلب</span>
               </div>
               <div className="mt-2 text-[11px] text-slate-400">
-                مستحقات المعلقين: ${fmtNum(overview?.totalTalentPayoutsUsd)} USD
+                {overview?.bookingCounts
+                  ? `مكتمل ${fmtNum(overview.bookingCounts.completed)} · قيد التنفيذ ${fmtNum(overview.bookingCounts.active)} · ملغي ${fmtNum(overview.bookingCounts.canceled)}`
+                  : `مستحقات المعلقين: $${fmtNum(overview?.totalTalentPayoutsUsd)} USD`}
               </div>
+              {overview?.lastBookingAt && (
+                <div className="mt-1 text-[10px] text-slate-400">آخر طلب: {fmtDateTime(overview.lastBookingAt)}</div>
+              )}
             </div>
 
             <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden">
@@ -634,7 +654,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <span className="text-xs font-bold text-slate-500">حرف</span>
               </div>
               <div className="mt-2 text-[11px] text-slate-400">
-                {overview?.totalGenerations ?? 14} عملية صوتية منجزة
+                {fmtNum(overview?.totalGenerations ?? 0)} عملية صوتية منجزة
               </div>
             </div>
 
@@ -647,12 +667,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-black font-mono text-purple-700">
-                  ${overview?.totalSystemCostUsd ?? '0.0009'}
+                  ${overview?.totalSystemCostUsd ?? 0}
                 </span>
                 <span className="text-xs font-bold text-slate-500">USD</span>
               </div>
-              <div className="mt-2 text-[11px] text-emerald-600 font-medium">
-                هامش ربحية عالي (كفاءة التوليد السحابي)
+              <div className="mt-2 text-[11px] text-slate-400">
+                {overview?.customersCount !== undefined
+                  ? `${fmtNum(overview.customersCount)} عميل · ${fmtNum(overview.narratorsCount)} معلق · ${fmtNum(overview.humanVoicesCount)} عينة صوتية`
+                  : 'تكلفة التوليد الفعلية من سجل العمليات'}
               </div>
             </div>
           </div>
@@ -664,31 +686,24 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <Server className="w-4 h-4 text-brand-text" />
                 <span>مصفوفة صحة الخدمات السحابية (Infrastructure Pulse)</span>
               </h3>
-              <span className="text-xs font-semibold text-slate-400">زمن الاستجابة اللحظي</span>
+              <span className="text-xs font-semibold text-slate-400">حالة ربط مفاتيح الخدمة</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">ElevenLabs v4</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              {[
+                { name: 'ElevenLabs (استوديو TTS)', on: overview?.providers?.elevenlabs },
+                { name: 'Google AI Studio (الشات بوت)', on: overview?.providers?.gemini }
+              ].map(p => (
+                <div key={p.name} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">{p.name}</span>
+                    <span className={`w-2 h-2 rounded-full ${p.on ? 'bg-emerald-500' : p.on === false ? 'bg-rose-500' : 'bg-slate-300'}`} />
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {p.on ? 'المفتاح مضاف ومفعّل' : p.on === false ? 'المفتاح غير مضاف: أضفه من الإعدادات' : 'غير معروف'}
+                  </div>
                 </div>
-                <div className="flex items-baseline justify-between text-xs">
-                  <span className="text-slate-500">الحالة: نشط</span>
-                  <span className="font-mono text-slate-700 font-bold">185 ms</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Google AI Studio (الشات بوت)</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                </div>
-                <div className="flex items-baseline justify-between text-xs">
-                  <span className="text-slate-500">الحالة: نشط</span>
-                  <span className="font-mono text-slate-700 font-bold">210 ms</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -838,7 +853,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* ========================================================= */}
       {/* TAB 2: STUDIO BOOKINGS PIPELINE */}
       {/* ========================================================= */}
-      {activeTab === 'bookings' && (
+      {activeTab === 'bookings' && openBookingId && (
+        <AdminBookingDetail bookingId={openBookingId} onBack={() => setOpenBookingId(null)} onChanged={() => { loadAdminData(); }} />
+      )}
+      {activeTab === 'bookings' && !openBookingId && (
         <div className="space-y-6">
           {/* Controls Bar */}
           <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -848,7 +866,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 { id: 'pending', label: 'بانتظار المراجعة' },
                 { id: 'in_studio', label: 'استوديو التسجيل' },
                 { id: 'delivered', label: 'تم التسليم' },
-                { id: 'approved', label: 'معتمد ومكتمل' }
+                { id: 'approved', label: 'معتمد ومكتمل' },
+                { id: 'canceled', label: 'ملغي' }
               ].map(f => (
                 <button
                   key={f.id}
@@ -875,6 +894,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
               />
             </div>
           </div>
+
+          {/* Bookings figures */}
+          {bookingSummary && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: 'إيرادات الحجوزات', value: bookingSummary.revenueUsd, tone: 'text-slate-900', hint: `${fmtNum(bookingSummary.bookingsCount)} حجز (بدون الملغاة)` },
+                { label: 'أرباح المعلقين', value: bookingSummary.narratorEarningsUsd, tone: 'text-slate-900', hint: 'سعر المعلق في كل حجز' },
+                { label: 'أرباح المنصة', value: bookingSummary.platformEarningsUsd, tone: 'text-brand-text', hint: 'عمولة 50% على الحجوزات قبل 5 نوفمبر 2026، و30% بعدها' }
+              ].map(c => (
+                <div key={c.label} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+                  <span className="text-xs font-semibold text-slate-500">{c.label}</span>
+                  <div className={`mt-2 text-2xl font-black font-mono ${c.tone}`}>${fmtNum(c.value)} <span className="text-xs font-bold text-slate-500">USD</span></div>
+                  <div className="mt-1 text-[11px] text-slate-400">{c.hint}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Bookings Table */}
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
@@ -905,13 +941,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       pending: { label: 'بانتظار المراجعة', bg: 'bg-amber-100 text-amber-800 border-amber-200' },
                       in_studio: { label: 'في الاستوديو', bg: 'bg-blue-100 text-blue-800 border-blue-200' },
                       delivered: { label: 'تم التسليم', bg: 'bg-purple-100 text-purple-800 border-purple-200' },
-                      approved: { label: 'معتمد ومكتمل', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
+                      approved: { label: 'معتمد ومكتمل', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+                      canceled: { label: 'ملغي', bg: 'bg-slate-100 text-slate-600 border-slate-200' }
                     }[b.status];
 
                     return (
                       <tr key={b.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{b.id}</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-800">{b.companyName}</td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                          <button onClick={() => setOpenBookingId(b.id)} className="hover:text-brand-text hover:underline cursor-pointer" title="فتح صفحة الحجز">{b.id}</button>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-slate-800">
+                          <span className="block">{b.companyName}</span>
+                          {(b as any).repeatCustomer && (
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title={`${(b as any).customerBookingsCount} حجوزات`}>
+                              زبون متكرر · {(b as any).customerBookingsCount}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-brand" />
@@ -934,7 +980,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <td className="py-3.5 px-4 font-mono">
                           <span className="font-bold text-slate-900 block">${fmtNum(b.priceUsd)} USD</span>
                           <span className="text-[10px] text-slate-400">
-                            سعر المعلق (قبل عمولة 30%): ${fmtNum(b.talentPayoutUsd)} USD
+                            سعر المعلق (قبل عمولة {(b as any).commissionPct ?? 30}%): ${fmtNum(b.talentPayoutUsd)} USD
                           </span>
                         </td>
                         <td className="py-3.5 px-4">
@@ -951,9 +997,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           <div className="flex items-center justify-center gap-1.5">
                             {/* View Script */}
                             <button
-                              onClick={() => setSelectedBookingForScript(b)}
+                              onClick={() => setOpenBookingId(b.id)}
                               className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
-                              title="عرض الاسكريبت والملاحظات"
+                              title="صفحة الحجز: كل التفاصيل"
                             >
                               <Eye className="w-3.5 h-3.5" />
                             </button>
@@ -1209,6 +1255,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {activeTab === 'ttsVoices' && <AdminTtsVoicesView />}
       {activeTab === 'guides' && <AdminGuidesView />}
       {activeTab === 'reviews' && <AdminReviewsView />}
+      {activeTab === 'rowad' && <AdminRowadView />}
       {activeTab.startsWith('settings-') && <AdminSettingsView key={activeTab} section={activeTab.replace('settings-', '') as SettingsSection} />}
 
       {activeTab === 'voices' && !showAiVoices && <AdminVoicesView />}

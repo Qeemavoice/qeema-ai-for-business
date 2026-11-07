@@ -54,9 +54,14 @@ import { TALENT_SIGNUP_EVENT, openTalentSignup } from './lib/talentJoin';
 import { narratorService } from './services/narratorService';
 
 import { Voice, Company, User, Generation, Plan } from './types';
-import { api, getToken } from './lib/api';
+import { api, getToken, ACCOUNT_CHANGED_EVENT } from './lib/api';
 import { getGoogleAccessToken } from './lib/googleSignIn';
 import { SignInGate } from './components/SignInGate';
+import { NewFeaturesGate } from './components/NewFeaturesGate';
+import { InsufficientCreditsDialog } from './components/InsufficientCreditsDialog';
+import { EarlyAccessPage, EarlyWelcomePage, WaitlistPage, ResetPasswordPage } from './pages/EarlyAccessPage';
+import { setRowadFeatures, setPublicLaunchAt, markRowadReady } from './lib/rowad';
+import { setCommissionPercent } from '../shared/pricing';
 
 // Lazy loaded non-blocking widgets
 
@@ -85,12 +90,17 @@ function AppLayout({
   const location = useLocation();
   const path = location.pathname;
 
-  const isWorkspaceDashboard = path === '/ar/dashboard' || 
+  // dashboards have their own top bar (avatar + account menu), so the site header would show the account twice
+  const isWorkspaceDashboard = path === '/ar/dashboard' || path === '/ar/account' || path.startsWith('/ar/account/') ||
     path.startsWith('/ar/talent-');
+  // the admin login screen stands alone: no site header (its «إنشاء حساب» / Google sign-in) and no footer
+  const adminPathCfg = (window as any).__QV_CONFIG?.adminPath as string | undefined;
+  const isAdminLogin = Boolean(adminPathCfg) && path === adminPathCfg && !currentUser;
+  const hideChrome = isWorkspaceDashboard || isAdminLogin;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFFFF] text-[#0F172A] font-['IBM_Plex_Sans_Arabic','Cairo',sans-serif]">
-      {!isWorkspaceDashboard && (
+      {!hideChrome && (
         <Header
           currentCompany={currentCompany}
           currentUser={currentUser}
@@ -106,7 +116,7 @@ function AppLayout({
         {children}
       </main>
 
-      {!isWorkspaceDashboard && (
+      {!hideChrome && (
         <Footer onOpenChangelog={onOpenChangelog} />
       )}
     </div>
@@ -141,6 +151,7 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => Boolean(getToken()));
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | null>(null);
   const [authRole, setAuthRole] = useState<'talent' | 'client'>('client');
+  const [authEmail, setAuthEmail] = useState('');
   const [postAuthPath, setPostAuthPath] = useState<string | null>(null);
 
   // «انضم كمعلق صوتي» anywhere on the site opens the narrator sign-up
@@ -157,6 +168,7 @@ export default function App() {
     setCurrentUser(meRes.user);
     setBalanceCredits(meRes.balanceCredits);
     setAvailableCompanies(meRes.availableCompanies);
+    setRowadFeatures(meRes.features ?? null, Boolean(meRes.user.isPlatformAdmin));
     if (meRes.user.narratorId) { try { localStorage.setItem('qeema_current_narrator', meRes.user.narratorId); } catch {} }
     return meRes.user;
   };
@@ -166,6 +178,7 @@ export default function App() {
     setCurrentUser(null);
     setCurrentCompany(null);
     setBalanceCredits(0);
+    setRowadFeatures(null);
     try { localStorage.removeItem('qeema_current_narrator'); } catch {}
   };
 
@@ -173,6 +186,14 @@ export default function App() {
   useEffect(() => {
     api.getVoices().then(r => setVoices(r.voices)).catch(err => console.error('Error loading voices:', err));
     if (getToken()) loadMe().catch(() => { api.logout(); signedOut(); }); // expired or revoked session
+    else markRowadReady();
+  }, []);
+
+  // a plan bought inside a page (BillingTab): reload balance, plan and Rowad state
+  useEffect(() => {
+    const reload = () => { if (getToken()) loadMe().catch(() => {}); };
+    window.addEventListener(ACCOUNT_CHANGED_EVENT, reload);
+    return () => window.removeEventListener(ACCOUNT_CHANGED_EVENT, reload);
   }, []);
 
   const handleSwitchCompany = async (companyId: string) => {
@@ -218,9 +239,11 @@ export default function App() {
   // «إعدادات الصيانة» in the admin dashboard: visitors see a maintenance page, admins keep working
   const [maintenance, setMaintenance] = useState(false);
   useEffect(() => {
-    fetch('/api/v1/site-status').then(r => (r.ok ? r.json() : null)).then(d => setMaintenance(Boolean(d?.maintenance))).catch(() => {});
+    fetch('/api/v1/site-status').then(r => (r.ok ? r.json() : null)).then(d => { setCommissionPercent(d?.commissionPercent); setMaintenance(Boolean(d?.maintenance)); setPublicLaunchAt(d?.publicLaunchAt); }).catch(() => {});
   }, []);
-  const siteClosed = maintenance && !currentUser?.isPlatformAdmin && !window.location.pathname.startsWith('/ar/admin');
+  // the admin dashboard's private address: from the admin page's own config, or from a signed-in admin's account
+  const adminPath = ((window as any).__QV_CONFIG?.adminPath as string | undefined) || currentUser?.adminPath || '';
+  const siteClosed = maintenance && !currentUser?.isPlatformAdmin && !(adminPath && window.location.pathname === adminPath);
 
   return (
     <BrowserRouter>
@@ -305,8 +328,14 @@ export default function App() {
           <Route path="/ar/voice-models/stories" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['stories']} />} />
           <Route path="/ar/voice-models/promo" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['promo']} />} />
           <Route path="/ar/voice-models/religious" element={<CommercialServiceTemplate data={COMMERCIAL_SERVICES['religious']} />} />
+          {/* open to everyone (and to Google); the studio inside the page is for Rowad members until the public launch */}
           <Route path="/ar/text-to-speech" element={<TextToSpeechPage isLoggedIn={isLoggedIn} voices={voices} onGenerated={setBalanceCredits} onGoogle={loginWithGoogle} onOpenLogin={() => setAuthModalMode('login')} onOpenSignup={() => setAuthModalMode('signup')} />} />
           <Route path="/ar/pricing" element={<PricingPage />} />
+          {/* «روّاد قيمة» invite links (the server checks the code first) and the waitlist */}
+          <Route path="/ar/early" element={<EarlyAccessPage isLoggedIn={isLoggedIn} onOpenLogin={(email) => { setAuthEmail(email || ''); setAuthModalMode('login'); }} onOpenSignup={(email) => { setAuthEmail(email || ''); setAuthRole('client'); setAuthModalMode('signup'); }} onActivated={() => { loadMe().catch(() => {}); }} />} />
+          <Route path="/ar/early/welcome" element={<EarlyWelcomePage isLoggedIn={isLoggedIn} onOpenLogin={() => setAuthModalMode('login')} />} />
+          <Route path="/ar/waitlist" element={<WaitlistPage />} />
+          <Route path="/ar/reset-password" element={<ResetPasswordPage onSignedIn={async (user) => { await completeAuth(user); if (user.accountType !== 'talent') setPostAuthPath('/ar/account'); }} />} />
           <Route path="/ar/saudi-voice-over" element={<SaudiVoiceOverPage />} />
           <Route path="/ar/emirati-voice-over" element={<EmiratiVoiceOverPage />} />
           <Route path="/ar/egyptian-voice-over" element={<EgyptianVoiceOverPage />} />
@@ -326,6 +355,7 @@ export default function App() {
                 onSwitchCompany={handleSwitchCompany}
                 onNavigate={() => {}}
                 onOpenTopUp={() => setIsTopUpOpen(true)}
+                onGenerated={setBalanceCredits}
                 onOpenDemo={() => setIsDemoOpen(true)}
                 onOpenLogin={() => setAuthModalMode('login')}
                 onOpenSignup={() => setAuthModalMode('signup')}
@@ -364,6 +394,7 @@ export default function App() {
           <Route 
             path="/ar/generate" 
             element={
+              <NewFeaturesGate>
               <GenerateVoiceView
                 voices={voices}
                 balanceCredits={balanceCredits}
@@ -378,15 +409,16 @@ export default function App() {
                   setBalanceCredits(meRes.balanceCredits);
                 }}
               />
+              </NewFeaturesGate>
             } 
           />
           {/* the old back office lives at /ar/dashboard on the Laravel host; the client dashboard moved to /ar/account */}
           <Route path="/ar/dashboard" element={<Navigate to="/ar/account" replace />} />
           <Route path="/ar/chatbot" element={<Navigate to="/ar/voices" replace />} />
-          <Route 
-            path="/ar/admin" 
+          {adminPath && <Route 
+            path={adminPath} 
             element={
-              <SignInGate user={currentUser} allow={u => Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة إدارة قيمة فويس" hint="هذه الصفحة لفريق الإدارة فقط. سجّل الدخول بحساب الإدارة." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}>
+              <SignInGate user={currentUser} allow={u => Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة إدارة قيمة فويس" hint="ادخل بحساب الإدارة." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout} inlineLogin={completeAuth}>
               <AdminView
                 voices={voices}
                 onVoiceToggled={(id, isActive) => setVoices(vs => vs.map(v => v.id === id ? { ...v, isActive } : v))}
@@ -395,7 +427,7 @@ export default function App() {
               />
               </SignInGate>
             } 
-          />
+          />}
 
           {/* 404 Catch-All */}
           <Route path="*" element={<NotFoundPage />} />
@@ -441,12 +473,14 @@ export default function App() {
 
       {postAuthPath && <GoTo to={postAuthPath} onDone={() => setPostAuthPath(null)} />}
 
+      <InsufficientCreditsDialog onOpenTopUp={() => setIsTopUpOpen(true)} />
       {authModalMode && (
         <AuthModal
           isOpen={Boolean(authModalMode)}
           mode={authModalMode}
           initialRole={authRole}
-          onClose={() => { setAuthModalMode(null); setAuthRole('client'); }}
+          initialEmail={authEmail}
+          onClose={() => { setAuthModalMode(null); setAuthRole('client'); setAuthEmail(''); }}
           onAuthSuccess={completeAuth}
         />
       )}

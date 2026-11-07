@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Check, FileText } from 'lucide-react';
 import { PLANS, findPlan } from '../../../shared/plans';
-import { api } from '../../lib/api';
+import { api, ACCOUNT_CHANGED_EVENT, type PlanOffer } from '../../lib/api';
 import { fmtDate, fmtNum } from '../../lib/format';
 import { CreditTransaction, HumanBooking } from '../../types';
 import { InvoiceModal, type InvoiceData } from './InvoiceModal';
@@ -14,10 +14,27 @@ export const BillingTab: React.FC<Props> = ({ balanceCredits, currentPlanId, onO
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [open, setOpen] = useState<InvoiceData | null>(null);
   const current = findPlan(currentPlanId);
+  const [offers, setOffers] = useState<Record<string, PlanOffer>>({});
+  const [busy, setBusy] = useState('');
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => { api.getOffers().then(r => setOffers(r.offers || {})).catch(() => setOffers({})); }, [currentPlanId]);
+
+  // «اشترك الآن»: the plan at this account's price (Rowad price locked for members, or list price)
+  const subscribe = async (planId: string, price: number) => {
+    if (!confirm(`الاشتراك في هذه الباقة بسعر ${price}$ شهرياً؟`)) return;
+    setBusy(planId); setNote(null);
+    try {
+      const r = await api.changePlan(planId);
+      setNote({ ok: true, text: r.message || 'تم الاشتراك' });
+      window.dispatchEvent(new CustomEvent(ACCOUNT_CHANGED_EVENT));
+    } catch (e: any) {
+      setNote({ ok: false, text: e?.message || 'تعذّر الاشتراك' });
+    } finally { setBusy(''); }
+  };
 
   useEffect(() => {
     Promise.all([api.getMyBookings(), api.getCredits()]).then(([bk, cr]) => {
-      const customer = bk.company;
+      const customer = bk.company || { name: '' };
       const purchases = (cr.transactions as CreditTransaction[]).filter(t => t.reason === 'purchase');
       const fromPurchases = purchases.map((t): InvoiceData => {
         const price = Number(/(\d+(?:\.\d+)?) USD/.exec(t.description)?.[1] || 0);
@@ -57,9 +74,14 @@ export const BillingTab: React.FC<Props> = ({ balanceCredits, currentPlanId, onO
         </div>
       </div>
 
+      {note && <p className={`text-xs font-bold rounded-xl px-3 py-2 ${note.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{note.text}</p>}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {PLANS.map(p => {
           const isCurrent = (current?.id || 'plan-free') === p.id;
+          const sub = offers[p.id]?.subscription;
+          const price = sub ? sub.price : p.priceUsd;
+          const offerLabel = sub?.offer === 'rowad' || sub?.offer === 'rowad_locked' ? 'سعر روّاد قيمة' : '';
           return (
             <div key={p.id} className={`p-5 rounded-3xl border bg-white flex flex-col gap-3 ${isCurrent ? 'border-brand ring-2 ring-brand/20' : 'border-slate-200'}`}>
               <div className="flex items-center justify-between">
@@ -67,17 +89,28 @@ export const BillingTab: React.FC<Props> = ({ balanceCredits, currentPlanId, onO
                 {isCurrent && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand-text border border-brand/30">باقتك</span>}
               </div>
               <div className="font-mono font-black text-2xl text-slate-900">
-                {p.priceUsd === null ? <span className="text-base font-sans">سعر مخصص</span> : <>${p.priceUsd}<span className="text-xs text-slate-400 font-sans"> / شهرياً</span></>}
+                {p.priceUsd === null ? <span className="text-base font-sans">سعر مخصص</span> : (
+                  <>
+                    {price !== p.priceUsd && <span className="text-sm text-slate-400 line-through ml-1.5">${p.priceUsd}</span>}
+                    <span className={price !== p.priceUsd ? 'text-brand-text' : ''}>${price}</span>
+                    <span className="text-xs text-slate-400 font-sans"> / شهرياً</span>
+                  </>
+                )}
               </div>
+              {offerLabel && <span className="self-start text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-ink text-white">{offerLabel}</span>}
               <ul className="space-y-1.5 text-xs text-slate-600 flex-1">
                 {p.features.map(f => <li key={f.text} className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />{f.text}</li>)}
               </ul>
               {p.priceUsd === null ? (
                 <a href="/ar/contact-us" className="w-full py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-center text-slate-800">تواصل معنا</a>
               ) : p.priceUsd > 0 ? (
-                <button onClick={onOpenTopUp} className={`w-full py-2 rounded-xl text-xs font-bold cursor-pointer ${isCurrent ? 'border border-slate-200 text-slate-700 hover:bg-slate-50' : 'bg-brand hover:bg-brand-orange text-white'}`}>
-                  {isCurrent ? 'شحن رصيد إضافي' : 'اشترك الآن'}
-                </button>
+                isCurrent ? (
+                  <button onClick={onOpenTopUp} className="w-full py-2 rounded-xl text-xs font-bold cursor-pointer border border-slate-200 text-slate-700 hover:bg-slate-50">شحن رصيد إضافي</button>
+                ) : (
+                  <button onClick={() => subscribe(p.id, Number(price))} disabled={busy === p.id} className="w-full py-2 rounded-xl text-xs font-bold cursor-pointer bg-brand hover:bg-brand-orange text-white disabled:opacity-50">
+                    {busy === p.id ? 'جارٍ الاشتراك...' : 'اشترك الآن'}
+                  </button>
+                )
               ) : null}
             </div>
           );

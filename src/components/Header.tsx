@@ -16,9 +16,13 @@ import {
   Mail,
   HelpCircle,
   Users,
-  Volume2
+  Volume2,
+  LayoutDashboard,
+  ShieldCheck
 } from 'lucide-react';
 import { Company, User } from '../types';
+import { WhiteFridayBar } from './WhiteFridayBar';
+import { RowadBadge } from './RowadBadge';
 
 interface HeaderProps {
   currentCompany: Company | null;
@@ -47,6 +51,13 @@ export const Header: React.FC<HeaderProps> = ({
   const currentPath = location.pathname;
 
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
+  // the signed-in user's own pages, by account type (admins see both)
+  const accountLinks = [
+    currentUser?.accountType === 'talent'
+      ? { to: '/ar/talent-dashboard', label: 'لوحة المعلق الصوتي', icon: Mic2 }
+      : { to: '/ar/account', label: 'حسابي', icon: LayoutDashboard },
+    ...(currentUser?.isPlatformAdmin && currentUser.adminPath ? [{ to: currentUser.adminPath, label: 'لوحة الإدارة', icon: ShieldCheck }] : []),
+  ];
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Dropdown states for Desktop
@@ -72,6 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header ref={headerRef} className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all" dir="rtl">
+      <WhiteFridayBar onSignup={currentUser ? undefined : onOpenSignup} />
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -145,7 +157,8 @@ export const Header: React.FC<HeaderProps> = ({
                     </Link>
                     )}
 
-                    {/* أستوديو TTS */}
+                    {/* أستوديو TTS (Rowad members now, everyone from the public launch) */}
+                    
                     <Link
                       to="/ar/text-to-speech"
                       onClick={() => setOpenDropdown(null)}
@@ -159,6 +172,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700">توليد فوري</span>
                       </div>
                     </Link>
+                    
 
                     <div className="my-1 border-t border-slate-100" />
 
@@ -240,6 +254,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* 3. الأسعار */}
+              {(
               <Link
                 to="/ar/pricing"
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
@@ -251,6 +266,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <CreditCard className="w-4 h-4 text-slate-500" />
                 <span>الأسعار</span>
               </Link>
+              )}
 
               {/* 4. تواصل معنا */}
               <div className="relative">
@@ -328,29 +344,33 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="relative">
                 <button
                   onClick={() => setShowCompanyMenu(!showCompanyMenu)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-right cursor-pointer"
+                  aria-label={currentUser?.name || 'حسابي'}
+                  title={currentUser?.name || 'حسابي'}
+                  className="relative block rounded-full ring-2 ring-slate-200 hover:ring-brand transition-all cursor-pointer"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-orange-100 text-brand-text font-black text-xs flex items-center justify-center">
-                    {currentUser?.name?.charAt(0) || 'ق'}
-                  </div>
-                  <div className="hidden sm:flex flex-col">
-                    <span className="text-xs font-bold text-slate-900 max-w-[120px] truncate">
-                      {currentUser?.name || 'المستخدم'}
-                    </span>
-                    <span className="text-[9px] text-slate-500">
-                      {currentCompany?.name.split('|')[0] || 'حساب المؤسسة'}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  {currentUser?.avatar
+                    ? <img src={currentUser.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    : <span className="w-10 h-10 rounded-full bg-orange-100 text-brand-text font-black text-sm flex items-center justify-center">{currentUser?.name?.charAt(0) || 'ق'}</span>}
+                  <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" />
                 </button>
 
                 {showCompanyMenu && (
                   <div className="absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
-                    <div className="px-3 py-2 border-b border-slate-100 text-xs text-slate-400 font-semibold">
-                      الملف الشخصي والحساب
+                    <div className="px-3 py-2 border-b border-slate-100 text-xs text-slate-400 font-semibold space-y-1.5">
+                      <div className="text-sm font-bold text-slate-900 truncate">{currentUser?.name || 'حسابي'}</div>
+                      <div className="truncate" dir="ltr">{currentUser?.email}</div>
+                      <RowadBadge />
                     </div>
+
                     
                     <div className="p-2 border-b border-slate-100 space-y-1">
+                      {accountLinks.map(l => (
+                        <Link key={l.to} to={l.to} onClick={() => setShowCompanyMenu(false)}
+                          className="w-full flex items-center gap-2 py-2 px-3 text-xs font-bold text-slate-800 hover:bg-orange-50 rounded-xl transition-all text-right">
+                          <l.icon className="w-4 h-4 text-brand-text" />
+                          <span>{l.label}</span>
+                        </Link>
+                      ))}
                       <Link
                         to="/ar/text-to-speech"
                         onClick={() => setShowCompanyMenu(false)}
@@ -360,6 +380,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <span>استوديو تحويل النص إلى صوت (TTS)</span>
                       </Link>
                     </div>
+                    
 
                     <div className="p-2 border-t border-slate-100">
                       <button
@@ -412,6 +433,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[10px] text-slate-400">1000+ موهبة</span>
             </Link>
 
+            
             <Link
               to="/ar/text-to-speech"
               onClick={() => setMobileMenuOpen(false)}
@@ -423,6 +445,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">توليد فوري</span>
             </Link>
+            
 
             <Link
               to="/ar/booking-steps"
@@ -475,7 +498,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* 3. الأسعار */}
-          <div className="border-t border-slate-100 pt-3 space-y-1">
+          {<div className="border-t border-slate-100 pt-3 space-y-1">
             <Link
               to="/ar/pricing"
               onClick={() => setMobileMenuOpen(false)}
@@ -486,7 +509,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>الأسعار والباقات</span>
               </div>
             </Link>
-          </div>
+          </div>}
 
           {/* 4. تواصل معنا */}
           <div className="space-y-1 border-t border-slate-100 pt-3">
@@ -541,6 +564,14 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
             ) : (
+              <>
+              {accountLinks.map(l => (
+                <Link key={l.to} to={l.to} onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-xs font-bold hover:bg-slate-50 transition-colors">
+                  <l.icon className="w-4 h-4 text-brand-text" />
+                  <span>{l.label}</span>
+                </Link>
+              ))}
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
@@ -550,6 +581,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 تسجيل الخروج (تصفح كزائر)
               </button>
+              </>
             )}
           </div>
         </div>

@@ -16,8 +16,9 @@ import {
 import { useSeo } from '../seo/useSeo';
 import { STATIC_SEO_ROUTES } from '../seo/seoConfig';
 import { Breadcrumbs } from '../components/Breadcrumbs';
-import { TextToSpeechPlayground } from '../components/TextToSpeechPlayground';
+import { TtsStudioPanel } from '../components/TtsStudioPanel';
 import { TextToSpeechVisitorLanding } from '../components/TextToSpeechVisitorLanding';
+import { useRowad } from '../lib/rowad';
 
 interface TextToSpeechPageProps {
   isLoggedIn: boolean;
@@ -33,8 +34,11 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
   useSeo(STATIC_SEO_ROUTES['/ar/text-to-speech']);
   const navigate = useNavigate();
 
-  // Visitors see the technology guide; signed-in users get the generation studio
-  const activeTab = isLoggedIn ? 'playground' : 'overview';
+  // Everyone sees the full studio (as in the client dashboard). Use is what differs: accounts with access generate on
+  // their credit; visitors and accounts without access yet get the free trial (short text, once a day), then sign-up
+  const { canUse, ready } = useRowad();
+  const studio = isLoggedIn && canUse;
+  if (isLoggedIn && !ready) return null;   // account still loading: don't flash the guide to a member
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20" dir="rtl">
@@ -48,15 +52,10 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
       </div>
 
       {/* SEO Headline Header with Single Strict H1 */}
-      {isLoggedIn && <header className="py-8 bg-white border-b border-slate-200">
+      <header className="py-8 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-brand-text text-xs font-bold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>محرك النطق العصبي العربي فائق الدقة</span>
-              </div>
-              
               {/* Strict Single H1 matching SEO spec */}
               <h1 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight">
                 تحويل النص إلى صوت عربي
@@ -68,12 +67,11 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
             </div>
           </div>
         </div>
-      </header>}
+      </header>
 
       {/* Main Content Area */}
-      {activeTab === 'playground' ? (
-        <section className="py-8">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <section className="py-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             {/* The Restored Interactive Text-to-Speech Playground Console */}
             <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-7">
@@ -90,8 +88,9 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
                 </div>
               </div>
 
-              <TextToSpeechPlayground voices={voices} onGenerated={onGenerated} onExploreVoices={() => navigate('/ar/voices')} />
+              <TtsStudioPanel voices={voices} onGenerated={onGenerated} trial={studio ? undefined : { onSignup: isLoggedIn ? () => navigate('/ar/waitlist') : onOpenSignup }} />
             </div>
+
 
             {/* SEO Key Value Props Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4">
@@ -144,16 +143,15 @@ export const TextToSpeechPage: React.FC<TextToSpeechPageProps> = ({ isLoggedIn, 
 
           </div>
         </section>
-      ) : (
-        <section className="py-6">
-          <TextToSpeechVisitorLanding
-            onOpenLogin={onOpenLogin}
-            onOpenSignup={onOpenSignup}
-            onGoogle={onGoogle}
-            onTryStudio={onOpenSignup}
-          />
-        </section>
-      )}
+
+      {/* Under the studio: direction control and the voice library, the dialects, the FAQ (from the visitor guide) */}
+      <TextToSpeechVisitorLanding
+        variant="extras"
+        onOpenLogin={onOpenLogin}
+        onOpenSignup={onOpenSignup}
+        onGoogle={onGoogle}
+        onTryStudio={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      />
 
     </div>
   );

@@ -200,15 +200,14 @@ export const CustomerStoriesView: React.FC<CustomerStoriesViewProps> = ({
           <Link
             key={story.id}
             to={`/ar/our-works/${story.id}`}
-            className="group bg-white rounded-3xl border border-slate-200 hover:border-brand hover:shadow-md transition-all p-5 flex flex-col items-center gap-3 text-center"
+            title={`قصة نجاح ${story.brand}`}
+            className="group bg-white rounded-3xl border border-slate-200 hover:border-brand hover:shadow-md transition-all p-5 flex items-center justify-center"
           >
-            <div className="h-20 w-full flex items-center justify-center">
+            {/* Logo only: gray, its own colours on hover. The name stays for search engines and screen readers. */}
+            <div className="h-20 w-full flex items-center justify-center grayscale opacity-60 transition duration-300 group-hover:grayscale-0 group-hover:opacity-100 group-focus-visible:grayscale-0 group-focus-visible:opacity-100">
               <StoryLogo story={story} className={story.logoUrl ? 'max-h-20 max-w-full' : 'w-16 h-16 text-2xl'} />
             </div>
-            <div>
-              <h2 className="text-sm font-black text-slate-900 group-hover:text-brand-text transition-colors">{story.brand}</h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">{story.voiceCategory}</p>
-            </div>
+            <h2 className="sr-only">{story.brand}</h2>
           </Link>
         ))}
         {!filteredStories.length && (

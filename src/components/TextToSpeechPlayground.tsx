@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { arLabel, useMunsitVoices } from '../lib/studioVoices';
 import { 
   Play, 
   Pause, 
@@ -24,111 +25,6 @@ export interface TTSVoiceItem {
   previewUrl: string;
 }
 
-const ALL_TTS_VOICES: TTSVoiceItem[] = [
-  // Page 1
-  {
-    id: 'tariq',
-    name: 'طارق',
-    role: 'راوي قصص بصوت خشن',
-    dialect: 'سعودي وقور',
-    flag: '🇸🇦',
-    avatarGradient: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #0284c7 100%)',
-    sampleQuote: 'في كل زاوية من التاريخ حكاية تنتظر من يرويها بنبض حي وأصالة لا تنتهي.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3'
-  },
-  {
-    id: 'sara',
-    name: 'سارة',
-    role: 'مقدمة بودكاست',
-    dialect: 'خليجي وحجازي',
-    flag: '🇸🇦',
-    avatarGradient: 'linear-gradient(135deg, #f43f5e 0%, #fb7185 50%, #fda4af 100%)',
-    sampleQuote: 'أهلاً بك! نسعد بمساعدتك في تقديم محتوى صوتي استثنائي يلهم جمهورك ومتابعيك.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3'
-  },
-  {
-    id: 'nour',
-    name: 'نور',
-    role: 'سوشيال ميديا',
-    dialect: 'مصري حيوي',
-    flag: '🇪🇬',
-    avatarGradient: 'linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fde047 100%)',
-    sampleQuote: 'معاك خطوة بخطوة عشان نوصل فكرتك لكل الناس بأسهل وأسرع طريقة وبأعلى تفاعل!',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
-  },
-  {
-    id: 'karim',
-    name: 'كريم',
-    role: 'راوي قصص تشويقية',
-    dialect: 'شامي فصيح',
-    flag: '🇸🇾',
-    avatarGradient: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%)',
-    sampleQuote: 'في هدوء الليل، تنكشف أسرار الرواية وتكتمل ملامح المغامرة التي تأسر الخيال.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2872/2872-preview.mp3'
-  },
-  {
-    id: 'zeyad',
-    name: 'زياد الفصيح',
-    role: 'أكاديمي ورسمي',
-    dialect: 'فصحى مشكولة',
-    flag: '🌍',
-    avatarGradient: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)',
-    sampleQuote: 'إن اللغة وعاء الفكر، وبها ترتقي المعارف الإنسانية وتتوارثها الأجيال عبر العصور.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3'
-  },
-
-  // Page 2
-  {
-    id: 'sofia',
-    name: 'صوفيا',
-    role: 'فخامة ونمط حياة',
-    dialect: 'مغاربي أنيق',
-    flag: '🇲🇦',
-    avatarGradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #fbcfe8 100%)',
-    sampleQuote: 'حين تجتمع الحرفية الأصيلة مع أرقى معايير الابتكار، تولد تجربة استثنائية تأسر الحواس.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
-  },
-  {
-    id: 'sultan',
-    name: 'سلطان',
-    role: 'تنفيذي بصوت عميق',
-    dialect: 'سعودي رسمي',
-    flag: '🇸🇦',
-    avatarGradient: 'linear-gradient(135deg, #0f172a 0%, #334155 50%, #64748b 100%)',
-    sampleQuote: 'في قلب الصحراء تزهر أفكار المستقبل، وترتسم ملامح الغد بهمة أبناء الوطن.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3'
-  },
-  {
-    id: 'mariam',
-    name: 'مريم',
-    role: 'صوت إعلاني',
-    dialect: 'مصري أبيض',
-    flag: '🇪🇬',
-    avatarGradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fed7aa 100%)',
-    sampleQuote: 'عروضنا دايمًا غير، جرب الآن واستمتع بأقوى المزايا الحصرية لعلامتك التجارية.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2873/2873-preview.mp3'
-  },
-  {
-    id: 'haytham',
-    name: 'هيثم الراوي',
-    role: 'سرد وثائقي',
-    dialect: 'فصحى سينمائية',
-    flag: '🌍',
-    avatarGradient: 'linear-gradient(135deg, #1e293b 0%, #475569 50%, #94a3b8 100%)',
-    sampleQuote: 'عبر مسارات التاريخ العريقة، كانت الكلمة الصادقة هي البوصلة الخالدة.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2872/2872-preview.mp3'
-  },
-  {
-    id: 'rana',
-    name: 'رنا الشامية',
-    role: 'كتب صوتية وهدوء',
-    dialect: 'شامي ناعم',
-    flag: '🇱🇧',
-    avatarGradient: 'linear-gradient(135deg, #06b6d4 0%, #22d3ee 50%, #67e8f9 100%)',
-    sampleQuote: 'جلسة هادئة مع كتاب مفضل، وصوت يرافقك عبر تفاصيل الحكاية بكل لطف وانسجام.',
-    previewUrl: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
-  }
-];
 
 interface LanguageOption {
   code: string;
@@ -147,6 +43,7 @@ const LANGUAGES: LanguageOption[] = [
 ];
 
 // Visitors get one short free attempt, then must sign in
+const NO_VOICE: TTSVoiceItem = { id: '', name: '-', role: '', dialect: '', flag: '', avatarGradient: '', sampleQuote: '', previewUrl: '' };
 const TRIAL_KEY = 'qeema_tts_trial_used';
 const TRIAL_MAX_CHARS = 120;
 const trialUsed = () => { try { return localStorage.getItem(TRIAL_KEY) === '1'; } catch { return false; } };
@@ -198,9 +95,12 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
     fetch('/api/v1/voices?type=ai').then(r => (r.ok ? r.json() : null)).then(d => d?.voices && setPublicVoices(d.voices)).catch(() => {});
   }, [voices]);
   const serverVoices = (voices || publicVoices || []).filter(v => v.type === 'ai' && v.isActive !== false);
-  const voiceList: TTSVoiceItem[] = serverVoices.length ? serverVoices.map(toItem) : ALL_TTS_VOICES;
+  const munsit = useMunsitVoices();
+  const voiceList: TTSVoiceItem[] = serverVoices.length ? serverVoices.map(toItem) : munsit.map((v, i) => ({
+    id: v.id, name: v.name, role: arLabel(v.style), dialect: arLabel(v.dialect), flag: '', avatarGradient: GRADIENTS[i % GRADIENTS.length], sampleQuote: '', previewUrl: v.previewUrl,
+  }));
   const [pickedVoice, setSelectedVoice] = useState<TTSVoiceItem | null>(null);
-  const selectedVoice = (pickedVoice && voiceList.find(v => v.id === pickedVoice.id)) || voiceList[0] || ALL_TTS_VOICES[0];
+  const selectedVoice = (pickedVoice && voiceList.find(v => v.id === pickedVoice.id)) || voiceList[0] || NO_VOICE;
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [page, setPage] = useState<number>(0);
@@ -366,7 +266,7 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
           {/* ========================================================================= */}
           {/* LEFT PANEL: VOICES LIST (Right in RTL, or LTR aligned with screenshot)    */}
           {/* ========================================================================= */}
-          <div className="md:col-span-5 p-5 sm:p-6 border-b md:border-b-0 md:border-l border-slate-100 flex flex-col justify-between bg-slate-50/40">
+          <div className="order-2 md:col-span-5 p-5 sm:p-6 border-t md:border-t-0 md:border-r border-slate-100 flex flex-col justify-between bg-slate-50/40">
             
             {/* Voices List */}
             <div className="space-y-1.5">
@@ -485,13 +385,15 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
           {/* ========================================================================= */}
           {/* RIGHT PANEL: TEXT AREA & CONTROLS (Left in RTL)                           */}
           {/* ========================================================================= */}
-          <div className="md:col-span-7 p-6 sm:p-7 flex flex-col justify-between bg-white relative">
+          <div className="order-1 md:col-span-7 p-6 sm:p-7 flex flex-col justify-between bg-white relative">
             
             {/* Textarea Input Area */}
             <div className="flex-1 flex flex-col">
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !isGenerating) { e.preventDefault(); handleTogglePlay(); } }}
+                aria-label="النص المراد تحويله إلى صوت"
                 placeholder="اكتب نصك هنا لتجربة الصوت العربي فوراً"
                 rows={5}
                 className="w-full h-full min-h-[190px] text-slate-800 text-base sm:text-lg leading-relaxed resize-none border-none focus:outline-none focus:ring-0 bg-transparent placeholder:text-slate-300 placeholder:font-light"
@@ -504,7 +406,7 @@ export const TextToSpeechPlayground: React.FC<TextToSpeechPlaygroundProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span>الصوت المختار: <strong className="text-slate-700 font-semibold">{selectedVoice.name}</strong> ({selectedVoice.dialect})</span>
                 </div>
-                <span className="text-[11px]">{text.length} حرف</span>
+                <span className="text-[11px]">{text.length} حرف<span className="hidden sm:inline text-slate-300"> · Ctrl + Enter للتوليد</span></span>
               </div>
             </div>
 

@@ -1,10 +1,21 @@
 import { Voice, Generation, CreditTransaction, UsageMetrics, Plan, Company, User, HumanBooking } from '../types';
+import type { RowadFeatures } from './rowad';
 
 export interface MeResponse {
   user: User;
   company: Company;
   balanceCredits: number;
   availableCompanies: Company[];
+  features?: RowadFeatures;
+}
+
+/** «روّاد قيمة»: answer of /api/v1/early/redeem and /api/v1/early/status */
+export interface EarlyStatus {
+  status?: 'redeemed' | 'already' | 'used' | 'expired' | 'invalid' | 'error';
+  error?: string;
+  features?: RowadFeatures;
+  freeGrant?: { chars: number; remaining: number; used: number; expiresAt: string | null } | null;
+  balanceCredits?: number;
 }
 
 export interface VoicesResponse {
@@ -37,6 +48,17 @@ export interface BillingResponse {
     status: string;
   }[];
 }
+
+export interface PlanOffer {
+  subscription: { price: number; listPrice: number; offer: 'rowad' | 'rowad_locked' | null; discountPct: number };
+  topup: { price: number; listPrice: number; chars: number; bonusChars: number; offer: 'rowad' | null };
+}
+
+/** window event: the balance or plan changed outside App (App reloads the account) */
+export const ACCOUNT_CHANGED_EVENT = 'qv:account-changed';
+
+/** window event fired when a TTS generation is refused for lack of credits (detail: the API answer) */
+export const INSUFFICIENT_CREDITS_EVENT = 'qv:insufficient-credits';
 
 // ---------- Login session (token from /auth/login, /auth/signup or /auth/google) ----------
 const TOKEN_KEY = 'qeema_token';
@@ -92,9 +114,30 @@ export const api = {
   signup: (data: { name: string; email: string; password: string; company?: string; accountType: 'client' | 'talent' }) => authCall('signup', data),
   login: (email: string, password: string) => authCall('login', { email, password }),
   loginWithGoogle: (accessToken: string, accountType: 'client' | 'talent') => authCall('google', { accessToken, accountType }),
+  /** «نسيت كلمة المرور؟»: emails a link to /ar/reset-password; returns the message to show */
+  async forgotPassword(email: string): Promise<string> {
+    const res = await fetch('/api/v1/auth/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر إرسال الرابط الآن');
+    return data.message;
+  },
+  /** New password from the emailed link; signs the user in */
+  resetPassword: (email: string, token: string, password: string) => authCall('reset', { email, token, password }),
   async logout() {
     await fetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => {});
     setToken('');
+  },
+
+  // «روّاد قيمة»: activates the invite saved by /ar/early (HttpOnly cookie, sent automatically) or the given code
+  async earlyRedeem(code?: string): Promise<EarlyStatus> {
+    const res = await fetch('/api/v1/early/redeem', { method: 'POST', headers: getHeaders(), body: JSON.stringify(code ? { code } : {}) });
+    const data = await res.json().catch(() => ({}));
+    return res.status === 429 ? { status: 'error', error: data.error } : data;
+  },
+  async earlyStatus(): Promise<EarlyStatus> {
+    const res = await fetch('/api/v1/early/status', { headers: getHeaders() });
+    if (!res.ok) throw new Error('تعذر جلب حالة الدعوة');
+    return res.json();
   },
 
   async switchCompany(companyId: string): Promise<MeResponse> {
@@ -137,6 +180,8 @@ export const api = {
     });
     const data = await res.json();
     if (!res.ok) {
+      // «رصيدك لا يكفي»: App shows the top-up / Rowad price choice (INSUFFICIENT_CREDITS_EVENT)
+      if (res.status === 402) window.dispatchEvent(new CustomEvent(INSUFFICIENT_CREDITS_EVENT, { detail: data }));
       throw new Error(data.error || 'فشل التوليد الصوتي');
     }
     return data;
@@ -178,7 +223,7 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error('فشل شحن الرصيد');
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'فشل شحن الرصيد');
     return res.json();
   },
 
@@ -196,13 +241,20 @@ export const api = {
     return res.json();
   },
 
-  async changePlan(planId: string): Promise<{ success: boolean; currentPlan: Plan; newBalanceCredits: number; message: string }> {
+  /** What this account pays per plan now: Rowad price / top-up gift (server: ClientController::offers) */
+  async getOffers(): Promise<{ offers: Record<string, PlanOffer>; rowadPriceActive: boolean; rowadPriceUntil: string | null }> {
+    const res = await fetch('/api/v1/billing/offers', { headers: getHeaders() });
+    if (!res.ok) throw new Error('تعذر جلب الأسعار');
+    return res.json();
+  },
+
+  async changePlan(planId: string): Promise<{ success: boolean; currentPlan: Plan; newBalanceCredits: number; message: string; priceUsd?: number; offer?: string | null }> {
     const res = await fetch('/api/v1/billing/change-plan', {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ planId })
     });
-    if (!res.ok) throw new Error('فشل تغيير الباقة');
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'فشل تغيير الباقة');
     return res.json();
   },
 

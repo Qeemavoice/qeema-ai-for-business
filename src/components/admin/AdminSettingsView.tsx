@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { api } from '../../lib/api';
+import { setCommissionPercent } from '../../../shared/pricing';
 
-export type SettingsSection = 'currency' | 'commission' | 'payments' | 'smtp' | 'maintenance';
+export type SettingsSection = 'currency' | 'commission' | 'policies' | 'payments' | 'smtp' | 'login' | 'tts' | 'maintenance';
 
 const TITLES: Record<SettingsSection, string> = {
-  currency: 'العملات', commission: 'العمولات', payments: 'طرق الدفع', smtp: 'إعدادات SMTP', maintenance: 'إعدادات الصيانة'
+  currency: 'العملات', commission: 'العمولات', policies: 'السياسات', payments: 'طرق الدفع', smtp: 'إعدادات SMTP', login: 'تسجيل الدخول عبر Google', tts: 'مزوّدو تحويل النص إلى صوت', maintenance: 'إعدادات الصيانة'
 };
 const CURRENCIES = [
   { code: 'USD', label: 'دولار أمريكي' }, { code: 'SAR', label: 'ريال سعودي' }, { code: 'AED', label: 'درهم إماراتي' },
@@ -35,7 +36,11 @@ const SecretInput: React.FC<{ value: string; hint?: string; onChange: (v: string
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
-      <input dir="ltr" type={show ? 'text' : 'password'} autoComplete="new-password" value={value} onChange={e => onChange(e.target.value)}
+      {/* a text field masked with CSS, not type="password": browsers then don't offer «Strong Password» or save it as a login */}
+      <input dir="ltr" type="text" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+        data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other"
+        style={{ WebkitTextSecurity: show ? 'none' : 'disc' } as React.CSSProperties}
+        value={value} onChange={e => onChange(e.target.value)}
         placeholder={hint ? `محفوظ ${hint} (اتركه فارغاً للإبقاء عليه)` : 'غير مضبوط'} className={`${input} font-mono text-left pl-10`} />
       <button type="button" onClick={() => setShow(s => !s)} className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer" title={show ? 'إخفاء' : 'إظهار'}>
         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -56,7 +61,7 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
 
   if (!draft) return <div className="p-10 text-center"><RefreshCw className="w-5 h-5 animate-spin inline text-slate-400" /></div>;
   const set = (k: string, v: any) => setDraft((d: any) => ({ ...d, [k]: v }));
-  const setInt = (group: 'stripe' | 'smtp', k: string, v: any) => setDraft((d: any) => ({ ...d, integrations: { ...d.integrations, [group]: { ...d.integrations[group], [k]: v } } }));
+  const setInt = (group: 'stripe' | 'smtp' | 'elevenlabs' | 'munsit' | 'google', k: string, v: any) => setDraft((d: any) => ({ ...d, integrations: { ...d.integrations, [group]: { ...d.integrations[group], [k]: v } } }));
   const stripe = draft.integrations.stripe;
   const smtp = draft.integrations.smtp;
 
@@ -68,9 +73,13 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
         section === 'currency' ? { settings: { defaultCurrency: draft.defaultCurrency, creditRatePer10kCharsUsd: draft.creditRatePer10kCharsUsd } }
         : section === 'commission' ? { settings: { platformCommissionPercent: draft.platformCommissionPercent, stripeFeePercent: draft.stripeFeePercent } }
         : section === 'maintenance' ? { settings: { maintenanceMode: draft.maintenanceMode } }
+        : section === 'login' ? { integrations: { google: draft.integrations.google } }
+        : section === 'policies' ? { settings: { paymentHoldDaysVoiceActor: draft.paymentHoldDaysVoiceActor } }
+        : section === 'tts' ? { settings: { ttsEnabled: draft.ttsEnabled }, integrations: { elevenlabs: draft.integrations.elevenlabs, munsit: draft.integrations.munsit } }
         : { integrations: { [section === 'payments' ? 'stripe' : 'smtp']: section === 'payments' ? stripe : smtp } };
       const d = await api.saveAdminSettings(payload);
       setData(d); setDraft(structuredClone(d));
+      setCommissionPercent(d.platformCommissionPercent);
       setToast({ ok: true, text: 'تم حفظ الإعدادات' });
     } catch (err: any) {
       setToast({ ok: false, text: err.message || 'تعذر الحفظ' });
@@ -139,6 +148,51 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
                 </Field>
               </div>
             </>
+          )}
+
+          {section === 'login' && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Google Client ID" hint="من Google Cloud Console ← APIs & Services ← Credentials (OAuth 2.0 Client ID من نوع Web application). ليس مفتاحاً سرياً." full>
+                <input dir="ltr" autoComplete="off" spellCheck={false} value={draft.integrations.google?.clientId || ''} onChange={e => setInt('google', 'clientId', e.target.value.trim())}
+                  placeholder="xxxxxxxx.apps.googleusercontent.com" className={`${input} font-mono text-left`} />
+              </Field>
+              <div className="sm:col-span-2 rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600 leading-relaxed">
+                في نفس صفحة الـ Client ID عند Google أضف عناوين الموقع إلى <strong dir="ltr">Authorized JavaScript origins</strong>:
+                <span dir="ltr" className="block font-mono mt-1">https://qeemavoice.com<br />https://test.qeemavoice.com</span>
+              </div>
+            </div>
+          )}
+
+          {section === 'policies' && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="عدد الأيام المخصصة لحجز مدفوعات المعلق الصوتي" hint="بعد تسليم الحجز تبقى حصة المعلق محجوزة هذه المدة قبل أن تصبح قابلة للسحب.">
+                <input type="number" min={0} max={365} value={draft.paymentHoldDaysVoiceActor ?? 0} onChange={e => set('paymentHoldDaysVoiceActor', e.target.value)} className={`${input} font-mono`} />
+              </Field>
+            </div>
+          )}
+
+          {section === 'tts' && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="المزوّدون المفعّلون" hint="المزوّد غير المفعّل لا تظهر أصواته في استوديو TTS ولا يُستخدم للتوليد." full>
+                <div className="flex flex-wrap gap-3">
+                  {([['munsit', 'منصّت (Munsit)'], ['elevenlabs', 'ElevenLabs']] as const).map(([k, l]) => {
+                    const on = (draft.ttsEnabled || []).includes(k);
+                    return (
+                      <label key={k} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm ${on ? 'border-brand bg-orange-50' : 'border-slate-200 bg-white'}`}>
+                        <input type="checkbox" checked={on} onChange={() => set('ttsEnabled', on ? draft.ttsEnabled.filter((x: string) => x !== k) : [...(draft.ttsEnabled || []), k])} className="accent-brand" />
+                        {l}
+                      </label>
+                    );
+                  })}
+                </div>
+              </Field>
+              <Field label="مفتاح منصّت (Munsit API Key)" hint="أصوات منصّت العربية في استوديو TTS. اتركه فارغاً للإبقاء على المفتاح المحفوظ.">
+                <SecretInput value={draft.integrations.munsit?.apiKey || ''} hint={draft.integrations.munsit?.apiKeyHint} onChange={v => setInt('munsit', 'apiKey', v)} />
+              </Field>
+              <Field label="مفتاح ElevenLabs (API Key)" hint="أصوات ElevenLabs والمساعد الصوتي. اتركه فارغاً للإبقاء على المفتاح المحفوظ.">
+                <SecretInput value={draft.integrations.elevenlabs?.apiKey || ''} hint={draft.integrations.elevenlabs?.apiKeyHint} onChange={v => setInt('elevenlabs', 'apiKey', v)} />
+              </Field>
+            </div>
           )}
 
           {section === 'smtp' && (

@@ -18,9 +18,9 @@ export const BusinessDemoModal: React.FC<BusinessDemoModalProps> = ({ isOpen, on
     requirements: ''
   });
 
-  if (!isOpen) return null;
-
   const [sendError, setSendError] = useState('');
+
+  if (!isOpen) return null;
   // Saved as a message in the admin dashboard (الرسائل)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

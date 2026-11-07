@@ -9,6 +9,8 @@ interface AuthModalProps {
   mode?: 'login' | 'signup';
   initialMode?: 'login' | 'signup';
   initialRole?: 'talent' | 'client';
+  /** pre-filled e-mail (e.g. the address a «روّاد قيمة» invite was sent to) */
+  initialEmail?: string;
   onClose: () => void;
   /** Called with the signed-in account (the session token is already stored) */
   onAuthSuccess?: (user: AppUser) => void;
@@ -17,6 +19,7 @@ interface AuthModalProps {
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   mode: propMode,
+  initialEmail,
   initialMode = 'login',
   initialRole = 'client',
   onClose,
@@ -37,14 +40,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (isOpen) {
       setMode(propMode || initialMode);
       if (initialRole) setAccountType(initialRole);
+      if (initialEmail) setEmail(initialEmail);
       setMessage(null);
     }
-  }, [isOpen, propMode, initialMode, initialRole]);
+  }, [isOpen, propMode, initialMode, initialRole, initialEmail]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // our own checks with a clear message (the browser's validation bubble is easy to miss, Safari especially)
+    const problem = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? 'اكتب بريداً إلكترونياً صحيحاً'
+      : !password ? 'اكتب كلمة المرور'
+      : mode === 'signup' && !name.trim() ? 'اكتب الاسم الكامل'
+      : mode === 'signup' && password.length < 8 ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
+      : '';
+    if (problem) { setMessage({ type: 'error', text: problem }); return; }
     setLoading(true);
     setMessage(null);
     try {
@@ -76,17 +87,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in" dir="rtl">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-in zoom-in-95">
-        
-        {/* Close Button */}
+    <div
+      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in" dir="rtl"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
+    >
+      {/* never taller than the screen: the form scrolls inside and the close button stays in view */}
+      <div className="relative max-w-md w-full max-h-[calc(100dvh-2rem)] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 animate-in zoom-in-95">
         <button
           onClick={onClose}
-          className="absolute top-5 left-5 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+          className="absolute top-3 left-3 z-10 p-2 text-slate-500 hover:text-slate-800 bg-white/90 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
           aria-label="إغلاق"
         >
           <X className="w-5 h-5" />
         </button>
+      <div className="overflow-y-auto overscroll-contain p-6 sm:p-8">
 
         {/* Top Header & Branding */}
         <div className="text-center mb-6">
@@ -165,7 +180,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {/* Auth Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
           {mode === 'signup' && (
             <>
               {/* اختيار نوع الحساب: معلق صوتي، عميل */}
@@ -266,7 +281,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {mode === 'login' && (
                 <button
                   type="button"
-                  onClick={() => alert('يرجى التحقق من بريدك الإلكتروني لإعادة تعيين كلمة المرور.')}
+                  onClick={async () => {
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setMessage({ type: 'error', text: 'اكتب بريدك الإلكتروني في الخانة أعلاه، ثم اضغط «نسيت كلمة المرور؟» مرة أخرى.' }); return; }
+                    setLoading(true); setMessage(null);
+                    try { setMessage({ type: 'success', text: await api.forgotPassword(email.trim()) }); }
+                    catch (err: any) { setMessage({ type: 'error', text: err.message || 'تعذر إرسال الرابط الآن' }); }
+                    finally { setLoading(false); }
+                  }}
+                  disabled={loading}
                   className="text-[11px] text-brand-text hover:underline"
                 >
                   نسيت كلمة المرور؟
@@ -282,9 +304,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                aria-describedby={mode === 'signup' ? 'qv-password-hint' : undefined}
                 className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
               />
             </div>
+            {mode === 'signup' && (
+              <p id="qv-password-hint" className={`mt-1 text-[11px] ${password && password.length < 8 ? 'text-rose-600' : 'text-slate-500'}`}>
+                8 أحرف على الأقل{password ? ` (${password.length}/8)` : ''}
+              </p>
+            )}
           </div>
 
           {mode === 'login' && (
@@ -341,6 +370,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </a>
         </div>
 
+      </div>
       </div>
     </div>
   );

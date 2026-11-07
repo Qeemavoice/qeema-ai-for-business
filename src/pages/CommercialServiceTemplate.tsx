@@ -65,14 +65,14 @@ const ServiceSamples: React.FC<{ category?: string }> = ({ category }) => {
   const matched = category ? voices.filter(v => v.tags?.includes(category) || v.category === category) : voices;
   const [main, ...rest] = (matched.length ? matched : voices).slice(0, MAX_SAMPLES);
   if (!main) return null;
-  const caption = (v: typeof main) => [v.talentName || v.name, v.accent].filter(Boolean).join(' · ');
+  const caption = (v: typeof main) => [v.category, v.accent].filter(Boolean).join(' · ');
   return (
     <section className="py-16 bg-slate-50 border-y border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="space-y-2">
           <span className="text-xs font-bold text-brand-text uppercase tracking-wider">عينات صوتية</span>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900">استمع لعينات هذا المجال</h2>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">عينات من مكتبة الأصوات، مع اسم المعلق واللهجة بجانب كل مشغل.</p>
+          <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">عينات من مكتبة الأصوات، مع التصنيف واللهجة بجانب كل مشغل.</p>
         </div>
         <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs flex items-center gap-5">
           <SamplePlayer url={main.previewUrl} big />

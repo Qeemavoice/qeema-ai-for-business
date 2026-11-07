@@ -54,7 +54,7 @@ export type { UnifiedVoiceItem } from '../data/humanVoices';
 import type { UnifiedVoiceItem } from '../data/humanVoices';
 export { HUMAN_VOICE_SAMPLES, VOICE_CATEGORY_FILTERS } from '../data/humanVoices';
 import { VOICE_CATEGORY_FILTERS } from '../data/humanVoices';
-import { dialectOf } from '../data/dialects';
+import { dialectOf, DIALECTS } from '../data/dialects';
 import { useSiteLists } from '../lib/siteLists';
 import { AI_VOICES_ENABLED } from '../../shared/features';
 import { useHumanVoices, realSampleUrl } from '../lib/humanVoices';
@@ -66,6 +66,8 @@ interface VoiceLibraryViewProps {
   onSelectForBooking: (voice: any) => void;
   onOpenDemo?: () => void;
   isLoggedIn?: boolean;
+  /** client dashboard: no «انضم كمعلق صوتي» button */
+  hideJoinNarrator?: boolean;
   onRequireAuth?: () => void;
   /** Rendered between the voices and the enterprise banner (the site page puts the production templates here) */
   afterVoices?: React.ReactNode;
@@ -215,6 +217,44 @@ export const buildSampleSlug = (voice: { id: string; sampleName?: string; name: 
  * getShortDialect: reduces a detailed accent string (e.g. "سعودي نجدي / فصحى")
  * to a single short dialect label (e.g. "سعودي").
  */
+/** Arabic dialects of the platform (data/dialects.ts without the English accents) */
+const ARABIC_DIALECTS = new Set<string>(DIALECTS.filter(d => !d.key.startsWith('إنجليزي')).map(d => d.key));
+
+/** «اللغة» / «اللهجة» dropdown of the voice library filter bar */
+const FilterDropdown: React.FC<{
+  label: string; options: { key: string; label: string }[]; value: string; open: boolean;
+  onToggle: () => void; onClose: () => void; onPick: (key: string) => void;
+}> = ({ label, options, value, open, onToggle, onClose, onPick }) => (
+  <div className="relative shrink-0">
+    <button
+      onClick={onToggle}
+      className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap cursor-pointer shadow-2xs ${
+        value !== 'all' ? 'bg-brand-ink text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+      }`}
+    >
+      <Globe2 className="w-3.5 h-3.5" />
+      <span>{label}: {options.find(o => o.key === value)?.label || 'الكل'}</span>
+      <ChevronDown className="w-3.5 h-3.5 text-slate-400 mr-0.5" />
+    </button>
+    {open && (
+      <div onMouseLeave={onClose} className="absolute right-0 mt-1 w-60 max-h-80 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-1.5 z-40 animate-in fade-in">
+        {options.map(opt => (
+          <button
+            key={opt.key}
+            onClick={() => { onPick(opt.key); onClose(); }}
+            className={`w-full text-right px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer ${
+              value === opt.key ? 'bg-orange-50 text-slate-900 font-bold' : 'hover:bg-slate-50 text-slate-700'
+            }`}
+          >
+            <span>{opt.label}</span>
+            {value === opt.key && <Check className="w-3.5 h-3.5 text-brand-text" />}
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 export const getShortDialect = (accent: string, flag?: string): string => dialectOf(accent, flag) || accent.split('/')[0].trim();
 
 export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
@@ -224,6 +264,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
   onSelectForBooking,
   onOpenDemo,
   isLoggedIn = false,
+  hideJoinNarrator = false,
   onRequireAuth,
   afterVoices
 }) => {
@@ -243,6 +284,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(() => (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('category')) || 'all');
   const [selectedDialect, setSelectedDialect] = useState<string>('all');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('all');
   const [selectedGender, setSelectedGender] = useState<string>('all');
   const [selectedSpeed, setSelectedSpeed] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'popularity' | 'usage' | 'name'>('popularity');
@@ -259,6 +301,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showDialectDropdown, setShowDialectDropdown] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [activeMenuVoiceId, setActiveMenuVoiceId] = useState<string | null>(null);
   const [selectedProfileVoice, setSelectedProfileVoice] = useState<UnifiedVoiceItem | null>(null);
   const [isB2BProjectModalOpen, setIsB2BProjectModalOpen] = useState(false);
@@ -561,8 +604,16 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
   const humanDialectOptions = siteLists.dialects.map(d => ({ key: d.key, label: `${d.flag} ${d.key}` }));
 
 
-  // Dialect dropdown (same list on the home page and in the dashboard)
-  const dialectOptions = [{ key: 'all', label: 'الكل' }, ...humanDialectOptions];
+  // «اللهجة»: every Arabic dialect of the platform (the foreign accents live under «اللغة»)
+  const dialectOptions = [{ key: 'all', label: 'الكل' }, ...humanDialectOptions.filter(d => ARABIC_DIALECTS.has(d.key))];
+  // «اللغة»: only languages that voices on the site are recorded in, most voices first
+  const languageOptions = useMemo(() => {
+    const count = new Map<string, number>();
+    currentCatalog.forEach(v => v.language && count.set(v.language, (count.get(v.language) || 0) + 1));
+    return [{ key: 'all', label: 'الكل' }, ...[...count].sort((a, b) => b[1] - a[1]).map(([k]) => ({ key: k, label: k.replace(/^اللغة\s+/, '') }))];
+  }, [currentCatalog]);
+  // a dialect is Arabic, so picking one means Arabic; another language clears the dialect
+  const isArabic = (lang: string) => lang === 'all' || lang.includes('العربية');
 
   // Filter and Sort voices
   const filteredVoices = useMemo(() => {
@@ -600,6 +651,8 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
           (voice.sampleName && voice.sampleName.includes(selectedCategory));
         if (!matchesCategory) return false;
       }
+
+      if (selectedLanguage !== 'all' && voice.language !== selectedLanguage) return false;
 
       // Dialect filter
       if (selectedDialect !== 'all' && dialectOf(voice.accent, voice.flag) !== selectedDialect) {
@@ -651,6 +704,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
     savedVoiceIds, 
     selectedCategory, 
     selectedDialect, 
+    selectedLanguage, 
     activeMainTab, 
     filterQuality, 
     filterGender, 
@@ -659,9 +713,18 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
     filterCustomRates, 
     filterLiveModeration, 
     searchQuery, 
-    sortBy, 
+    sortBy,
     similarFilterVoice
   ]);
+
+  // Render 50 voices at a time («استمع للمزيد من الأصوات» adds 50); back to 50 whenever the filters change
+  const PAGE_SIZE = 50;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [
+    currentCatalog, subTab, selectedCategory, selectedDialect, selectedLanguage, activeMainTab, filterQuality, filterGender, filterAge,
+    filterNoticePeriod, filterCustomRates, filterLiveModeration, searchQuery, sortBy, similarFilterVoice
+  ]);
+  const visibleVoices = filteredVoices.slice(0, visibleCount);
 
   // Handle Play/Pause Audio preview
   const handleTogglePlay = (voice: UnifiedVoiceItem) => {
@@ -915,7 +978,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               
               {/* Text & Value Proposition */}
-              <div className="max-w-2xl space-y-3">
+              <div className="max-w-2xl lg:max-w-none min-w-0 space-y-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100/80 text-brand-text text-xs font-bold border border-orange-200">
                   <Mic2 className="w-3.5 h-3.5" />
                   <span>سوق الأصوات البشرية الاحترافي للشركات والوكالات</span>
@@ -925,7 +988,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                   أصوات بشرية حقيقية لمشاريعك
                 </h2>
 
-                <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+                <p className="text-sm sm:text-base text-slate-600 leading-relaxed xl:whitespace-nowrap">
                   اختر من أصوات معلقين محترفين وموثقين بمختلف اللهجات والأساليب، واحصل على الصوت المناسب لعلامتك التجارية.
                 </p>
 
@@ -1012,7 +1075,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {activeMainTab === 'human' ? (
+            {activeMainTab === 'human' ? (hideJoinNarrator ? null :
               <button
                 onClick={openTalentSignup}
                 className="px-3 py-1.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
@@ -1125,49 +1188,23 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
         {/* ========================================================================= */}
         <div className="flex items-center gap-2 py-1 min-w-0">
           
-          {/* Language Dropdown Button */}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => setShowDialectDropdown(!showDialectDropdown)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap cursor-pointer shadow-2xs ${
-                selectedDialect !== 'all'
-                  ? 'bg-brand-ink text-white border-slate-900'
-                  : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
-              }`}
-            >
-              <Globe2 className="w-3.5 h-3.5" />
-              <span>
-                اللهجة: {selectedDialect === 'all' ? 'الكل' : selectedDialect}
-              </span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 mr-0.5" />
-            </button>
-
-            {showDialectDropdown && (
-              <div 
-                onMouseLeave={() => setShowDialectDropdown(false)}
-                className="absolute right-0 mt-1 w-60 max-h-80 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-1.5 z-40 animate-in fade-in"
-              >
-                {dialectOptions.map(opt => {
-                  const isActive = selectedDialect === opt.key;
-                  return (
-                    <button
-                      key={opt.key}
-                      onClick={() => {
-                        setSelectedDialect(opt.key);
-                        setShowDialectDropdown(false);
-                      }}
-                      className={`w-full text-right px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer ${
-                        isActive ? 'bg-orange-50 text-slate-900 font-bold' : 'hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      {isActive && <Check className="w-3.5 h-3.5 text-brand-text" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Language, then dialect (Arabic dialects only) */}
+          <FilterDropdown
+            label="اللغة" options={languageOptions} value={selectedLanguage} open={showLanguageDropdown}
+            onToggle={() => { setShowLanguageDropdown(o => !o); setShowDialectDropdown(false); }}
+            onClose={() => setShowLanguageDropdown(false)}
+            onPick={k => { setSelectedLanguage(k); if (!isArabic(k)) setSelectedDialect('all'); }}
+          />
+          <FilterDropdown
+            label="اللهجة" options={dialectOptions} value={selectedDialect} open={showDialectDropdown}
+            onToggle={() => { setShowDialectDropdown(o => !o); setShowLanguageDropdown(false); }}
+            onClose={() => setShowDialectDropdown(false)}
+            onPick={k => {
+              setSelectedDialect(k);
+              const ar = languageOptions.find(l => l.key.includes('العربية'));
+              if (k !== 'all' && ar) setSelectedLanguage(ar.key);
+            }}
+          />
 
           {/* Thin Vertical Divider | */}
           <div className="h-6 w-px bg-slate-200 shrink-0 mx-0.5" />
@@ -1273,6 +1310,11 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                 • التصنيف: <strong className="text-slate-900">{categoryFilters.find(c => c.key === selectedCategory)?.label}</strong>
               </span>
             )}
+            {selectedLanguage !== 'all' && (
+              <span className="text-slate-500 font-normal mr-1">
+                • اللغة: <strong className="text-slate-900">{languageOptions.find(l => l.key === selectedLanguage)?.label}</strong>
+              </span>
+            )}
             {selectedDialect !== 'all' && (
               <span className="text-slate-500 font-normal mr-1">
                 • اللهجة: <strong className="text-slate-900">{dialectOptions.find(d => d.key === selectedDialect)?.label}</strong>
@@ -1320,7 +1362,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
         {/* 5. VOICE CARDS LISTING — High-Density Sleek Single-Line Row Layout        */}
         {/* ========================================================================= */}
         <div className="space-y-1.5" dir="rtl">
-          {filteredVoices.map(voice => {
+          {visibleVoices.map(voice => {
             const isPlaying = playingVoiceId === voice.id;
             const isSaved = savedVoiceIds.has(voice.id);
             const isHoveredLicense = hoveredLicenseVoiceId === voice.id;
@@ -1629,6 +1671,20 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
           })}
         </div>
 
+        {filteredVoices.length > visibleCount && (
+          <div className="pt-4 text-center space-y-2">
+            <button
+              type="button"
+              onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-900 text-sm font-bold shadow-2xs transition cursor-pointer"
+            >
+              <Volume2 className="w-4 h-4 text-brand-text" />
+              استمع للمزيد من الأصوات
+            </button>
+            <p className="text-[11px] text-slate-400">يعرض {visibleVoices.length.toLocaleString('en-US')} من {filteredVoices.length.toLocaleString('en-US')} صوت</p>
+          </div>
+        )}
+
         {/* Empty State */}
         {filteredVoices.length === 0 && (
           <div className="text-center py-16 px-4 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-3">
@@ -1643,6 +1699,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                   setSearchQuery('');
                   setSelectedCategory('all');
                   setSelectedDialect('all');
+                  setSelectedLanguage('all');
                   setSelectedGender('all');
                   setSubTab('explore');
                   setSimilarFilterVoice(null);
@@ -2054,6 +2111,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                   setFilterLiveModeration('include');
                   setSelectedCategory('all');
                   setSelectedDialect('all');
+                  setSelectedLanguage('all');
                   setSelectedGender('all');
                   setShowFiltersModal(false);
                 }}

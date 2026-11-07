@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { UsageView } from './UsageView';
 import { 
   Plus, 
   X, 
@@ -12,12 +13,14 @@ import {
 import { Company, User, Voice, Generation, ActiveView } from '../types';
 import { findPlan } from '../../shared/plans';
 import { api, UsageResponse, BillingResponse } from '../lib/api';
-import { DashboardSidebar, DashboardNavKey } from './dashboard/DashboardSidebar';
+import { DashboardSidebar, DashboardNavKey, GATED_NAV } from './dashboard/DashboardSidebar';
+import { useRowad } from '../lib/rowad';
+import { RowadBadge } from './RowadBadge';
 import { DashboardTopNav } from './dashboard/DashboardTopNav';
 import { HomeSubView } from './dashboard/HomeSubView';
 import { VoiceLibraryView, buildSampleSlug } from './VoiceLibraryView';
 import { useNavigate } from 'react-router-dom';
-import { StudioSubView } from './dashboard/StudioSubView';
+import { TtsStudioPanel } from './TtsStudioPanel';
 import { BillingTab } from './dashboard/BillingTab';
 import { 
   ProjectsSubView, 
@@ -40,6 +43,7 @@ interface ClientDashboardViewProps {
   onOpenLogin: () => void;
   onOpenSignup: () => void;
   onOpenAssistant?: () => void;
+  onGenerated?: (newBalanceCredits: number) => void;
 }
 
 export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
@@ -55,10 +59,15 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
   onOpenDemo,
   onOpenLogin,
   onOpenSignup,
-  onOpenAssistant
+  onOpenAssistant,
+  onGenerated
 }) => {
   // Navigation State inside ElevenLabs-style Workspace
   const [activeNav, setActiveNav] = useState<DashboardNavKey>('home');
+  // «روّاد قيمة»: studio and billing tabs open to Rowad members now, to everyone from the public launch
+  const canUseNew = useRowad().canUse;
+  const navigateTo = useNavigate();
+  const goNav = (nav: DashboardNavKey) => (!canUseNew && GATED_NAV.includes(nav) ? navigateTo('/ar/waitlist') : setActiveNav(nav));
   const [searchQuery, setSearchQuery] = useState('');
   const [envMode, setEnvMode] = useState<'production' | 'sandbox'>('production');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -157,18 +166,18 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
   const handleQuickGenerateFromHome = (text: string, voiceId: string) => {
     setStudioInitialText(text);
     setStudioInitialVoiceId(voiceId);
-    setActiveNav('studio');
+    goNav('studio');
   };
 
   const handleOpenStudioPreset = (text: string, voiceId?: string) => {
     setStudioInitialText(text);
     if (voiceId) setStudioInitialVoiceId(voiceId);
-    setActiveNav('studio');
+    goNav('studio');
   };
 
   const handleSelectVoiceForStudio = (voiceId: string) => {
     setStudioInitialVoiceId(voiceId);
-    setActiveNav('studio');
+    goNav('studio');
   };
 
   const handleGenerationComplete = (newGen: Generation) => {
@@ -206,7 +215,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
     if (!newVoiceName.trim()) return;
     setIsCreateVoiceModalOpen(false);
     setStudioInitialText(`أهلاً بك! هذا الصوت مخصص باسم "${newVoiceName.trim()}".`);
-    setActiveNav('studio');
+    goNav('studio');
   };
 
   return (
@@ -217,7 +226,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
       {/* 1. ElevenLabs Left Sidebar */}
       <DashboardSidebar
         activeNav={activeNav}
-        onSelectNav={(nav) => setActiveNav(nav)}
+        onSelectNav={(nav) => goNav(nav)}
         currentCompany={currentCompany}
         currentUser={currentUser}
         availableCompanies={availableCompanies}
@@ -242,7 +251,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
           onToggleEnvMode={setEnvMode}
           onOpenAssistant={onOpenAssistant || (() => onNavigate('generate'))}
           onOpenTopUp={onOpenTopUp}
-          onNavigateTab={(tab) => setActiveNav(tab)}
+          onNavigateTab={(tab) => goNav(tab)}
           currentCompany={currentCompany}
           currentUser={currentUser}
           availableCompanies={availableCompanies}
@@ -259,9 +268,11 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
               generations={generations}
               playingId={playingId}
               onTogglePlay={handleTogglePlay}
-              onNavigateTab={(tab) => setActiveNav(tab)}
+              onNavigateTab={(tab) => goNav(tab)}
               onQuickGenerate={handleQuickGenerateFromHome}
               onOpenStudioPreset={handleOpenStudioPreset}
+              canUseStudio={canUseNew}
+              onGenerated={onGenerated}
             />
           )}
 
@@ -280,25 +291,31 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
                 voices={voices}
                 initialTab="human"
                 isLoggedIn
+                hideJoinNarrator
                 onSelectForBooking={(voice: any) => routerNavigate(`/ar/booking/${buildSampleSlug(voice)}`)}
                 onSelectForGeneration={(voice: any) => handleSelectVoiceForStudio(voice?.id)}
               />
             </div>
           )}
 
+          {/* Same studio as the site's /ar/text-to-speech page */}
           {activeNav === 'studio' && (
-            <StudioSubView
-              voices={voices}
-              initialText={studioInitialText}
-              initialVoiceId={studioInitialVoiceId}
-              generations={generations}
-              onGenerationComplete={handleGenerationComplete}
-              balanceCredits={balanceCredits}
-              onOpenTopUp={onOpenTopUp}
-            />
+            <div className="bg-[#FFFFFF] pb-10" dir="rtl">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+                <div className="border-b border-slate-200/80 pb-4">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">تحويل النص إلى صوت عربي</h1>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-2 max-w-2xl leading-relaxed">
+                    استمع لنصك بأصوات AI مرخّصة من معلقين عرب حقيقيين وبتقاسم الأرباح معهم، ثم احجز المعلق البشري نفسه للنسخة النهائية.
+                  </p>
+                </div>
+                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-7">
+                  <TtsStudioPanel key={`${studioInitialVoiceId}|${studioInitialText}`} voices={voices} onGenerated={onGenerated} initialText={studioInitialText || undefined} initialVoiceId={studioInitialVoiceId || undefined} />
+                </div>
+              </div>
+            </div>
           )}
 
-          {activeNav === 'flows' && <FlowsSubView onNavigateTab={(tab) => setActiveNav(tab)} />}
+          {activeNav === 'flows' && <FlowsSubView onNavigateTab={(tab) => goNav(tab)} />}
 
           {activeNav === 'projects' && (
             <ProjectsSubView
@@ -326,7 +343,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
 
           {activeNav === 'human-bookings' && (
             <HumanBookingsSubView
-              onBookTalent={() => setActiveNav('voices')}
+              onBookTalent={() => goNav('voices')}
             />
           )}
 
@@ -394,6 +411,8 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
               </div>
             </div>
           )}
+
+          {activeNav === 'usage' && <UsageView />}
 
           {activeNav === 'billing' && (
             <BillingTab

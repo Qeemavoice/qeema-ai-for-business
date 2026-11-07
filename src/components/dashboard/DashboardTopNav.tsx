@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { RowadBadge } from '../RowadBadge';
+import { useRowad } from '../../lib/rowad';
 import { findPlan } from '../../../shared/plans';
 import { 
   Search, 
@@ -73,6 +75,7 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
 }) => {
   // Profile dropdown menu state
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const canUseNew = useRowad().canUse;
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
@@ -219,8 +222,10 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
                 className="absolute left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 divide-y divide-slate-100 py-1 z-50 text-right animate-scale-up"
                 style={{ direction: 'rtl' }}
               >
+                <div className="px-3.5 pt-3 pb-1 empty:hidden"><RowadBadge /></div>
+
                 {/* 1. Balance Box */}
-                <div className="p-3.5 space-y-2.5 bg-slate-50/50">
+                {<div className="p-3.5 space-y-2.5 bg-slate-50/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-slate-800">رصيد الحساب</span>
@@ -247,7 +252,7 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
                       <span className="text-brand-text">{balanceCredits.toLocaleString()}</span>
                     </div>
                   </div>
-                </div>
+                </div>}
 
                 {/* 2. Current Workspace Section */}
                 <div className="p-3.5 space-y-1.5">
@@ -328,7 +333,7 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
                   <button
                     onClick={() => {
                       setIsProfileMenuOpen(false);
-                      if (onNavigate) onNavigate('usage');
+                      onNavigateTab('usage');
                     }}
                     className="w-full px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center justify-between text-right"
                   >

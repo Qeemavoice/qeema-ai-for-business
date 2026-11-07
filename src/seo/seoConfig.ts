@@ -1,3 +1,4 @@
+import { TTS_FAQS } from '../data/ttsFaqs';
 export interface BreadcrumbItem {
   name: string;
   item: string;
@@ -136,10 +137,27 @@ export const STATIC_SEO_ROUTES: Record<string, SeoConfigItem> = {
     ogType: 'website',
     jsonLdType: 'Service',
     serviceType: 'Arabic Text to Speech (Licensed AI Voice)',
+    keywords: 'تحويل النص إلى صوت, تحويل النص لصوت عربي, text to speech عربي, قارئ نصوص عربي, صوت ذكاء اصطناعي عربي, تعليق صوتي بالذكاء الاصطناعي, لهجة سعودية, لهجة مصرية, لهجة خليجية',
+    faqs: TTS_FAQS.map(f => ({ question: f.q, answer: f.a })),
     breadcrumbs: [
       { name: 'الرئيسية', item: '/ar' },
       { name: 'تحويل النص إلى صوت', item: '/ar/text-to-speech' }
     ]
+  },
+  '/ar/reset-password': {
+    path: '/ar/reset-password',
+    title: 'تعيين كلمة مرور جديدة | قيمة فويس',
+    h1: 'تعيين كلمة مرور جديدة',
+    description: 'اختر كلمة مرور جديدة لحسابك في قيمة فويس.',
+    noindex: true
+  },
+  // «روّاد قيمة»: never indexed (and not in the sitemap)
+  '/ar/waitlist': {
+    path: '/ar/waitlist',
+    title: 'قائمة الانتظار | قيمة فويس',
+    h1: 'قريباً للجميع',
+    description: 'استوديو TTS والرصيد والباقات تفتح للجميع قريباً. سجّل ليصلك التنبيه أولاً.',
+    noindex: true
   },
   '/ar/pricing': {
     path: '/ar/pricing',

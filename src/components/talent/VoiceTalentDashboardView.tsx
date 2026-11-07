@@ -66,7 +66,7 @@ import {
   NarratorNotification
 } from '../../types';
 import { SAMPLE_RULES } from '../../../shared/sampleRules';
-import { fmtUsd, PLATFORM_COMMISSION_PERCENT } from '../../../shared/pricing';
+import { fmtUsd, commissionPercent } from '../../../shared/pricing';
 import { fmtDate, fmtDateTime } from '../../lib/format';
 import { narratorService } from '../../services/narratorService';
 import { audioSynth } from '../../utils/audioSynthesizer';
@@ -144,12 +144,6 @@ const USE_CASE_LABELS: Record<UseCase, string> = {
   impersonation: 'انتحال شخصية'
 };
 
-const NOTICE_PERIOD_OPTIONS = [
-  { days: 30, share: 20, label: '30 يومًا', desc: 'حصة أرباح 20%' },
-  { days: 180, share: 30, label: '6 أشهر', desc: 'حصة أرباح 30%' },
-  { days: 365, share: 40, label: 'سنة واحدة', desc: 'حصة أرباح 40% (الأكثر شيوعاً)' },
-  { days: 730, share: 50, label: 'سنتان', desc: 'حصة أرباح 50% (الأعلى عائداً)' }
-];
 
 /** Same categories as the voice library filters */
 
@@ -508,22 +502,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
     }
   };
 
-  const handleSelectNoticePeriod = async (days: 30 | 180 | 365 | 730) => {
-    if (!contract || !selectedNarratorId) return;
-    if (days < contract.noticePeriodDays) {
-      showToast('لا يمكن تقليل فترة الإشعار المتفق عليها بالعقد، فقط تمديدها لخيار أطول');
-      return;
-    }
-    if (days === contract.noticePeriodDays) return;
 
-    try {
-      const updatedContract = await narratorService.updateNoticePeriod(selectedNarratorId, days);
-      setContract(updatedContract);
-      showToast(`تم تمديد فترة الإشعار وزيادة حصتك من الأرباح إلى ${updatedContract.revenueSharePercent}%`);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleConfirmPayout = async () => {
     if (!selectedNarratorId) return;
@@ -841,7 +820,8 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
 
   // Consent section values (from the signed contract)
   const noticeDays = contract?.noticePeriodDays || 365;
-  const consentShare = NOTICE_PERIOD_OPTIONS.find(o => o.days === noticeDays)?.share ?? 40;
+  // the share the admin set on the narrator's studio voices (the one earnings are paid at); the narrator cannot change it
+  const consentShare = studioVoices.find(v => v.sharePercent > 0)?.sharePercent;
   const consentStart = contract?.signedAt || '2026-02-15T10:00:00Z';
   const consentEnd = (() => { const d = new Date(consentStart); d.setFullYear(d.getFullYear() + 1); return d.toISOString(); })();
 
@@ -2157,6 +2137,46 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                   </div>
                 </div>
 
+                {/* «أصواتي في مكتبة الأصوات»: the narrator's published library voices with their price (read-only) */}
+                {narrator && narratorService.libraryVoicesOf(narrator.id).length > 0 && (
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+                    <div>
+                      <h3 className="font-black text-slate-900 text-sm">أصواتي في مكتبة الأصوات ({narratorService.libraryVoicesOf(narrator.id).length})</h3>
+                      <p className="text-[11px] text-slate-500 mt-1">أصواتك المنشورة التي يراها العملاء ويحجزونها. سعر الدقيقة هنا هو سعرك أنت، والعميل يرى سعرك مضافاً إليه عمولة المنصة {commissionPercent()}%. لتعديل صوت أو سعره تواصل مع الإدارة.</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {narratorService.libraryVoicesOf(narrator.id).map(v => {
+                        const own = v.narratorPriceUsd > 0 ? v.narratorPriceUsd : (narrator.rates?.perMinuteUsd || 0);
+                        const isPlaying = playingAudioId === `lib-${v.id}`;
+                        return (
+                          <div key={v.id} className="rounded-2xl border border-slate-200 p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-bold text-sm text-slate-900 truncate">{v.title || 'بدون اسم'}</p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">{[v.category, v.dialect].filter(Boolean).join(' • ')}</p>
+                              </div>
+                              {v.audioUrl && (
+                                <button
+                                  onClick={() => handleTogglePlayAudio(`lib-${v.id}`, v.audioUrl)}
+                                  className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center cursor-pointer ${isPlaying ? 'bg-brand text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                                  aria-label={isPlaying ? 'إيقاف' : 'استماع'}
+                                >
+                                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">سعرك / دقيقة</p><p className="font-mono font-black text-slate-900 text-sm">{own ? `$${fmtUsd(own)}` : '—'}</p></div>
+                              <div className="rounded-xl bg-orange-50 p-2"><p className="text-[9px] text-slate-500">يراه العميل</p><p className="font-mono font-black text-brand-text text-sm">{own ? `$${fmtUsd(own * (1 + commissionPercent() / 100))}` : '—'}</p></div>
+                              <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">حجوزات</p><p className="font-mono font-black text-slate-900 text-sm">{v.bookingsCount}</p></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
               </div>
             )}
 
@@ -2401,7 +2421,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><Check className="w-3 h-3 stroke-[3]" /></span>
-                      <span>تحصل على <strong className="text-orange-700 font-mono">{consentShare}%</strong> من كل استخدام لصوتك.</span>
+                      <span>تحصل على {consentShare ? <strong className="text-orange-700 font-mono">{consentShare}%</strong> : 'النسبة التي تحددها إدارة قيمة فويس لصوتك'} من كل استخدام لصوتك.</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><Check className="w-3 h-3 stroke-[3]" /></span>
@@ -2690,7 +2710,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between">
                 <div>
                   <span className="text-slate-700 font-bold block">سعر الدقيقة المعتمد:</span>
-                  <span className="text-[10px] text-slate-500">سعرك الخاص. يرى العميل السعر شاملاً عمولة المنصة ({PLATFORM_COMMISSION_PERCENT}%)</span>
+                  <span className="text-[10px] text-slate-500">سعرك الخاص. يرى العميل السعر شاملاً عمولة المنصة ({commissionPercent()}%)</span>
                 </div>
                 <div className="px-3 py-1 rounded-lg bg-white border border-slate-200 font-mono font-black text-slate-900 text-sm">
                   ${fmtUsd(narrator?.rates?.perMinuteUsd ?? 0)} / دقيقة

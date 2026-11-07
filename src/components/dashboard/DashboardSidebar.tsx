@@ -1,4 +1,6 @@
 import React from 'react';
+import { RowadBadge } from '../RowadBadge';
+import { useRowad } from '../../lib/rowad';
 import { 
   Home, 
   Mic2, 
@@ -24,6 +26,9 @@ import {
 import { Company, User } from '../../types';
 import { findPlan } from '../../../shared/plans';
 
+/** Tabs closed until the public launch for accounts without early access (the TTS studio; plans are open to all) */
+export const GATED_NAV: string[] = ['studio'];
+
 export type DashboardNavKey = 
   | 'home' 
   | 'voices' 
@@ -34,7 +39,8 @@ export type DashboardNavKey =
   | 'human-bookings' 
   | 'compliance' 
   | 'team' 
-  | 'billing';
+  | 'billing'
+  | 'usage';
 
 interface DashboardSidebarProps {
   activeNav: DashboardNavKey;
@@ -66,14 +72,15 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onToggleCollapse
 }) => {
   const [isCompanyMenuOpen, setIsCompanyMenuOpen] = React.useState(false);
+  const canUseNew = useRowad().canUse;
 
   const mainNavItems = [
     { key: 'home' as DashboardNavKey, label: 'الرئيسية', icon: Home, badge: undefined },
     { key: 'voices' as DashboardNavKey, label: 'مكتبة الأصوات', icon: Mic2, badge: undefined },
-    { key: 'studio' as DashboardNavKey, label: 'استوديو التوليد', icon: Sliders, badge: undefined },
+    { key: 'human-bookings' as DashboardNavKey, label: 'حجوزاتي (معلقون بشريون)', icon: Users2, badge: undefined },
+    { key: 'studio' as DashboardNavKey, label: 'استوديو التوليد TTS', icon: Sliders, badge: undefined },
     { key: 'flows' as DashboardNavKey, label: 'التدفقات وسير العمل', icon: GitFork, badge: undefined },
     { key: 'projects' as DashboardNavKey, label: 'المشاريع والقوالب', icon: LayoutTemplate, badge: undefined },
-    { key: 'human-bookings' as DashboardNavKey, label: 'حجوزاتي (معلقون بشريون)', icon: Users2, badge: undefined },
     { key: 'assets' as DashboardNavKey, label: 'أصولي والتراخيص', icon: FileAudio, badge: undefined },
     { key: 'billing' as DashboardNavKey, label: 'الباقة والفوترة', icon: CreditCard, badge: undefined },
   ];
@@ -142,7 +149,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-5 custom-scrollbar">
         {/* Main Section */}
         <div className="space-y-0.5">
-          {mainNavItems.map((item) => {
+          {mainNavItems.filter(item => canUseNew || !GATED_NAV.includes(item.key)).map((item) => {
             const Icon = item.icon;
             const isActive = activeNav === item.key;
             return (
@@ -197,8 +204,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </div>
         )}
 
-        {/* Upgrade / Credits Bar */}
-        <div className="p-2.5 rounded-2xl bg-gradient-to-r from-brand-ink to-brand-ink/90 text-white shadow-xs">
+        {/* Upgrade / Credits Bar (plans and top-up are open to every client) */}
+        {<div className="p-2.5 rounded-2xl bg-gradient-to-r from-brand-ink to-brand-ink/90 text-white shadow-xs">
           <div className="flex items-center justify-between mb-1.5">
             <div className="text-[11px] font-bold flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-brand-text" />
@@ -227,7 +234,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               </div>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* User Profile Mini Bar */}
         <div className="flex items-center justify-between p-1.5 rounded-xl hover:bg-white transition-colors">
@@ -243,6 +250,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 <div className="text-[10px] text-slate-400 truncate">
                   {currentUser?.email || ''}
                 </div>
+                <RowadBadge className="mt-1" />
               </div>
             )}
           </div>

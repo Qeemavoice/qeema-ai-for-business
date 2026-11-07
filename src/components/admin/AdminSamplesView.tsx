@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, RefreshCw, Check, X, AlertTriangle, Info } from 'lucide-react';
 import { narratorService } from '../../services/narratorService';
 import { Narrator, VoiceSample, VoiceSampleStatus } from '../../types';
-import { finalPrice, fmtUsd, PLATFORM_COMMISSION_PERCENT } from '../../../shared/pricing';
+import { finalPrice, fmtUsd, commissionPercent } from '../../../shared/pricing';
 import { REJECTION_REASONS, SAMPLE_RULES, reasonByCode } from '../../../shared/sampleRules';
 import { fmtDate, fmtNum } from '../../lib/format';
 import { exportToExcel } from '../../lib/exportExcel';
@@ -183,7 +183,7 @@ export const AdminSamplesView: React.FC = () => {
                       <span className={`block ${(s.format || 'mp3') !== 'mp3' ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>{(s.format || 'mp3').toUpperCase()} {(s.format || 'mp3') !== 'mp3' && <AlertTriangle className="w-3 h-3 inline" />}</span>
                     </td>
                     <td className="p-3 font-mono">
-                      {price ? (<><span className="block font-bold text-brand-text">${fmtUsd(finalPrice(price))}</span><span className="block text-[10px] text-slate-400">للمعلق ${fmtUsd(price)} + {PLATFORM_COMMISSION_PERCENT}%</span></>) : '-'}
+                      {price ? (<><span className="block font-bold text-brand-text">${fmtUsd(finalPrice(price))}</span><span className="block text-[10px] text-slate-400">للمعلق ${fmtUsd(price)} + {commissionPercent()}%</span></>) : '-'}
                     </td>
                     <td className="p-3 max-w-[260px]">
                       <div className="flex items-center gap-1.5 flex-wrap">

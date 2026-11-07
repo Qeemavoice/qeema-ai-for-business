@@ -190,7 +190,7 @@ export const MyAudioView: React.FC<MyAudioViewProps> = ({ onNavigateToGenerate }
                     <div className="text-[10px] text-slate-400 flex items-center gap-2 pt-1 font-mono">
                       <span>{dateStr}</span>
                       <span>•</span>
-                      <span>{gen.model}</span>
+                      <span>{gen.format || 'WAV'}</span>
                     </div>
                   </div>
                 </div>

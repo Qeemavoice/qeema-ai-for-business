@@ -10,8 +10,7 @@ import {
   VoiceSampleStatus,
   VoiceOverBooking,
   VoiceOverBookingStatus,
-  NarratorNotification
-} from '../types';
+  NarratorNotification, LibraryVoice } from '../types';
 import { SAMPLE_RULES, reasonByCode } from '../../shared/sampleRules';
 import { DIALECTS } from '../data/dialects';
 import { getToken } from '../lib/api';
@@ -26,6 +25,8 @@ class NarratorService {
   private usageEvents: UsageEvent[] = [];
   private auditLogs: AuditLog[] = [];
   private voiceSamples: VoiceSample[] = [];
+  /** voices of «مكتبة الأصوات» per narrator: read-only, sent by the server on every load, never saved back */
+  private libraryVoices: LibraryVoice[] = [];
   private voiceOverBookings: VoiceOverBooking[] = [];
   private notifications: NarratorNotification[] = [];
   private verificationCodes: Record<string, string> = {};
@@ -60,6 +61,7 @@ class NarratorService {
     this.usageEvents = data?.usageEvents || [];
     this.auditLogs = data?.auditLogs || [];
     this.voiceSamples = data?.voiceSamples || [];
+    this.libraryVoices = data?.libraryVoices || [];
     this.voiceOverBookings = data?.voiceOverBookings || [];
     this.notifications = data?.notifications || [];
     // dialects are picked from the platform list (src/data/dialects.ts); old free-text ones are mapped
@@ -521,50 +523,6 @@ class NarratorService {
     return { ...contract };
   }
 
-  public async updateNoticePeriod(narratorId: string, noticePeriodDays: 30 | 180 | 365 | 730): Promise<VoiceContract> {
-    await this.ready;
-    await new Promise(r => setTimeout(r, 400));
-    const aiVoice = this.aiVoices[narratorId];
-    if (!aiVoice || !aiVoice.contractId) throw new Error('لا يوجد عقد مرتبط بهذا المعلق');
-    
-    let contract = this.contracts[aiVoice.contractId];
-    if (!contract) throw new Error('العقد غير موجود');
-
-    // Rule: only longer options can be chosen
-    if (noticePeriodDays < contract.noticePeriodDays) {
-      throw new Error('لا يمكن تقليص فترة الإشعار الحالية وفق بنود العقد المبرم.');
-    }
-
-    const shareMap: Record<number, number> = {
-      30: 20,
-      180: 30,
-      365: 40,
-      730: 50
-    };
-
-    const currentVer = contract.version || '1.0.0';
-    const parts = currentVer.split('.');
-    const nextVer = `${parseInt(parts[0] || '1', 10) + 1}.0.0`;
-
-    contract = {
-      ...contract,
-      noticePeriodDays,
-      revenueSharePercent: shareMap[noticePeriodDays] || 45,
-      version: nextVer
-    };
-    this.contracts[aiVoice.contractId] = contract;
-
-    await this.writeAuditLog(narratorId, 'contract_notice_period_updated', {
-      version: contract.version,
-      noticePeriodDays,
-      newRevenueSharePercent: contract.revenueSharePercent,
-      updatedAt: new Date().toISOString()
-    });
-
-    this.saveState();
-    return { ...contract };
-  }
-
   /** Sends a payout / emergency request to the admin team (admin «الرسائل البريدية»). */
   private async sendRequest(narratorId: string, body: Record<string, unknown>) {
     const r = await fetch(`/api/v1/narrators/${encodeURIComponent(narratorId)}/requests`, {
@@ -641,6 +599,16 @@ class NarratorService {
   // ==========================================
   // VOICE SAMPLES MANAGEMENT
   // ==========================================
+
+  /** Every narrator's library voices */
+  public allLibraryVoices(): LibraryVoice[] {
+    return [...this.libraryVoices];
+  }
+
+  /** The narrator's voices in the voice library (with their price per minute) */
+  public libraryVoicesOf(narratorId: string): LibraryVoice[] {
+    return this.libraryVoices.filter(v => v.narratorId === narratorId);
+  }
 
   public async getVoiceSamples(narratorId: string): Promise<VoiceSample[]> {
     await this.ready;

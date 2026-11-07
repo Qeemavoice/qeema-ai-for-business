@@ -2,7 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Search, RefreshCw, Send, Copy, Check, ExternalLink, Mail, Phone, Eye, Ban, RotateCcw, Plus, ShieldCheck } from 'lucide-react';
 import { narratorService } from '../../services/narratorService';
 import { Narrator, NarratorNotification, NarratorStatus, VoiceOverBooking, VoiceSample, AIVoice } from '../../types';
-import { finalPrice, commissionAmount, fmtUsd, PLATFORM_COMMISSION_PERCENT } from '../../../shared/pricing';
+import { buildSampleSlug } from '../VoiceLibraryView';
+
+/** A narrator's price per minute above this is a typing mistake (e.g. a phone number in the price field) */
+const MAX_RATE_USD = 1000;
+const validRate = (p: number) => Number.isFinite(p) && p > 0 && p <= MAX_RATE_USD;
+import { finalPrice, commissionAmount, fmtUsd, commissionPercent } from '../../../shared/pricing';
 import { reasonByCode } from '../../../shared/sampleRules';
 import { fmtDate, fmtDateTime, fmtMoney, fmtNum } from '../../lib/format';
 import { exportToExcel } from '../../lib/exportExcel';
@@ -77,8 +82,9 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const prices = narrators.map(n => n.rates?.perMinuteUsd).filter((p): p is number => !!p);
-  const avgFinal = prices.length ? finalPrice(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+  // voices in «مكتبة الأصوات» and how many narrators they belong to
+  const libraryVoices = narratorService.allLibraryVoices();
+  const libraryNarrators = new Set(libraryVoices.map(v => v.narratorId)).size;
   const pendingSamples = samples.filter(s => s.status === 'pending_review').length;
 
   const sendInvite = async (id: string) => {
@@ -104,10 +110,11 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
     { header: 'التوثيق (KYC)', value: n => (KYC[n.kycStatus] || KYC.none).label },
     { header: 'شارة معلق بشري', value: n => BADGE[n.humanBadge || 'none'].label },
     { header: 'سعر المعلق / دقيقة ($)', value: n => n.rates?.perMinuteUsd ?? '' },
-    { header: `عمولة المنصة ${PLATFORM_COMMISSION_PERCENT}% ($)`, value: n => n.rates?.perMinuteUsd ? commissionAmount(n.rates.perMinuteUsd) : '' },
+    { header: `عمولة المنصة ${commissionPercent()}% ($)`, value: n => n.rates?.perMinuteUsd ? commissionAmount(n.rates.perMinuteUsd) : '' },
     { header: 'السعر النهائي بالمكتبة / دقيقة ($)', value: n => n.rates?.perMinuteUsd ? finalPrice(n.rates.perMinuteUsd) : '' },
     { header: 'العينات المعتمدة', value: n => samplesOf(n.id).filter(s => s.status === 'published').length },
     { header: 'إجمالي العينات', value: n => samplesOf(n.id).length },
+    { header: 'أصوات المكتبة', value: n => narratorService.libraryVoicesOf(n.id).length },
     { header: 'تاريخ الانضمام', value: n => fmtDate(n.createdAt) }
   ], filtered);
 
@@ -121,7 +128,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
         <StatCard label="إجمالي المعلقين" value={fmtNum(narrators.length)} />
         <StatCard label="الحسابات المفعّلة" value={fmtNum(narrators.filter(n => n.status === 'active').length)} tone="green" />
         <StatCard label="عينات بانتظار المراجعة" value={fmtNum(pendingSamples)} tone="amber" hint="تُراجع من صفحة العينات" />
-        <StatCard label="متوسط السعر النهائي بالمكتبة" value={`$${fmtUsd(avgFinal)}`} tone="orange" hint={`سعر المعلق + عمولة ${PLATFORM_COMMISSION_PERCENT}%`} />
+        <StatCard label="عدد الأصوات" value={fmtNum(libraryVoices.length)} tone="orange" hint={`في مكتبة الأصوات، لـ ${fmtNum(libraryNarrators)} معلق`} />
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-5 space-y-4">
@@ -182,11 +189,18 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
                       <span className="block text-[11px] text-slate-400">{n.email || '-'}</span>
                     </td>
                     <td className="p-3"><div className="flex flex-wrap gap-1 max-w-[190px]">{n.dialects.map(d => <span key={d} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">{d}</span>)}</div></td>
-                    <td className="p-3 font-mono font-bold text-slate-800">{price ? `$${fmtUsd(price)}` : '-'}</td>
-                    <td className="p-3 font-mono font-bold text-brand-text">{price ? `$${fmtUsd(finalPrice(price))}` : '-'}</td>
+                    {price && !validRate(price) ? (
+                      <td colSpan={2} className="p-3"><Badge tone="red">سعر غير صالح: {fmtNum(price)}</Badge></td>
+                    ) : (
+                      <>
+                        <td className="p-3 font-mono font-bold text-slate-800">{price ? `$${fmtUsd(price)}` : '-'}</td>
+                        <td className="p-3 font-mono font-bold text-brand-text">{price ? `$${fmtUsd(finalPrice(price))}` : '-'}</td>
+                      </>
+                    )}
                     <td className="p-3">
                       <span className="font-mono font-bold text-slate-800">{pub}/{ss.length}</span>
                       {pend > 0 && <Badge tone="amber" className="mr-1.5">{pend} بالانتظار</Badge>}
+                      {narratorService.libraryVoicesOf(n.id).length > 0 && <span className="block text-[10px] text-slate-500 mt-0.5">{narratorService.libraryVoicesOf(n.id).length} صوت في المكتبة</span>}
                     </td>
                     <td className="p-3"><Badge tone={(KYC[n.kycStatus] || KYC.none).tone}>{(KYC[n.kycStatus] || KYC.none).label}</Badge></td>
                     <td className="p-3"><Badge tone={BADGE[n.humanBadge || 'none'].tone}>{BADGE[n.humanBadge || 'none'].label}</Badge></td>
@@ -247,6 +261,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   const [msgBody, setMsgBody] = useState('');
 
   const refreshNotifs = async () => setNotifs(await narratorService.getNotifications(n.id));
+  const library = useMemo(() => narratorService.libraryVoicesOf(n.id), [n.id]);
 
   useEffect(() => {
     narratorService.getVoiceOverBookings(n.id).then(setBookings);
@@ -257,7 +272,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   }, [n.id]);
 
   const priceNum = parseFloat(priceInput);
-  const validPrice = !isNaN(priceNum) && priceNum > 0;
+  const validPrice = !isNaN(priceNum) && validRate(priceNum);
   const paidTotal = bookings.filter(b => b.status === 'paid').reduce((a, b) => a + b.amount, 0);
 
   const savePrice = async () => {
@@ -292,6 +307,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
       <Tabs active={tab} onChange={setTab} tabs={[
         { id: 'overview', label: 'نظرة عامة' },
         { id: 'samples', label: 'العينات', count: samples.length },
+        { id: 'library', label: 'أصواته في المكتبة', count: library.length },
         { id: 'earnings', label: 'الحجوزات والأرباح', count: bookings.length },
         { id: 'notifs', label: 'الإشعارات', count: notifs.length },
         { id: 'notes', label: 'ملاحظات الإدارة', count: n.adminNotes?.length || 0 }
@@ -349,18 +365,19 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
             {/* Pricing */}
             <div className="rounded-2xl border border-orange-200 bg-orange-50/40 p-4 space-y-3">
               <h4 className="text-sm font-black text-slate-900">التسعير</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed">لكل معلق سعره الخاص للدقيقة. السعر الذي يراه العميل في مكتبة الأصوات البشرية هو السعر النهائي (سعر المعلق + عمولة المنصة {PLATFORM_COMMISSION_PERCENT}%).</p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">لكل معلق سعره الخاص للدقيقة. السعر الذي يراه العميل في مكتبة الأصوات البشرية هو السعر النهائي (سعر المعلق + عمولة المنصة {commissionPercent()}%).</p>
               <div className="flex items-end gap-3 flex-wrap">
                 <label className="text-xs font-bold text-slate-700">سعر المعلق / دقيقة ($)
                   <input type="number" min="1" step="1" value={priceInput} onChange={e => setPriceInput(e.target.value)} dir="ltr"
                     className="mt-1 block w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono font-bold outline-hidden focus:border-brand" />
                 </label>
                 <button onClick={savePrice} disabled={!validPrice || priceNum === n.rates?.perMinuteUsd} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">حفظ السعر</button>
+              {priceNum > MAX_RATE_USD && <p className="text-[11px] font-bold text-rose-600">السعر أعلى من {MAX_RATE_USD}$ للدقيقة: تأكد من الرقم (قد يكون رقم هاتف)</p>}
               </div>
               {validPrice && (
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-white rounded-xl p-2.5 border border-slate-200"><p className="text-[10px] text-slate-400">للمعلق</p><p className="font-mono font-black">${fmtUsd(priceNum)}</p></div>
-                  <div className="bg-white rounded-xl p-2.5 border border-slate-200"><p className="text-[10px] text-slate-400">عمولة المنصة {PLATFORM_COMMISSION_PERCENT}%</p><p className="font-mono font-black text-emerald-600">+${fmtUsd(commissionAmount(priceNum))}</p></div>
+                  <div className="bg-white rounded-xl p-2.5 border border-slate-200"><p className="text-[10px] text-slate-400">عمولة المنصة {commissionPercent()}%</p><p className="font-mono font-black text-emerald-600">+${fmtUsd(commissionAmount(priceNum))}</p></div>
                   <div className="bg-white rounded-xl p-2.5 border border-orange-300"><p className="text-[10px] text-slate-400">السعر النهائي للعميل</p><p className="font-mono font-black text-brand-text">${fmtUsd(finalPrice(priceNum))}</p></div>
                 </div>
               )}
@@ -413,6 +430,34 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
               );
             })}
             {onOpenSamples && <button onClick={onOpenSamples} className="text-xs font-bold text-brand-text hover:underline cursor-pointer">الذهاب إلى صفحة العينات للمراجعة والاعتماد ←</button>}
+          </>
+        )}
+
+        {tab === 'library' && (
+          <>
+            <p className="text-[11px] text-slate-500 leading-relaxed">أصوات المعلق المنشورة في مكتبة الأصوات، بسعر الدقيقة الخاص بكل صوت والسعر الذي يراه العميل (سعر المعلق + عمولة المنصة {commissionPercent()}%).</p>
+            {library.length === 0 && <p className="text-center text-slate-400 text-xs py-10">لا توجد أصوات لهذا المعلق في مكتبة الأصوات</p>}
+            {library.map(v => {
+              const own = v.narratorPriceUsd > 0 ? v.narratorPriceUsd : (n.rates?.perMinuteUsd || 0);
+              return (
+                <div key={v.id} className="rounded-2xl border border-slate-200 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-slate-900">{v.title || 'بدون اسم'}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{[v.category, v.dialect, v.language, v.gender === 'female' ? 'نسائي' : 'رجالي'].filter(Boolean).join(' • ')}</p>
+                    </div>
+                    <a href={`/ar/booking/${buildSampleSlug({ id: v.id, sampleName: v.title, name: v.title })}`} target="_blank" rel="noopener noreferrer"
+                      className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-brand-text hover:underline"><ExternalLink className="w-3 h-3" />صفحة الصوت</a>
+                  </div>
+                  {v.audioUrl && <SamplePlayer url={v.audioUrl} />}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-slate-50 p-2"><p className="text-[10px] text-slate-500">سعر المعلق / دقيقة</p><p className="font-mono font-black text-slate-900 text-sm">{own ? `$${fmtUsd(own)}` : '—'}</p>{v.narratorPriceUsd <= 0 && own > 0 && <p className="text-[9px] text-slate-400">من سعره العام</p>}</div>
+                    <div className="rounded-xl bg-orange-50 p-2"><p className="text-[10px] text-slate-500">السعر للعميل / دقيقة</p><p className="font-mono font-black text-brand-text text-sm">{own ? `$${fmtUsd(finalPrice(own))}` : '—'}</p></div>
+                    <div className="rounded-xl bg-slate-50 p-2"><p className="text-[10px] text-slate-500">الحجوزات / الاستماع</p><p className="font-mono font-black text-slate-900 text-sm">{fmtNum(v.bookingsCount)} / {fmtNum(v.listensCount)}</p></div>
+                  </div>
+                </div>
+              );
+            })}
           </>
         )}
 

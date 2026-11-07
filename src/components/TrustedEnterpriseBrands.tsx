@@ -48,19 +48,20 @@ export const TrustedEnterpriseBrands: React.FC = () => {
         </Link>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm px-4 py-6 sm:p-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-8 sm:gap-y-10">
           {stories.slice(0, MAX_LOGOS).map(story => (
             <Link
               key={story.id}
               to={`/ar/our-works/${story.id}`}
               title={`قصة نجاح ${story.brand}`}
-              className="group flex flex-col items-center justify-center gap-2 p-3 rounded-2xl hover:bg-slate-50 transition-colors text-center"
+              className="group h-12 flex items-center justify-center"
             >
-              <div className="h-12 w-full flex items-center justify-center">
+              {/* Logo only: gray, its own colours on hover. The name stays for search engines and screen readers. */}
+              <span className="h-full w-full flex items-center justify-center grayscale opacity-60 transition duration-300 group-hover:grayscale-0 group-hover:opacity-100 group-focus-visible:grayscale-0 group-focus-visible:opacity-100">
                 <StoryLogo story={story} />
-              </div>
-              <span className="text-xs font-bold text-slate-700 group-hover:text-brand-text transition-colors">{story.brand}</span>
+              </span>
+              <span className="sr-only">{story.brand}</span>
             </Link>
           ))}
         </div>
