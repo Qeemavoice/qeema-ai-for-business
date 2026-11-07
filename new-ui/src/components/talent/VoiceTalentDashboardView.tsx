@@ -144,12 +144,6 @@ const USE_CASE_LABELS: Record<UseCase, string> = {
   impersonation: 'انتحال شخصية'
 };
 
-const NOTICE_PERIOD_OPTIONS = [
-  { days: 30, share: 20, label: '30 يومًا', desc: 'حصة أرباح 20%' },
-  { days: 180, share: 30, label: '6 أشهر', desc: 'حصة أرباح 30%' },
-  { days: 365, share: 40, label: 'سنة واحدة', desc: 'حصة أرباح 40% (الأكثر شيوعاً)' },
-  { days: 730, share: 50, label: 'سنتان', desc: 'حصة أرباح 50% (الأعلى عائداً)' }
-];
 
 /** Same categories as the voice library filters */
 
@@ -508,22 +502,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
     }
   };
 
-  const handleSelectNoticePeriod = async (days: 30 | 180 | 365 | 730) => {
-    if (!contract || !selectedNarratorId) return;
-    if (days < contract.noticePeriodDays) {
-      showToast('لا يمكن تقليل فترة الإشعار المتفق عليها بالعقد، فقط تمديدها لخيار أطول');
-      return;
-    }
-    if (days === contract.noticePeriodDays) return;
 
-    try {
-      const updatedContract = await narratorService.updateNoticePeriod(selectedNarratorId, days);
-      setContract(updatedContract);
-      showToast(`تم تمديد فترة الإشعار وزيادة حصتك من الأرباح إلى ${updatedContract.revenueSharePercent}%`);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleConfirmPayout = async () => {
     if (!selectedNarratorId) return;
@@ -841,7 +820,8 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
 
   // Consent section values (from the signed contract)
   const noticeDays = contract?.noticePeriodDays || 365;
-  const consentShare = NOTICE_PERIOD_OPTIONS.find(o => o.days === noticeDays)?.share ?? 40;
+  // the share the admin set on the narrator's studio voices (the one earnings are paid at); the narrator cannot change it
+  const consentShare = studioVoices.find(v => v.sharePercent > 0)?.sharePercent;
   const consentStart = contract?.signedAt || '2026-02-15T10:00:00Z';
   const consentEnd = (() => { const d = new Date(consentStart); d.setFullYear(d.getFullYear() + 1); return d.toISOString(); })();
 
@@ -2441,7 +2421,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><Check className="w-3 h-3 stroke-[3]" /></span>
-                      <span>تحصل على <strong className="text-orange-700 font-mono">{consentShare}%</strong> من كل استخدام لصوتك.</span>
+                      <span>تحصل على {consentShare ? <strong className="text-orange-700 font-mono">{consentShare}%</strong> : 'النسبة التي تحددها إدارة قيمة فويس لصوتك'} من كل استخدام لصوتك.</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><Check className="w-3 h-3 stroke-[3]" /></span>

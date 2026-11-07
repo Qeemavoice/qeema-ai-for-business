@@ -523,50 +523,6 @@ class NarratorService {
     return { ...contract };
   }
 
-  public async updateNoticePeriod(narratorId: string, noticePeriodDays: 30 | 180 | 365 | 730): Promise<VoiceContract> {
-    await this.ready;
-    await new Promise(r => setTimeout(r, 400));
-    const aiVoice = this.aiVoices[narratorId];
-    if (!aiVoice || !aiVoice.contractId) throw new Error('لا يوجد عقد مرتبط بهذا المعلق');
-    
-    let contract = this.contracts[aiVoice.contractId];
-    if (!contract) throw new Error('العقد غير موجود');
-
-    // Rule: only longer options can be chosen
-    if (noticePeriodDays < contract.noticePeriodDays) {
-      throw new Error('لا يمكن تقليص فترة الإشعار الحالية وفق بنود العقد المبرم.');
-    }
-
-    const shareMap: Record<number, number> = {
-      30: 20,
-      180: 30,
-      365: 40,
-      730: 50
-    };
-
-    const currentVer = contract.version || '1.0.0';
-    const parts = currentVer.split('.');
-    const nextVer = `${parseInt(parts[0] || '1', 10) + 1}.0.0`;
-
-    contract = {
-      ...contract,
-      noticePeriodDays,
-      revenueSharePercent: shareMap[noticePeriodDays] || 45,
-      version: nextVer
-    };
-    this.contracts[aiVoice.contractId] = contract;
-
-    await this.writeAuditLog(narratorId, 'contract_notice_period_updated', {
-      version: contract.version,
-      noticePeriodDays,
-      newRevenueSharePercent: contract.revenueSharePercent,
-      updatedAt: new Date().toISOString()
-    });
-
-    this.saveState();
-    return { ...contract };
-  }
-
   /** Sends a payout / emergency request to the admin team (admin «الرسائل البريدية»). */
   private async sendRequest(narratorId: string, body: Record<string, unknown>) {
     const r = await fetch(`/api/v1/narrators/${encodeURIComponent(narratorId)}/requests`, {
