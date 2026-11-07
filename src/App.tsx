@@ -367,6 +367,7 @@ export default function App() {
           <Route 
             path="/ar/account" 
             element={
+              currentUser?.accountType === 'talent' && !currentUser.isPlatformAdmin ? <Navigate to="/ar/talent-dashboard" replace /> :
               <SignInGate user={currentUser} allow={() => true} isLoggedIn={isLoggedIn} title="لوحة العميل" hint="سجّل الدخول لفتح لوحتك ومتابعة رصيدك وتوليداتك وحجوزاتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}>
               <ClientDashboardView
                 currentCompany={currentCompany}

@@ -267,17 +267,17 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
                       </div>
                     </div>
 
-                    <button
+                    {availableCompanies.length > 1 && <button
                       onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
                       className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-900 transition-colors shrink-0"
                       title="تبديل المنشأة / مساحة العمل"
                     >
                       <Repeat className="w-3.5 h-3.5" />
-                    </button>
+                    </button>}
                   </div>
 
                   {/* Workspace Switcher Submenu */}
-                  {isWorkspaceMenuOpen && (
+                  {isWorkspaceMenuOpen && availableCompanies.length > 1 && (
                     <div className="mt-2 p-2 bg-slate-50 rounded-xl border border-slate-200 space-y-1 animate-fade-in">
                       <div className="text-[10px] font-bold text-slate-400 px-1">اختر مساحة العمل:</div>
                       {availableCompanies.length > 0 ? (
