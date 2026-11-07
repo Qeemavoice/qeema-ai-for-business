@@ -55,7 +55,7 @@ export const PLANS: PlanDefinition[] = [
       { icon: 'gift', text: '5,000 حرف رصيد ترحيبي مجاني' },
       { icon: 'audio', text: 'تحويل النص إلى صوت بأصوات AI' },
       { icon: 'headphones', text: 'الاستماع لعينات المعلقين البشريين' },
-      { icon: 'calendar', text: 'حجز معلق بشري لأي مشروع' },
+      { icon: 'calendar', text: 'حجز معلق بشري لأي مشروع بتكلفة منفصلة' },
       { icon: 'file', text: 'تنزيل بصيغة MP3' }
     ]
   },
@@ -71,7 +71,7 @@ export const PLANS: PlanDefinition[] = [
     inheritsFrom: 'المجانية',
     features: [
       { icon: 'audio', text: '25,000 حرف شهرياً' },
-      { icon: 'calendar', text: 'حجز معلق بشري لأي مشروع' },
+      { icon: 'calendar', text: 'حجز معلق بشري لأي مشروع بتكلفة منفصلة' },
       { icon: 'mic', text: 'أستوديو TTS لتحويل النص إلى صوت' },
       { icon: 'shield', text: 'ترخيص تجاري كامل للمحتوى' },
       { icon: 'file', text: 'تنزيل WAV 48kHz بجودة استوديو' },

@@ -437,6 +437,9 @@ export default function App() {
                 onVoiceToggled={(id, isActive) => setVoices(vs => vs.map(v => v.id === id ? { ...v, isActive } : v))}
                 onVoiceAdded={(voice) => setVoices(vs => [voice, ...vs])}
                 onVoiceUpdated={(voice) => setVoices(vs => vs.map(v => v.id === voice.id ? voice : v))}
+                userName={currentUser?.name}
+                userEmail={currentUser?.email}
+                onLogout={logout}
               />
               </SignInGate>
             } 

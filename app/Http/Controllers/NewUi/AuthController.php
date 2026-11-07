@@ -168,6 +168,19 @@ class AuthController extends Controller
         return response()->json(['success' => true]);
     }
 
+    /** Change the signed-in account's password: needs the current one (accounts made with Google may have none yet). */
+    public function changePassword(Request $r)
+    {
+        $u = Accounts::currentUser($r);
+        $current = (string) $r->input('currentPassword', '');
+        $new = (string) $r->input('newPassword', '');
+        if ($u->password && !Hash::check($current, $u->password)) return response()->json(['error' => 'كلمة المرور الحالية غير صحيحة'], 400);
+        if (mb_strlen($new) < 8) return response()->json(['error' => 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل'], 400);
+        if ($new === $current) return response()->json(['error' => 'اختر كلمة مرور مختلفة عن الحالية'], 400);
+        $u->forceFill(['password' => Hash::make($new)])->save();
+        return response()->json(['ok' => true]);
+    }
+
     public function favoritesGet(Request $r)
     {
         $u = Accounts::currentUser($r);

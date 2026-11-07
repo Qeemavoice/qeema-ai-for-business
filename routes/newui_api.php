@@ -23,6 +23,7 @@ Route::prefix('auth')->group(function () {
     Route::middleware('qv.user')->group(function () {
         Route::get('favorites', 'AuthController@favoritesGet');
         Route::put('favorites', 'AuthController@favoritesPut');
+        Route::post('password', 'AuthController@changePassword')->middleware('throttle:password');
     });
     Route::post('switch-company', 'AuthController@switchCompany')->middleware('qv.admin');
 });

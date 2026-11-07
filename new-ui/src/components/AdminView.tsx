@@ -80,6 +80,9 @@ interface AdminViewProps {
   onVoiceAdded?: (voice: Voice) => void;
   onVoiceUpdated?: (voice: Voice) => void;
   onNavigateToClaim?: (token: string) => void;
+  userName?: string;
+  userEmail?: string;
+  onLogout?: () => void;
 }
 
 
@@ -88,7 +91,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onVoiceToggled, 
   onVoiceAdded, 
   onVoiceUpdated,
-  onNavigateToClaim 
+  onNavigateToClaim,
+  userName,
+  userEmail,
+  onLogout
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [voicesSection, setVoicesSection] = useState<'human' | 'ai'>('human');
@@ -513,6 +519,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
       activeTab={activeTab}
       onSelect={setActiveTab}
       badges={{ bookings: pendingBookingsCount }}
+      userName={userName}
+      userEmail={userEmail}
+      onLogout={onLogout}
       actions={
         <>
           {activeTab === 'financials' && <ExcelButton onClick={exportPayouts} disabled={payouts.length === 0} />}

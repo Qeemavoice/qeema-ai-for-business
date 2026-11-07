@@ -238,7 +238,7 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
         { label: 'اللهجات واللغات', val: 'عربي + إنجليزي + فرنسي' },
         { label: 'تنزيل MP3', val: true },
         { label: 'تنزيل WAV 48kHz', val: !free },
-        { label: 'حجز معلق بشري', val: true },
+        { label: 'حجز معلق بشري (بتكلفة منفصلة)', val: true },
         { label: 'خصم حجوزات المعلقين', val: p.isCustom ? 'مخصص' : p.bookingDiscountPct ? `${p.bookingDiscountPct}%` : false },
         { label: 'أولوية في التوليد', val: Boolean(p.featured || p.isCustom) },
         { label: 'صوت AI حصري لعلامتك', val: Boolean(p.isCustom) },

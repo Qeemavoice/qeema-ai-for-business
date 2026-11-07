@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { openTalentSignup } from '../lib/talentJoin';
 import { Link } from 'react-router-dom';
 import { 
-  Mail, 
-  MapPin, 
+  Mail,  
   Send, 
   CheckCircle2, 
   Headphones, 
@@ -92,14 +91,6 @@ export const ContactUsPage: React.FC = () => {
 
                 <div className="space-y-4 text-xs">
                   <div className="flex items-start gap-3">
-                    <MapPin className="w-4 h-4 text-brand-text shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold block text-white">المقر الرئيسي:</span>
-                      <span className="text-slate-400">الرياض، المملكة العربية السعودية • دبي، الإمارات</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
                     <Mail className="w-4 h-4 text-brand-text shrink-0 mt-0.5" />
                     <div>
                       <span className="font-bold block text-white">البريد الإلكتروني المعتمد:</span>
@@ -114,7 +105,7 @@ export const ContactUsPage: React.FC = () => {
               {/* Side CTA */}
               <div className="pt-6 border-t border-slate-800 space-y-3">
                 <span className="text-xs text-slate-300 font-bold block">
-                  هل أنت معلق صوتي وترغب بالانضمام لسوق قيمة؟
+                  هل أنت معلق صوتي وترغب بالانضمام لمنصة قيمة؟
                 </span>
                 <button
                   type="button"
@@ -252,7 +243,7 @@ export const ContactUsPage: React.FC = () => {
             </div>
             <div className="space-y-1">
               <h3 className="text-xl sm:text-2xl font-black text-white">
-                هل أنت معلق صوتي وترغب بالانضمام لسوق قيمة؟
+                هل أنت معلق صوتي وترغب بالانضمام لمنصة قيمة؟
               </h3>
               <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
                 انضم إلى شبكة نخبة الأصوات المعتمدة في الوطن العربي واستقبل طلبات المشاريع والعقود المؤسسية مباشرة.

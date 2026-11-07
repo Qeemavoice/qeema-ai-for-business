@@ -49,4 +49,17 @@ class PasswordResetTest extends TestCase
         $this->postJson('/api/v1/auth/google', ['accessToken' => 'token-from-another-app'])->assertStatus(401);
         $this->postJson('/api/v1/auth/google', ['accessToken' => 'our-token'])->assertOk()->assertJsonPath('user.email', $u->email);
     }
+
+    public function test_signed_in_account_changes_its_password()
+    {
+        $u = $this->account();
+        $u->forceFill(['password' => Hash::make('old-pass-123')])->save();
+        $token = $this->postJson('/api/v1/auth/login', ['email' => $u->email, 'password' => 'old-pass-123'])->assertOk()->json('token');
+        $h = ['Authorization' => 'Bearer ' . $token];
+        $this->postJson('/api/v1/auth/password', ['currentPassword' => 'old-pass-123', 'newPassword' => 'new-pass-123'])->assertStatus(401);
+        $this->postJson('/api/v1/auth/password', ['currentPassword' => 'wrong', 'newPassword' => 'new-pass-123'], $h)->assertStatus(400);
+        $this->postJson('/api/v1/auth/password', ['currentPassword' => 'old-pass-123', 'newPassword' => 'short'], $h)->assertStatus(400);
+        $this->postJson('/api/v1/auth/password', ['currentPassword' => 'old-pass-123', 'newPassword' => 'new-pass-123'], $h)->assertOk();
+        $this->assertTrue(Hash::check('new-pass-123', $u->fresh()->password));
+    }
 }
