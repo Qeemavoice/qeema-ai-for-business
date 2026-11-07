@@ -87,17 +87,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in" dir="rtl">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-in zoom-in-95">
-        
-        {/* Close Button */}
+    <div
+      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in" dir="rtl"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
+    >
+      {/* never taller than the screen: the form scrolls inside and the close button stays in view */}
+      <div className="relative max-w-md w-full max-h-[calc(100dvh-2rem)] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 animate-in zoom-in-95">
         <button
           onClick={onClose}
-          className="absolute top-5 left-5 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+          className="absolute top-3 left-3 z-10 p-2 text-slate-500 hover:text-slate-800 bg-white/90 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
           aria-label="إغلاق"
         >
           <X className="w-5 h-5" />
         </button>
+      <div className="overflow-y-auto overscroll-contain p-6 sm:p-8">
 
         {/* Top Header & Branding */}
         <div className="text-center mb-6">
@@ -366,6 +370,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </a>
         </div>
 
+      </div>
       </div>
     </div>
   );

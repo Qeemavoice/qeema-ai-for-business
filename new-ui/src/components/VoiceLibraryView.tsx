@@ -66,6 +66,8 @@ interface VoiceLibraryViewProps {
   onSelectForBooking: (voice: any) => void;
   onOpenDemo?: () => void;
   isLoggedIn?: boolean;
+  /** client dashboard: no «انضم كمعلق صوتي» button */
+  hideJoinNarrator?: boolean;
   onRequireAuth?: () => void;
   /** Rendered between the voices and the enterprise banner (the site page puts the production templates here) */
   afterVoices?: React.ReactNode;
@@ -262,6 +264,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
   onSelectForBooking,
   onOpenDemo,
   isLoggedIn = false,
+  hideJoinNarrator = false,
   onRequireAuth,
   afterVoices
 }) => {
@@ -1072,7 +1075,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {activeMainTab === 'human' ? (
+            {activeMainTab === 'human' ? (hideJoinNarrator ? null :
               <button
                 onClick={openTalentSignup}
                 className="px-3 py-1.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"

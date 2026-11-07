@@ -291,6 +291,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
                 voices={voices}
                 initialTab="human"
                 isLoggedIn
+                hideJoinNarrator
                 onSelectForBooking={(voice: any) => routerNavigate(`/ar/booking/${buildSampleSlug(voice)}`)}
                 onSelectForGeneration={(voice: any) => handleSelectVoiceForStudio(voice?.id)}
               />

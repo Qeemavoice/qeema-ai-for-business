@@ -46,7 +46,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
   }, [pickerOpen]);
   const voice = all.find(v => v.id === voiceId) || all[0];
 
-  const [text, setText] = useState(initialText || 'مرحباً بك في قيمة فويس، حيث يتحول النص العربي إلى صوت واضح وطبيعي.');
+  const [text, setText] = useState(initialText || '');
   // Munsit picks the dialect through the voice; «emirati» and «fusha» are also sent as a hint
   const steering = ['emirati', 'fusha'].includes(dialectFilter) ? dialectFilter : 'auto';
   const pickDialect = (d: string) => {
@@ -113,7 +113,7 @@ export const TtsStudioPanel: React.FC<{ voices: Voice[]; onGenerated?: (newBalan
               onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !busy) { e.preventDefault(); generate(); } }}
               aria-label="النص المراد تحويله إلى صوت"
-              placeholder="اكتب نصك هنا"
+              placeholder="اكتب النص المراد توليده هنا"
               maxLength={5000}
               className="w-full min-h-[170px] resize-y border-none bg-transparent text-base leading-relaxed text-slate-800 focus:outline-none"
             />
