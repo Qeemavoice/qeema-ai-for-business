@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import { getGoogleAccessToken } from '../lib/googleSignIn';
 import { api } from '../lib/api';
 import type { User as AppUser } from '../types';
-import { X, Sparkles, Mail, Lock, User, Building2, CheckCircle2, ArrowRight, ShieldCheck, Mic2 } from 'lucide-react';
+import { X, Sparkles, Mail, Lock, User, Building2, CheckCircle2, ArrowRight, ShieldCheck, Mic2, Phone } from 'lucide-react';
+
+/** Dialling codes for the narrator's WhatsApp number (Arab countries first) */
+const DIAL_CODES = [
+  ['+966', 'السعودية'], ['+971', 'الإمارات'], ['+965', 'الكويت'], ['+974', 'قطر'], ['+973', 'البحرين'], ['+968', 'عُمان'],
+  ['+20', 'مصر'], ['+962', 'الأردن'], ['+970', 'فلسطين'], ['+961', 'لبنان'], ['+963', 'سوريا'], ['+964', 'العراق'],
+  ['+967', 'اليمن'], ['+249', 'السودان'], ['+218', 'ليبيا'], ['+216', 'تونس'], ['+213', 'الجزائر'], ['+212', 'المغرب'],
+  ['+222', 'موريتانيا'], ['+90', 'تركيا'], ['+44', 'المملكة المتحدة'], ['+49', 'ألمانيا'], ['+1', 'أمريكا / كندا'],
+] as const;
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -31,6 +39,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
+  const [dialCode, setDialCode] = useState('+966');
+  const [whatsapp, setWhatsapp] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -54,6 +64,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       : !password ? 'اكتب كلمة المرور'
       : mode === 'signup' && !name.trim() ? 'اكتب الاسم الكامل'
       : mode === 'signup' && password.length < 8 ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
+      : mode === 'signup' && accountType === 'talent' && !/^\d{6,14}$/.test(whatsapp.replace(/\D/g, '').replace(/^0+/, '')) ? 'اكتب رقم الواتساب صحيحاً'
       : '';
     if (problem) { setMessage({ type: 'error', text: problem }); return; }
     setLoading(true);
@@ -61,7 +72,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       const { user } = mode === 'login'
         ? await api.login(email, password)
-        : await api.signup({ name, email, password, company: company || undefined, accountType });
+        : await api.signup({ name, email, password, accountType,
+            ...(accountType === 'talent' ? { whatsapp: dialCode + whatsapp.replace(/\D/g, '').replace(/^0+/, '') } : { company: company || undefined }) });
       setMessage({ type: 'success', text: mode === 'login' ? 'تم تسجيل الدخول بنجاح.' : 'تم إنشاء حسابك بنجاح.' });
       onAuthSuccess?.(user);
       onClose();
@@ -244,6 +256,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
+              {accountType === 'talent' ? (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">رقم الواتساب</label>
+                <div className="flex gap-2" dir="ltr">
+                  <select value={dialCode} onChange={e => setDialCode(e.target.value)} aria-label="مقدمة الدولة"
+                    className="shrink-0 w-28 px-2 py-2.5 rounded-xl border border-slate-200 text-xs font-mono bg-white focus:outline-none focus:border-brand cursor-pointer">
+                    {DIAL_CODES.map(([code, country]) => <option key={code + country} value={code}>{code} {country}</option>)}
+                  </select>
+                  <div className="relative flex-1">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input type="tel" inputMode="tel" autoComplete="tel-national" value={whatsapp} onChange={e => setWhatsapp(e.target.value)}
+                      placeholder="5XXXXXXXX" className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20" />
+                  </div>
+                </div>
+              </div>
+              ) : (
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">اسم المؤسسة أو الشركة (اختياري)</label>
                 <div className="relative">
@@ -257,6 +285,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   />
                 </div>
               </div>
+              )}
             </>
           )}
 

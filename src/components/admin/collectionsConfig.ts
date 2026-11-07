@@ -129,6 +129,23 @@ export const COLLECTIONS: Record<string, CollectionConfig> = {
       { key: 'status', label: 'الحالة', type: 'select', options: PUBLISH }
     ]
   },
+  playerSamples: {
+    title: 'أصوات المشغّل', desc: 'العينات التي تُسمع في المشغّل أعلى الصفحة الرئيسية. يظهر المنشور منها بالترتيب؛ إذا لم يُنشر أي صوت يعرض الموقع العينات الافتراضية.',
+    addLabel: 'إضافة صوت', searchKeys: ['title', 'desc'], canEdit: true,
+    columns: [
+      { key: 'title', label: 'العنوان' },
+      { key: 'order', label: 'الترتيب', mono: true },
+      { key: 'desc', label: 'الوصف' },
+      { key: 'status', label: 'الحالة', badge: true }
+    ],
+    fields: [
+      { key: 'title', label: 'العنوان (يظهر تحت المشغّل، مثل: إعلانات)', required: true },
+      { key: 'desc', label: 'الوصف المختصر', type: 'textarea' },
+      { key: 'audioUrl', label: 'المقطع الصوتي', type: 'audio', required: true, hint: 'MP3 أو M4A أو WAV. يفضّل مقطع قصير بين 20 و60 ثانية.' },
+      { key: 'order', label: 'الترتيب (الأصغر يظهر أولاً)', type: 'number' },
+      { key: 'status', label: 'الحالة', type: 'select', options: PUBLISH }
+    ]
+  },
   faqs: {
     title: 'الأسئلة الشائعة', desc: 'الأسئلة والأجوبة المعروضة في صفحة الأسئلة الشائعة',
     addLabel: 'إضافة سؤال', searchKeys: ['question', 'answer'], canEdit: true,
