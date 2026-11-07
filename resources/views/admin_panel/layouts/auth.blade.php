@@ -53,6 +53,6 @@
 <script src="{{ asset_admin('plugins/global/plugins.bundle.js') }}"></script>
 <script src="{{ asset_admin('js/scripts.bundle.js') }}"></script>
 <script src="{{ asset_admin('js/custom/custom.js') }}" type="text/javascript"></script>
-<script src="{{ asset('/js/admin/auth.js')  }}" type="text/javascript"></script>
+<script src="{{ asset('/js/admin/auth.js') }}?v=old-admin" type="text/javascript"></script>
 </body>
 </html>
