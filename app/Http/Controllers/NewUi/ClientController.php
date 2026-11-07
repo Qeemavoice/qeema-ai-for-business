@@ -151,7 +151,7 @@ class ClientController extends Controller
         if (!$plan || !$plan['priceUsd'] || !$plan['monthlyCredits']) return response()->json(['error' => 'الباقة المختارة غير متاحة'], 400);
         $method = (string) $r->input('paymentMethod', 'card');
         Accounts::saveAccount($ctx['companyUser'], ['planId' => $plan['id']]);
-        // Rowad top-up gift or White Friday price, never both (RowadService::topupPrice); applies to this top-up only
+        // Rowad top-up gift (RowadService::topupPrice); applies to this top-up only
         $q = RowadService::topupPrice($ctx['companyUser'], (float) $plan['priceUsd'], (int) $plan['monthlyCredits']);
         $gift = $q['bonusChars'] ? ' + هدية روّاد قيمة ' . number_format($q['bonusChars']) . ' حرف' : '';
         // ponytail: no payment gateway yet, credits are added on request; connect Stripe here before launch
@@ -178,7 +178,7 @@ class ClientController extends Controller
         return response()->json(['company' => $ctx['company'], 'currentPlan' => $plan, 'availablePlans' => Plans::all(), 'balanceCredits' => $ctx['balance'], 'invoices' => $invoices]);
     }
 
-    /** GET billing/offers: what this account pays per plan now (Rowad price / top-up gift / White Friday, never combined) */
+    /** GET billing/offers: what this account pays per plan now (Rowad price / top-up gift) */
     public function offers(Request $r)
     {
         $cu = Accounts::context($r)['companyUser'];
@@ -201,7 +201,7 @@ class ClientController extends Controller
         if (!empty($plan['isCustom'])) return response()->json(['error' => 'باقة الشركات بتسعير مخصص، تواصل مع فريق المبيعات لتفعيلها'], 400);
         $cu = $ctx['companyUser'];
         Accounts::saveAccount($cu, ['planId' => $plan['id']]);
-        // Rowad price (locked until rowad_price_until, used again on every renewal) or White Friday, the larger only
+        // Rowad price (locked until rowad_price_until, used again on every renewal)
         $q = RowadService::subscriptionPrice($cu, $plan);
         if ($q['lock']) {
             DB::table('qv_client_accounts')->where('user_id', $cu->id)->update(['locked_plan_id' => $q['lock']['plan_id'],

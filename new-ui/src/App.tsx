@@ -93,10 +93,14 @@ function AppLayout({
   // dashboards have their own top bar (avatar + account menu), so the site header would show the account twice
   const isWorkspaceDashboard = path === '/ar/dashboard' || path === '/ar/account' || path.startsWith('/ar/account/') ||
     path.startsWith('/ar/talent-');
+  // the admin login screen stands alone: no site header (its «إنشاء حساب» / Google sign-in) and no footer
+  const adminPathCfg = (window as any).__QV_CONFIG?.adminPath as string | undefined;
+  const isAdminLogin = Boolean(adminPathCfg) && path === adminPathCfg && !currentUser;
+  const hideChrome = isWorkspaceDashboard || isAdminLogin;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFFFF] text-[#0F172A] font-['IBM_Plex_Sans_Arabic','Cairo',sans-serif]">
-      {!isWorkspaceDashboard && (
+      {!hideChrome && (
         <Header
           currentCompany={currentCompany}
           currentUser={currentUser}
@@ -112,7 +116,7 @@ function AppLayout({
         {children}
       </main>
 
-      {!isWorkspaceDashboard && (
+      {!hideChrome && (
         <Footer onOpenChangelog={onOpenChangelog} />
       )}
     </div>
@@ -237,7 +241,9 @@ export default function App() {
   useEffect(() => {
     fetch('/api/v1/site-status').then(r => (r.ok ? r.json() : null)).then(d => { setCommissionPercent(d?.commissionPercent); setMaintenance(Boolean(d?.maintenance)); setPublicLaunchAt(d?.publicLaunchAt); }).catch(() => {});
   }, []);
-  const siteClosed = maintenance && !currentUser?.isPlatformAdmin && !window.location.pathname.startsWith('/ar/admin');
+  // the admin dashboard's private address: from the admin page's own config, or from a signed-in admin's account
+  const adminPath = ((window as any).__QV_CONFIG?.adminPath as string | undefined) || currentUser?.adminPath || '';
+  const siteClosed = maintenance && !currentUser?.isPlatformAdmin && !(adminPath && window.location.pathname === adminPath);
 
   return (
     <BrowserRouter>
@@ -409,10 +415,10 @@ export default function App() {
           {/* the old back office lives at /ar/dashboard on the Laravel host; the client dashboard moved to /ar/account */}
           <Route path="/ar/dashboard" element={<Navigate to="/ar/account" replace />} />
           <Route path="/ar/chatbot" element={<Navigate to="/ar/voices" replace />} />
-          <Route 
-            path="/ar/admin" 
+          {adminPath && <Route 
+            path={adminPath} 
             element={
-              <SignInGate user={currentUser} allow={u => Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة إدارة قيمة فويس" hint="هذه الصفحة لفريق الإدارة فقط. سجّل الدخول بحساب الإدارة." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}>
+              <SignInGate user={currentUser} allow={u => Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة إدارة قيمة فويس" hint="ادخل بحساب الإدارة." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout} inlineLogin={completeAuth}>
               <AdminView
                 voices={voices}
                 onVoiceToggled={(id, isActive) => setVoices(vs => vs.map(v => v.id === id ? { ...v, isActive } : v))}
@@ -421,7 +427,7 @@ export default function App() {
               />
               </SignInGate>
             } 
-          />
+          />}
 
           {/* 404 Catch-All */}
           <Route path="*" element={<NotFoundPage />} />

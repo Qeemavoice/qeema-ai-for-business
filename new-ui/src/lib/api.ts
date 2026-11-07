@@ -50,8 +50,8 @@ export interface BillingResponse {
 }
 
 export interface PlanOffer {
-  subscription: { price: number; listPrice: number; offer: 'rowad' | 'rowad_locked' | 'white_friday' | null; discountPct: number };
-  topup: { price: number; listPrice: number; chars: number; bonusChars: number; offer: 'rowad' | 'white_friday' | null };
+  subscription: { price: number; listPrice: number; offer: 'rowad' | 'rowad_locked' | null; discountPct: number };
+  topup: { price: number; listPrice: number; chars: number; bonusChars: number; offer: 'rowad' | null };
 }
 
 /** window event: the balance or plan changed outside App (App reloads the account) */
@@ -241,7 +241,7 @@ export const api = {
     return res.json();
   },
 
-  /** What this account pays per plan now: Rowad price / top-up gift / White Friday (server: ClientController::offers) */
+  /** What this account pays per plan now: Rowad price / top-up gift (server: ClientController::offers) */
   async getOffers(): Promise<{ offers: Record<string, PlanOffer>; rowadPriceActive: boolean; rowadPriceUntil: string | null }> {
     const res = await fetch('/api/v1/billing/offers', { headers: getHeaders() });
     if (!res.ok) throw new Error('تعذر جلب الأسعار');

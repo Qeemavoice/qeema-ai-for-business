@@ -19,7 +19,7 @@ export const TopUpCreditsModal: React.FC<TopUpCreditsModalProps> = ({ isOpen, on
   const [selectedPack, setSelectedPack] = useState(PACKS.find(p => p.featured)?.id || PACKS[0]?.id);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // this account's price per pack (Rowad gift / White Friday); list prices until it answers
+  // this account's price per pack (Rowad gift); list prices until it answers
   const [offers, setOffers] = useState<Record<string, PlanOffer>>({});
   useEffect(() => { if (isOpen) api.getOffers().then(r => setOffers(r.offers || {})).catch(() => setOffers({})); }, [isOpen]);
 

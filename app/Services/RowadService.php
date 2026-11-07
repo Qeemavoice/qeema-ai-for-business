@@ -140,18 +140,9 @@ class RowadService
         return $user->rowad_badge_at !== null && now()->lessThanOrEqualTo(self::at('early_window_ends_at'));
     }
 
-    public static function whiteFridayPct(): float
-    {
-        $wf = config('rowad.white_friday');
-        $tz = config('rowad.timezone');
-        if (empty($wf['discount_pct'])) return 0.0;
-        $active = now()->between(Carbon::parse($wf['starts_at'], $tz), Carbon::parse($wf['ends_at'], $tz));
-        return $active ? (float) $wf['discount_pct'] : 0.0;
-    }
-
     /**
-     * Price of a plan subscription for $user: a valid lock wins; otherwise the larger of the Rowad discount (only for
-     * a Rowad member inside the early window, then locked until rowad_price_until) and the White Friday discount.
+     * Price of a plan subscription for $user: a valid lock wins; otherwise the Rowad discount (only for a Rowad member
+     * inside the early window, then locked until rowad_price_until).
      * @return array{price: float, listPrice: float, offer: ?string, discountPct: float, lock: ?array}
      */
     public static function subscriptionPrice(User $user, array $plan, ?array $account = null): array
@@ -165,30 +156,22 @@ class RowadService
                 'discountPct' => round((1 - (float) $acc['locked_price'] / $list) * 100, 2)]);
         }
         $rowad = self::rowadPriceActive($user) ? (float) config('rowad.rowad_discount_pct') : 0.0;
-        $wf = self::whiteFridayPct();
-        if ($rowad <= 0 && $wf <= 0) return $out;
-        [$pct, $offer] = $rowad >= $wf ? [$rowad, 'rowad'] : [$wf, 'white_friday'];
-        $price = round($list * (1 - $pct / 100), 2);
-        $lock = $offer === 'rowad' ? ['plan_id' => $plan['id'], 'price' => $price, 'until' => $user->rowad_price_until] : null;
-        return array_merge($out, ['price' => $price, 'offer' => $offer, 'discountPct' => $pct, 'lock' => $lock]);
+        if ($rowad <= 0) return $out;
+        $price = round($list * (1 - $rowad / 100), 2);
+        return array_merge($out, ['price' => $price, 'offer' => 'rowad', 'discountPct' => $rowad,
+            'lock' => ['plan_id' => $plan['id'], 'price' => $price, 'until' => $user->rowad_price_until]]);
     }
 
     /**
-     * A top-up for $user: Rowad members inside the early window get extra characters (the higher top-up gift);
-     * White Friday lowers the price. Never both: the larger benefit wins (a bonus of b% is worth b/(100+b) off).
+     * A top-up for $user: Rowad members inside the early window get extra characters (the higher top-up gift).
      * @return array{price: float, listPrice: float, chars: int, bonusChars: int, offer: ?string}
      */
     public static function topupPrice(User $user, float $listPrice, int $chars): array
     {
         $out = ['price' => $listPrice, 'listPrice' => $listPrice, 'chars' => $chars, 'bonusChars' => 0, 'offer' => null];
         $bonusPct = self::rowadPriceActive($user) ? (float) config('rowad.rowad_topup_bonus_pct') : 0.0;
-        $wf = self::whiteFridayPct();
-        $bonusWorth = $bonusPct > 0 ? $bonusPct / (100 + $bonusPct) * 100 : 0.0;
-        if ($bonusWorth <= 0 && $wf <= 0) return $out;
-        if ($bonusWorth >= $wf) {
-            $bonus = (int) round($chars * $bonusPct / 100);
-            return array_merge($out, ['chars' => $chars + $bonus, 'bonusChars' => $bonus, 'offer' => 'rowad']);
-        }
-        return array_merge($out, ['price' => round($listPrice * (1 - $wf / 100), 2), 'offer' => 'white_friday']);
+        if ($bonusPct <= 0) return $out;
+        $bonus = (int) round($chars * $bonusPct / 100);
+        return array_merge($out, ['chars' => $chars + $bonus, 'bonusChars' => $bonus, 'offer' => 'rowad']);
     }
 }

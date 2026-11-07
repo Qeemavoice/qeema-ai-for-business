@@ -19,7 +19,7 @@ export const BillingTab: React.FC<Props> = ({ balanceCredits, currentPlanId, onO
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   useEffect(() => { api.getOffers().then(r => setOffers(r.offers || {})).catch(() => setOffers({})); }, [currentPlanId]);
 
-  // «اشترك الآن»: the plan at this account's price (Rowad price locked for members, White Friday, or list price)
+  // «اشترك الآن»: the plan at this account's price (Rowad price locked for members, or list price)
   const subscribe = async (planId: string, price: number) => {
     if (!confirm(`الاشتراك في هذه الباقة بسعر ${price}$ شهرياً؟`)) return;
     setBusy(planId); setNote(null);
@@ -81,7 +81,7 @@ export const BillingTab: React.FC<Props> = ({ balanceCredits, currentPlanId, onO
           const isCurrent = (current?.id || 'plan-free') === p.id;
           const sub = offers[p.id]?.subscription;
           const price = sub ? sub.price : p.priceUsd;
-          const offerLabel = sub?.offer === 'rowad' || sub?.offer === 'rowad_locked' ? 'سعر روّاد قيمة' : sub?.offer === 'white_friday' ? 'عرض الجمعة البيضاء' : '';
+          const offerLabel = sub?.offer === 'rowad' || sub?.offer === 'rowad_locked' ? 'سعر روّاد قيمة' : '';
           return (
             <div key={p.id} className={`p-5 rounded-3xl border bg-white flex flex-col gap-3 ${isCurrent ? 'border-brand ring-2 ring-brand/20' : 'border-slate-200'}`}>
               <div className="flex items-center justify-between">

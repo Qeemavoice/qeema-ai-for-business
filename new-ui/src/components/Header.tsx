@@ -56,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
     currentUser?.accountType === 'talent'
       ? { to: '/ar/talent-dashboard', label: 'لوحة المعلق الصوتي', icon: Mic2 }
       : { to: '/ar/account', label: 'حسابي', icon: LayoutDashboard },
-    ...(currentUser?.isPlatformAdmin ? [{ to: '/ar/admin', label: 'لوحة الإدارة', icon: ShieldCheck }] : []),
+    ...(currentUser?.isPlatformAdmin && currentUser.adminPath ? [{ to: currentUser.adminPath, label: 'لوحة الإدارة', icon: ShieldCheck }] : []),
   ];
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header ref={headerRef} className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all" dir="rtl">
-      <WhiteFridayBar />
+      <WhiteFridayBar onSignup={currentUser ? undefined : onOpenSignup} />
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">

@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 // ponytail: fixed end date; move it to the dashboard settings if offers start changing often
 const ENDS_AT = new Date('2026-12-01T00:00:00+03:00').getTime();   // end of 30 Nov 2026, Riyadh time
 
 const two = (n: number) => String(n).padStart(2, '0');
 
-/** «عروض الجمعة البيضاء» strip at the top of the header with a live countdown; hidden once the offer ends. */
-export const WhiteFridayBar: React.FC = () => {
+/**
+ * «عروض الجمعة البيضاء» strip at the top of the header: the sentence and a live countdown only (no offer prices).
+ * For visitors the strip opens the sign-up; hidden once the countdown ends.
+ */
+export const WhiteFridayBar: React.FC<{ onSignup?: () => void }> = ({ onSignup }) => {
   const [now, setNow] = useState(() => Date.now());
-  const target = '/ar/pricing';
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -25,12 +26,15 @@ export const WhiteFridayBar: React.FC = () => {
   ];
 
   return (
-    <Link
-      to={target}
-      className="block bg-brand-ink text-white hover:bg-brand-ink/95 transition-colors"
-      aria-label="عروض الجمعة البيضاء: شاهد العروض"
+    <div
+      role={onSignup ? 'button' : undefined}
+      tabIndex={onSignup ? 0 : undefined}
+      onClick={onSignup}
+      onKeyDown={e => { if (onSignup && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onSignup(); } }}
+      className={`block bg-brand-ink text-white transition-colors ${onSignup ? 'cursor-pointer hover:bg-brand-ink/95' : ''}`}
+      aria-label={onSignup ? 'عروض الجمعة البيضاء: أنشئ حسابك الآن' : 'عروض الجمعة البيضاء'}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center justify-center gap-3 sm:gap-5 text-xs sm:text-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-10 py-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:gap-5 text-xs sm:text-sm">
         <span className="font-black whitespace-nowrap">
           <span className="text-brand-yellow">عروض</span> الجمعة البيضاء
         </span>
@@ -42,8 +46,8 @@ export const WhiteFridayBar: React.FC = () => {
             </span>
           ))}
         </span>
-        <span className="hidden sm:inline font-bold underline underline-offset-4 decoration-brand-yellow/60 whitespace-nowrap">شاهد العروض</span>
+        {onSignup && <span className="inline font-bold underline underline-offset-4 decoration-brand-yellow/60 whitespace-nowrap">أنشئ حسابك الآن</span>}
       </div>
-    </Link>
+    </div>
   );
 };

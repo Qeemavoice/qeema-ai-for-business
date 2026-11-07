@@ -22,13 +22,6 @@ return [
     'rowad_topup_bonus_pct'  => 20,     // ⚠️ extra characters added to a top-up (the higher top-up gift)
     'rowad_price_months'     => 12,     // ⚠️
 
-    // White Friday: never combined with the Rowad price, the larger benefit wins
-    'white_friday' => [
-        'discount_pct' => env('WHITE_FRIDAY_DISCOUNT_PCT', 0), // ⚠️ 0 = no White Friday discount in the price
-        'starts_at'    => env('WHITE_FRIDAY_STARTS_AT', '2026-11-20 00:00:00'),
-        'ends_at'      => env('WHITE_FRIDAY_ENDS_AT', '2026-11-30 23:59:59'),
-    ],
-
     'redeem_rate_limit'      => (int) env('ROWAD_REDEEM_RATE_LIMIT', 10), // attempts per hour per IP on /ar/early
     'site_url'               => env('ROWAD_SITE_URL', 'https://qeemavoice.com'),
     'whatsapp_support'       => env('ROWAD_WHATSAPP', 'https://wa.me/96893822649'), // support WhatsApp (+968 9382 2649)

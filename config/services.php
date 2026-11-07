@@ -86,5 +86,9 @@ return [
     // unless this is switched on (tests). Turn it off for good once the gateway charges first.
     'newui_grant_without_payment' => (bool) env('NEWUI_GRANT_WITHOUT_PAYMENT', false),
 
+    // New UI admin dashboard: a private address (not linked anywhere public). Only admins are told it (auth/me)
+    // and only that page carries it in its config. Set NEWUI_ADMIN_PATH on each server, e.g. ar/qv-control-xxxxxxxx
+    'newui_admin_path' => trim((string) env('NEWUI_ADMIN_PATH', 'ar/admin'), '/'),
+
 
 ];

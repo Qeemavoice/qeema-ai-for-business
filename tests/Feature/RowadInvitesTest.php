@@ -188,30 +188,16 @@ class RowadInvitesTest extends TestCase
             ->assertOk()->assertJsonPath('priceUsd', 20)->assertJsonPath('offer', null);
     }
 
-    /** 9. Rowad price and White Friday: only the larger one */
-    public function test_rowad_and_white_friday_are_not_combined()
+    /** 9. Rowad price: 20% off a plan (locked), +20% characters on a top-up */
+    public function test_rowad_price_and_topup_gift()
     {
         $u = $this->client('wf@example.test');
         $this->api($u)->postJson('/api/v1/early/redeem', ['code' => $this->invite()->code])->assertOk();
-        $plan = ['id' => 'plan-starter', 'priceUsd' => 20];
-
-        config(['rowad.white_friday.discount_pct' => 30]);   // White Friday larger than Rowad (20%)
-        $q = RowadService::subscriptionPrice($u->fresh(), $plan);
-        $this->assertSame('white_friday', $q['offer']);
-        $this->assertEquals(14.0, $q['price']);
-        $this->assertNull($q['lock']);
-
-        config(['rowad.white_friday.discount_pct' => 10]);   // Rowad larger
-        $q = RowadService::subscriptionPrice($u->fresh(), $plan);
+        $q = RowadService::subscriptionPrice($u->fresh(), ['id' => 'plan-starter', 'priceUsd' => 20]);
         $this->assertSame('rowad', $q['offer']);
         $this->assertEquals(16.0, $q['price']);
-
-        // top-up: Rowad gift = +20% characters (worth 16.7% off) vs White Friday price cut
         $t = RowadService::topupPrice($u->fresh(), 20.0, 25000);
         $this->assertSame(['rowad', 5000, 20.0], [$t['offer'], $t['bonusChars'], $t['price']]);
-        config(['rowad.white_friday.discount_pct' => 25]);
-        $t = RowadService::topupPrice($u->fresh(), 20.0, 25000);
-        $this->assertSame(['white_friday', 0, 15.0], [$t['offer'], $t['bonusChars'], $t['price']]);
     }
 
     /** 10. after 30 days: an «expire» entry and the free balance is zero; spending takes from the soonest expiry first */

@@ -66,6 +66,8 @@ export interface User {
   accountType?: 'client' | 'talent';
   /** Platform staff: may open the admin dashboard */
   isPlatformAdmin?: boolean;
+  /** the admin dashboard's private address (admins only) */
+  adminPath?: string | null;
   /** Narrator record of a talent account */
   narratorId?: string;
 }
