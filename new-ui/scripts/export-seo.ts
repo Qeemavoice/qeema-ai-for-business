@@ -16,6 +16,15 @@ const routes: Record<string, any> = {};
 for (const [path, cfg] of Object.entries(STATIC_SEO_ROUTES)) {
   routes[path] = { title: cfg.title, description: cfg.description, ogImage: cfg.ogImage, noindex: cfg.noindex, keywords: cfg.keywords };
 }
+// «نماذج الإنتاج الصوتي» and service pages: the title and description CommercialServiceTemplate sets
+for (const sv of Object.values(COMMERCIAL_SERVICES) as any[]) {
+  if (sv.route && !routes[sv.route]) routes[sv.route] = { title: sv.title, description: sv.description };
+}
+// built-in success stories (a dashboard copy of a story replaces it on the server: SpaController::dynamicSeo)
+for (const st of STORIES) {
+  routes[`/ar/our-works/${st.id}`] = { title: `${st.brand} | قصص النجاح | قيمة فويس`,
+    description: st.heroSubtitle || 'تجارب وقصص نجاح كبرى الشركات والجهات الحكومية العربية في التعليق الصوتي والرد الآلي والدوبلاج مع قيمة فويس.' };
+}
 for (const p of BLOG_POSTS) {
   routes[`/ar/blogs/details/${p.slug}`] = { title: `${p.title} | قيمة فويس`, description: p.metaDescription || p.shortDescription, keywords: p.keywords };
 }

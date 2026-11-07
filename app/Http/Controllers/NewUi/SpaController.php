@@ -40,10 +40,47 @@ class SpaController extends Controller
         return self::$seo;
     }
 
+    /**
+     * Pages made from the database (voice booking pages, blog articles, success stories): the same title and
+     * description the React page sets (BookingVoicePage, BlogDetailsPage, OurWorksPage), written here for crawlers.
+     */
+    private static function dynamicSeo(string $path): ?array
+    {
+        $brand = fn (string $t) => mb_substr($t, -9) === 'قيمة فويس' ? $t : "{$t} | قيمة فويس";
+        $cut = fn (string $t) => mb_strlen($t) > 155 ? mb_substr($t, 0, 152) . '...' : $t;
+        try {
+            if (preg_match('#^/ar/booking/(\d+)#', $path, $m) && ($v = \App\Services\NewUi\Library::publicItem($m[1]))) {
+                $dialect = $v['dialect'] ?: 'عربية';
+                $title = trim((string) $v['metaTitle']) !== '' ? $brand(trim($v['metaTitle'])) : "{$v['name']} - عينة تعليق صوتي {$dialect} | قيمة فويس";
+                $desc = trim((string) $v['metaDescription']) ?: ($v['description'] ? $cut($v['description'])
+                    : "استمع إلى عينة «{$v['name']}» بلهجة {$dialect}، تخصص " . ($v['category'] ?: 'تعليق احترافي') . '. احجز الصوت مباشرة بجودة 48kHz.');
+                return ['title' => $title, 'description' => $desc];
+            }
+            if (preg_match('#^/ar/blogs/details/(\d+)#', $path, $m) && ($a = \App\Models\Article::find((int) $m[1]))) {
+                $i = PublicController::articleItem($a);
+                if ($i['status'] !== 'published' || $i['title'] === '') return null;
+                return ['title' => $brand($i['title']), 'description' => trim($i['metaDescription']) ?: $cut(trim(strip_tags($i['shortDescription']))),
+                    'keywords' => $i['keywords'], 'ogImage' => $i['coverImage'] ?: null];
+            }
+            if (preg_match('#^/ar/our-works/([^/]+)$#', $path, $m)) {
+                foreach (\App\Services\NewUi\Store::list('stories') as $st) {
+                    if ((string) ($st['id'] ?? '') === rawurldecode($m[1]) && ($st['status'] ?? '') === 'published') {
+                        return ['title' => ($st['brand'] ?? $st['title'] ?? 'قصة نجاح') . ' | قصص النجاح | قيمة فويس',
+                            'description' => trim((string) ($st['heroSubtitle'] ?? '')) ?: 'تجارب وقصص نجاح كبرى الشركات والجهات الحكومية العربية في التعليق الصوتي والرد الآلي والدوبلاج مع قيمة فويس.'];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+        return null;
+    }
+
     private function injectSeo(string $html, string $path): string
     {
         $routes = self::seoMap()['routes'] ?? [];
-        $cfg = $routes[$path] ?? null;
+        // a story edited in the dashboard wins over the built-in copy exported in seo.json
+        $cfg = (str_starts_with($path, '/ar/our-works/') ? self::dynamicSeo($path) : null) ?? $routes[$path] ?? self::dynamicSeo($path);
         if (!$cfg) return $html;
         $e = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         $site = rtrim(self::seoMap()['site'] ?? 'https://qeemavoice.com', '/');

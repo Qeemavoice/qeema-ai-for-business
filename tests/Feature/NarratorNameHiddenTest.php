@@ -43,5 +43,10 @@ class NarratorNameHiddenTest extends TestCase
         $this->assertSame('عميل', $list->json('company.name'));   // invoices are made out to the client
 
         $this->assertStringNotContainsString(rawurlencode('محمد'), $this->get('/sitemap.xml')->getContent());
+
+        // the booking pages' server-side title (what Google reads): the clip name, never the narrator's
+        $page = $this->get('/ar/booking/601-x')->assertOk()->getContent();
+        $this->assertStringContainsString('<title>إعلان حماسي - عينة تعليق صوتي', $page);
+        $this->assertStringNotContainsString($secret, $this->get('/ar/booking/602-x')->getContent());
     }
 }

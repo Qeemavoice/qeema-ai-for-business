@@ -151,6 +151,23 @@ class Library
     public static function publicItems(): array
     {
         return array_map(fn ($v) => array_merge(array_filter($v, fn ($k) => $k[0] !== '_', ARRAY_FILTER_USE_KEY),
-            ['name' => self::safeClip($v['sampleName'], $v['talentName'], $v['category']), 'sampleName' => self::safeClip($v['sampleName'], $v['talentName'], $v['category']), 'talentName' => '']), self::all());
+            ['name' => self::safeClip($v['sampleName'], $v['talentName'], $v['category']), 'sampleName' => self::safeClip($v['sampleName'], $v['talentName'], $v['category']), 'talentName' => '',
+             // SEO and description texts typed in the dashboard follow the same rule (they feed the page title and Google)
+             'subtitle' => self::without($v['subtitle'] ?? '', $v['talentName']), 'description' => self::without($v['description'] ?? '', $v['talentName']),
+             'metaTitle' => self::without($v['metaTitle'] ?? '', $v['talentName']), 'metaDescription' => self::without($v['metaDescription'] ?? '', $v['talentName'])]), self::all());
+    }
+
+    /** The text, or '' when it carries the narrator's name */
+    public static function without(?string $text, ?string $narrator): string
+    {
+        $text = trim((string) $text); $narrator = trim((string) $narrator);
+        return $narrator !== '' && mb_strpos($text, $narrator) !== false ? '' : $text;
+    }
+
+    /** One voice as the public sees it (publicItems' rules), or null */
+    public static function publicItem(string $id): ?array
+    {
+        foreach (self::publicItems() as $v) if ($v['id'] === $id) return $v;
+        return null;
     }
 }
