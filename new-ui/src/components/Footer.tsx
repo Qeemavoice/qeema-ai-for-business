@@ -1,6 +1,5 @@
 import React from 'react';
 import { SocialLinks } from './SocialLinks';
-import { openTalentSignup } from '../lib/talentJoin';
 import { Link } from 'react-router-dom';
 import { useSiteLists } from '../lib/siteLists';
 import { 
@@ -80,16 +79,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenChangelog }) => {
             {nlState === 'done' && <p className="text-[11px] text-emerald-400">تم الاشتراك في النشرة البريدية.</p>}
             {nlState === 'error' && <p className="text-[11px] text-red-400">تعذر الاشتراك، تحقق من البريد وحاول مرة أخرى.</p>}
 
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={openTalentSignup}
-                className="inline-flex items-center gap-2 text-xs font-bold text-white bg-brand hover:bg-brand-orange px-4 py-2 rounded-xl transition shadow-sm cursor-pointer"
-              >
-                <Briefcase className="w-3.5 h-3.5" />
-                <span>انضم إلى قيمة فويس كمعلق صوتي</span>
-              </button>
-            </div>
           </div>
 
           {/* Col 2: خدمات التعليق الصوتي والإنتاج */}
