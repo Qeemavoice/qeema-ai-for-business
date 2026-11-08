@@ -57,11 +57,6 @@ export const ContactUsPage: React.FC = () => {
 
       <section className="py-12 border-b border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand/10 text-brand-text text-xs font-bold">
-            <Mail className="w-3.5 h-3.5" />
-            <span>خدمة العملاء والشركات</span>
-          </div>
-
           {/* Strict Single H1 */}
           <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight">
             {pageText.title}
