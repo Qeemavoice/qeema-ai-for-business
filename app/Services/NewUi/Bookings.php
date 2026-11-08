@@ -284,6 +284,25 @@ class Bookings
         return ['booking' => self::clientView($order, $voice)];
     }
 
+    /** Card payment confirmed by Stripe: the booking leaves «بانتظار الدفع» and goes to the team's review */
+    public static function markPaid(string $id, string $paymentId): void
+    {
+        $oid = self::orderId($id);
+        $o = $oid ? self::query()->find($oid) : null;
+        if (!$o) return;
+        $o->forceFill(['payment_method_id' => PaymentMethod::STRIPE])->save();
+        $m = self::meta($o->id);
+        self::saveMeta($o->id, ['qv_status' => ($m->qv_status ?? '') === 'awaiting_payment' ? 'pending' : ($m->qv_status ?? 'pending')]);
+        Store::audit('c' . $o->customer_id, 'client', 'BOOKING_PAID: ' . self::id($o));
+    }
+
+    /** Starts (or restarts) the card payment of a booking that waits for it; returns Stripe's page URL */
+    public static function startPayment(Order $o, User $payer, string $returnPath): string
+    {
+        return Payments::start('booking', $payer, $payer, (float) $o->total, 'حجز تعليق صوتي ' . self::id($o) . ' - قيمة فويس',
+            ['bookingId' => self::id($o)], $returnPath, (string) $o->customer_full_name, (string) $o->customer_email);
+    }
+
     public static function setStatus(string $id, string $status, ?string $deliverableUrl = null): ?array
     {
         $oid = self::orderId($id);

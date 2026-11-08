@@ -15,7 +15,7 @@ export const PaymentReturn: React.FC<{ isLoggedIn: boolean }> = ({ isLoggedIn })
   useEffect(() => {
     const q = new URLSearchParams(location.search);
     const state = q.get('payment');
-    if (!state || !isLoggedIn) return;
+    if (!state) return;   // a guest back from paying a booking is confirmed too
     const sessionId = q.get('session_id') || '';
     q.delete('payment');
     q.delete('session_id');
@@ -30,7 +30,8 @@ export const PaymentReturn: React.FC<{ isLoggedIn: boolean }> = ({ isLoggedIn })
     api.confirmPayment(sessionId).then(r => {
       window.dispatchEvent(new Event(ACCOUNT_CHANGED_EVENT));
       window.dispatchEvent(new CustomEvent(PAYMENT_CONFIRMED_EVENT, { detail: r }));
-      const what = r.kind === 'guide' ? 'تم شراء الدليل، ويمكنك تحميله الآن.' : r.kind === 'plan' ? 'تم تفعيل باقتك الجديدة وإضافة رصيدها.' : 'تمت إضافة الرصيد إلى حسابك.';
+      const what = r.kind === 'guide' ? 'تم شراء الدليل، ويمكنك تحميله الآن.' : r.kind === 'plan' ? 'تم تفعيل باقتك الجديدة وإضافة رصيدها.'
+        : r.kind === 'booking' ? 'حجزك الآن قيد المراجعة، وسنبلغك بكل جديد.' : 'تمت إضافة الرصيد إلى حسابك.';
       setNotice({ tone: 'ok', text: `تم الدفع بنجاح ($${r.amountUsd}). ${what}` });
     }).catch(e => setNotice({ tone: 'error', text: e.message })).finally(clean);
   }, [location.search, isLoggedIn]);

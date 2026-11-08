@@ -300,9 +300,40 @@ class ClientController extends Controller
 
     public function book(Request $r)
     {
-        $res = Bookings::create($r->all(), Accounts::currentUser($r));
+        $user = Accounts::currentUser($r);
+        $res = Bookings::create($r->all(), $user);
         if (isset($res['error'])) return response()->json(['error' => $res['error']], $res['status']);
+        // with card payment on, a booking is paid first and reaches the team's review only after Stripe confirms it
+        if (\App\Services\NewUi\Payments::enabled() && !($user && Accounts::isAdmin($user))) {
+            $oid = Bookings::orderId($res['booking']['id']);
+            $o = Bookings::query()->find($oid);
+            Bookings::saveMeta($o->id, ['qv_status' => 'awaiting_payment']);
+            try {
+                $url = Bookings::startPayment($o, $o->customer, $user ? '/ar/account' : '/ar/voices');
+            } catch (\Throwable $e) {
+                report($e);
+                return response()->json(['error' => 'حُفظ طلبك لكن تعذر فتح صفحة الدفع الآن. ادفع لاحقاً من «حجوزاتي» أو تواصل معنا.'], 502);
+            }
+            return response()->json(['success' => true, 'booking' => Bookings::clientView($o->fresh()), 'checkoutUrl' => $url]);
+        }
         return response()->json(['success' => true, 'booking' => $res['booking']]);
+    }
+
+    /** «ادفع الآن» on a booking that still waits for its payment */
+    public function payBooking(Request $r, string $id)
+    {
+        $ctx = Accounts::context($r);
+        $oid = Bookings::orderId($id);
+        $o = $oid ? Bookings::query()->where('customer_id', $ctx['companyUser']->id)->find($oid) : null;
+        if (!$o) return response()->json(['error' => 'طلب الحجز غير موجود'], 404);
+        if (Bookings::status($o, Bookings::meta($o->id)) !== 'awaiting_payment') return response()->json(['error' => 'هذا الحجز لا ينتظر الدفع'], 400);
+        if (!\App\Services\NewUi\Payments::enabled()) return self::paymentUnavailable();
+        try {
+            return response()->json(['checkoutUrl' => Bookings::startPayment($o, $ctx['companyUser'], '/ar/account')]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 502);
+        }
     }
 
     public function review(Request $r, string $id)

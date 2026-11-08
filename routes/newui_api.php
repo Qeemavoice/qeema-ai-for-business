@@ -155,8 +155,9 @@ Route::prefix('admin')->middleware('qv.admin')->group(function () {
 
 // ---- card payments (Stripe Checkout) and paid guides ----
 Route::post('payments/stripe-webhook', 'PaymentsController@webhook')->middleware('throttle:120,1,stripe-webhook');
+Route::post('payments/confirm', 'PaymentsController@confirm')->middleware('throttle:20,1,pay-confirm');
 Route::middleware('qv.user')->group(function () {
-    Route::post('payments/confirm', 'PaymentsController@confirm')->middleware('throttle:20,1,pay-confirm');
+    Route::post('client/bookings/{id}/pay', 'ClientController@payBooking')->middleware('throttle:10,1,booking-pay');
     Route::post('guides/{id}/checkout', 'PaymentsController@guideCheckout')->middleware('throttle:10,1,guide-checkout');
     Route::get('guides/{id}/file', 'PaymentsController@guideFile')->middleware('throttle:30,1,guide-file');
 });

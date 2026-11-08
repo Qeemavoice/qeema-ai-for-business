@@ -412,7 +412,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
     return matchesStatus && matchesSearch;
   });
 
-  const BOOKING_STATUS_AR: Record<HumanBooking['status'], string> = { pending: 'بانتظار المراجعة', in_studio: 'استوديو التسجيل', delivered: 'تم التسليم', approved: 'معتمد ومكتمل', canceled: 'ملغي' };
+  const BOOKING_STATUS_AR: Record<HumanBooking['status'], string> = { awaiting_payment: 'بانتظار دفع العميل', pending: 'بانتظار المراجعة', in_studio: 'استوديو التسجيل', delivered: 'تم التسليم', approved: 'معتمد ومكتمل', canceled: 'ملغي' };
   const exportBookings = () => exportToExcel<HumanBooking>('bookings', 'الحجوزات', [
     { header: 'رقم الحجز', value: 'id', width: 14 },
     { header: 'العميل', value: 'companyName', width: 26 },
@@ -949,6 +949,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     const statusConfig = {
                       pending: { label: 'بانتظار المراجعة', bg: 'bg-amber-100 text-amber-800 border-amber-200' },
                       in_studio: { label: 'في الاستوديو', bg: 'bg-blue-100 text-blue-800 border-blue-200' },
+                      awaiting_payment: { label: 'بانتظار دفع العميل', bg: 'bg-amber-50 text-amber-800 border-amber-200' },
                       delivered: { label: 'تم التسليم', bg: 'bg-purple-100 text-purple-800 border-purple-200' },
                       approved: { label: 'معتمد ومكتمل', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
                       canceled: { label: 'ملغي', bg: 'bg-slate-100 text-slate-600 border-slate-200' }

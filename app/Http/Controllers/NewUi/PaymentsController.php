@@ -14,11 +14,11 @@ class PaymentsController extends Controller
     /** Return page after Stripe: grants the purchase once Stripe confirms it was paid */
     public function confirm(Request $r)
     {
-        $u = Accounts::currentUser($r);
+        $u = Accounts::currentUser($r);   // guests may confirm a paid booking only
         $sid = (string) $r->input('sessionId', '');
         if (!preg_match('/^cs_[A-Za-z0-9_]{10,250}$/', $sid)) return response()->json(['error' => 'رمز عملية غير صالح'], 400);
         try {
-            $res = Payments::fulfil($sid, $u);
+            $res = $u ? Payments::fulfil($sid, $u) : Payments::fulfil($sid, null, ['booking']);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['error' => 'تعذر التحقق من الدفع الآن. إذا خُصم المبلغ فسيُضاف تلقائياً خلال دقائق.'], 502);
@@ -27,7 +27,8 @@ class PaymentsController extends Controller
         $p = $res['payment'];
         $meta = json_decode($p->meta, true) ?: [];
         return response()->json(['success' => true, 'kind' => $p->kind, 'amountUsd' => $p->amount_cents / 100,
-            'guideId' => $meta['guideId'] ?? null, 'newBalanceCredits' => Accounts::balance((int) $p->company_user_id)]);
+            'guideId' => $meta['guideId'] ?? null, 'bookingId' => $meta['bookingId'] ?? null,
+            'newBalanceCredits' => $u ? Accounts::balance((int) $p->company_user_id) : null]);
     }
 
     /** Stripe → us (server to server): signature-checked, so it works even when the buyer closes the tab before returning */

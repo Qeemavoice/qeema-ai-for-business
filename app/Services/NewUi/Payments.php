@@ -71,10 +71,12 @@ class Payments
      * Grants a paid checkout once. $payer limits it to the buyer's own session (return page); null = webhook (signature-checked).
      * Returns ['ok' => bool, 'payment' => row|null, 'error' => string|null].
      */
-    public static function fulfil(string $sessionId, ?User $payer = null): array
+    public static function fulfil(string $sessionId, ?User $payer = null, ?array $onlyKinds = null): array
     {
         $row = DB::table('qv_payments')->where('session_id', $sessionId)->first();
         if (!$row) return ['ok' => false, 'payment' => null, 'error' => 'عملية الدفع غير معروفة'];
+        // a guest back from paying a booking confirms it without an account (Stripe still has to say it was paid in full)
+        if ($onlyKinds !== null && !in_array($row->kind, $onlyKinds, true)) return ['ok' => false, 'payment' => null, 'error' => 'سجّل الدخول لإكمال العملية'];
         if ($payer && (int) $row->user_id !== (int) $payer->id) return ['ok' => false, 'payment' => null, 'error' => 'عملية الدفع غير معروفة'];
         if ($row->status === 'fulfilled') return ['ok' => true, 'payment' => $row, 'error' => null];
 
@@ -97,6 +99,7 @@ class Payments
             if ($locked->kind === 'topup') \App\Http\Controllers\NewUi\ClientController::applyTopup($account, $payer, $meta, 'بطاقة');
             elseif ($locked->kind === 'plan') \App\Http\Controllers\NewUi\ClientController::applyPlan($account, $payer, $meta);
             elseif ($locked->kind === 'guide') DB::table('guides')->where('id', (int) ($meta['guideId'] ?? 0))->increment('number_of_downloads');
+            elseif ($locked->kind === 'booking') Bookings::markPaid((string) ($meta['bookingId'] ?? ''), $locked->id);
             DB::table('qv_payments')->where('id', $locked->id)->update(['status' => 'fulfilled', 'fulfilled_at' => now(), 'updated_at' => now(),
                 'payment_intent' => is_string($s['payment_intent'] ?? null) ? $s['payment_intent'] : null, 'livemode' => !empty($s['livemode'])]);
             return ['ok' => true, 'payment' => DB::table('qv_payments')->where('id', $locked->id)->first(), 'error' => null];

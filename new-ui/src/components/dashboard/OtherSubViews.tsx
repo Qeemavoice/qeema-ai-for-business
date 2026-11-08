@@ -191,6 +191,7 @@ interface HumanBookingsSubViewProps {
 }
 
 const BOOKING_STATUS: Record<string, { label: string; cls: string; step: number }> = {
+  awaiting_payment: { label: 'بانتظار الدفع', cls: 'bg-amber-50 text-amber-800 border-amber-200', step: 0 },
   pending: { label: 'قيد المراجعة', cls: 'bg-slate-100 text-slate-700 border-slate-200', step: 0 },
   in_studio: { label: 'جاري التسجيل', cls: 'bg-brand/10 text-brand-text border-brand/30', step: 1 },
   delivered: { label: 'تم التسليم', cls: 'bg-brand-ink/10 text-brand-ink border-brand-ink/20', step: 2 },
@@ -358,6 +359,13 @@ export const HumanBookingsSubView: React.FC<HumanBookingsSubViewProps> = ({ onBo
                 </div>
                 <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
               </button>
+              {b.status === 'awaiting_payment' && (
+                <div className="mx-5 mb-4 -mt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl bg-amber-50 border border-amber-200 p-3">
+                  <p className="text-xs text-amber-800 font-bold">لم يكتمل دفع هذا الحجز بعد. يبدأ فريقنا مراجعته بعد الدفع.</p>
+                  <button type="button" onClick={async e => { const el = e.currentTarget; el.disabled = true; el.textContent = 'جارٍ فتح صفحة الدفع...'; try { await api.payBooking(b.id); } catch (err: any) { alert(err.message); el.disabled = false; el.textContent = `ادفع الآن $${b.priceUsd}`; } }}
+                    className="shrink-0 px-4 py-2 rounded-xl bg-brand hover:bg-brand-orange text-white text-xs font-bold cursor-pointer disabled:opacity-60">ادفع الآن ${b.priceUsd}</button>
+                </div>
+              )}
 
               {open && (
                 <div className="px-5 pb-5 space-y-5 border-t border-slate-100 pt-5">

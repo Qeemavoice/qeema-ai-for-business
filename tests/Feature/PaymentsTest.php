@@ -83,6 +83,7 @@ class PaymentsTest extends TestCase
         $this->stripe->paid[$sid] = ['payment_status' => 'paid'];
         $this->postJson('/api/v1/payments/confirm', ['sessionId' => $sid], $other)->assertStatus(409);   // not the buyer
         $this->postJson('/api/v1/payments/confirm', ['sessionId' => 'cs_test_unknown_session'], $h)->assertStatus(409);
+        $this->postJson('/api/v1/payments/confirm', ['sessionId' => $sid])->assertStatus(409);   // no account: only bookings
 
         $this->stripe->paid[$sid] = ['payment_status' => 'paid', 'amount_total' => 100];   // paid less than the price
         $this->postJson('/api/v1/payments/confirm', ['sessionId' => $sid], $h)->assertStatus(409);
@@ -113,6 +114,28 @@ class PaymentsTest extends TestCase
     public function test_webhook_rejects_a_bad_signature()
     {
         $this->postJson('/api/v1/payments/stripe-webhook', ['type' => 'checkout.session.completed'], ['Stripe-Signature' => 't=1,v1=forged'])->assertStatus(400);
+    }
+
+    public function test_booking_waits_for_payment_then_goes_to_review()
+    {
+        DB::statement('PRAGMA foreign_keys = OFF');   // orders reference lookup tables (currencies, payment methods…) this test does not seed
+        foreach ([1 => 'draft', 2 => 'review', 3 => 'accepted', 4 => 'rejected'] as $id => $n) DB::table('voice_statuses')->insert(['id' => $id, 'name' => json_encode(['ar' => $n])]);
+        foreach ([1 => 'child', 2 => 'man', 3 => 'women'] as $id => $n) DB::table('voice_types')->insert(['id' => $id, 'name' => json_encode(['ar' => $n])]);
+        $narrator = Accounts::createAccount('معلق', 'narrator@example.test', 'password-123', 'client');
+        DB::table('voices')->insert(['id' => 501, 'title' => json_encode(['ar' => 'إعلان']), 'price_per_minute' => 40, 'total_price' => 52,
+            'voiceover_id' => $narrator->id, 'voice_type_id' => 2, 'voice_status_id' => 3, 'created_at' => now(), 'updated_at' => now()]);
+        \App\Services\NewUi\Library::forget();   // the library is cached across tests
+        [$u, $h] = $this->client();
+        $res = $this->postJson('/api/v1/client/bookings', ['sampleId' => '501', 'scriptText' => 'نص الإعلان', 'customerName' => 'مشتري',
+            'customerEmail' => 'buyer@example.test', 'customerWhatsapp' => '+966500000000'], $h)->assertOk();
+        $this->assertSame('awaiting_payment', $res->json('booking.status'));
+        $this->assertStringStartsWith('https://checkout.stripe.com/', $res->json('checkoutUrl'));
+        $sid = array_key_first($this->stripe->created);
+        $this->assertSame((int) round($res->json('booking.priceUsd') * 100), $this->stripe->created[$sid]['line_items'][0]['price_data']['unit_amount']);
+
+        $this->stripe->paid[$sid] = ['payment_status' => 'paid'];
+        $this->postJson('/api/v1/payments/confirm', ['sessionId' => $sid])->assertOk()->assertJsonPath('kind', 'booking');   // a guest return works for bookings
+        $this->assertSame('pending', collect($this->getJson('/api/v1/client/bookings', $h)->json('bookings'))->first()['status']);
     }
 
     public function test_guides_need_sign_in_and_paid_ones_a_purchase()
