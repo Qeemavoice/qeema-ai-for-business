@@ -29,6 +29,8 @@ class Payments
         if ($secret === '') return null;
         // a live key while «وضع الاختبار» is on (or the reverse) is a setup mistake: refuse rather than charge by surprise
         if ($test !== Str::startsWith($secret, ['sk_test_', 'rk_test_'])) return null;
+        // the live site never takes test payments (a test card there would hand out real credit for nothing)
+        if ($test && self::isLiveSite()) return null;
         return ['secret' => $secret, 'live' => !$test, 'webhookSecret' => trim((string) ($test ? $s['testWebhookSecret'] : $s['liveWebhookSecret']))];
     }
 
@@ -125,6 +127,12 @@ class Payments
         }
         if (!in_array($event->type, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true)) return '';
         return (string) $event->data->object->id;
+    }
+
+    private static function isLiveSite(): bool
+    {
+        $host = app()->runningInConsole() ? (string) parse_url((string) config('app.url'), PHP_URL_HOST) : request()->getHost();
+        return in_array($host, ['qeemavoice.com', 'www.qeemavoice.com'], true);
     }
 
     /** Site address for Stripe's return links: the request host only when it is ours (a forged Host header cannot redirect buyers away) */
