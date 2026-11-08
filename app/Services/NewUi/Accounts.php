@@ -155,6 +155,7 @@ class Accounts
             'status' => $r->status ?? 'active',
             'industry' => $r->industry ?? 'Corporate Business',
             'country' => $r->country ?? 'المملكة العربية السعودية',
+            'companyName' => (string) ($r->company_name ?? ''),
             'notes' => $j($r->notes ?? null, []),
             'projects' => $j($r->projects ?? null, []),
             'teamInvites' => $j($r->team_invites ?? null, []),
@@ -165,7 +166,7 @@ class Accounts
     public static function saveAccount(User $u, array $patch): void
     {
         $cols = [];
-        foreach (['planId' => 'plan_id', 'status' => 'status', 'industry' => 'industry', 'country' => 'country'] as $k => $c) {
+        foreach (['planId' => 'plan_id', 'status' => 'status', 'industry' => 'industry', 'country' => 'country', 'companyName' => 'company_name'] as $k => $c) {
             if (array_key_exists($k, $patch)) $cols[$c] = $patch[$k];
         }
         foreach (['notes' => 'notes', 'projects' => 'projects', 'teamInvites' => 'team_invites', 'savedVoiceIds' => 'saved_voice_ids'] as $k => $c) {
@@ -187,7 +188,8 @@ class Accounts
         $a = self::account($u);
         return [
             'id' => self::companyId($u),
-            'name' => self::name($u),
+            // the workspace carries the company name when the client set one, otherwise the person's name
+            'name' => $a['companyName'] !== '' ? $a['companyName'] : self::name($u),
             'industry' => $a['industry'],
             'country' => $a['country'],
             'createdAt' => Store::iso(Store::created($u, 'created_at')),

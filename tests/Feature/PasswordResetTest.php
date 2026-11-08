@@ -75,6 +75,9 @@ class PasswordResetTest extends TestCase
         $this->putJson('/api/v1/auth/profile', ['name' => 'سارة أحمد', 'mobile' => '+966 555 123 456', 'country' => 'الإمارات'], $h)
             ->assertOk()->assertJsonPath('user.name', 'سارة أحمد');
         $this->getJson('/api/v1/auth/profile', $h)->assertJsonPath('mobile', '+966555123456')->assertJsonPath('country', 'الإمارات');
+        $this->putJson('/api/v1/auth/profile', ['name' => 'سارة أحمد', 'companyName' => 'شركة الصوت'], $h)->assertOk();
+        $this->getJson('/api/v1/auth/profile', $h)->assertJsonPath('companyName', 'شركة الصوت');
+        $this->getJson('/api/v1/auth/me', $h)->assertJsonPath('company.name', 'شركة الصوت');
     }
 
     public function test_signed_in_account_uploads_a_profile_photo()

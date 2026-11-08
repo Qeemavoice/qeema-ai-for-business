@@ -211,6 +211,12 @@ class Bookings
             'email' => mb_substr(trim((string) ($in['customerEmail'] ?? ($user->email ?? ''))), 0, 160),
             'whatsapp' => mb_substr(trim((string) ($in['customerWhatsapp'] ?? ($user->mobile ?? ''))), 0, 40),
         ];
+        // a signed-in client books with the account's own name and e-mail (and its mobile when saved): not editable in the form
+        if ($user) {
+            $contact['name'] = Accounts::name($user);
+            $contact['email'] = (string) $user->email;
+            if (!empty($user->mobile)) $contact['whatsapp'] = (string) $user->mobile;
+        }
         if (!$contact['name'] || !$contact['email'] || strlen(preg_replace('/\D/', '', $contact['whatsapp'])) < 8) {
             return ['error' => 'أدخل الاسم والبريد ورقم واتساب صحيح', 'status' => 400];
         }

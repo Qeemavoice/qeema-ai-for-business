@@ -179,12 +179,12 @@ export const api = {
     if (!res.ok) throw new Error(data.error || 'تعذر حذف الصورة');
     return data.user;
   },
-  async getProfile(): Promise<{ name: string; email: string; mobile: string; country: string; avatar?: string | null }> {
+  async getProfile(): Promise<{ name: string; email: string; mobile: string; country: string; companyName?: string; avatar?: string | null }> {
     const res = await fetch('/api/v1/auth/profile', { headers: getHeaders() });
     if (!res.ok) throw new Error('تعذر تحميل البيانات');
     return res.json();
   },
-  async updateProfile(p: { name: string; mobile: string; country: string }): Promise<User> {
+  async updateProfile(p: { name: string; mobile: string; country: string; companyName?: string }): Promise<User> {
     const res = await fetch('/api/v1/auth/profile', { method: 'PUT', headers: getHeaders(), body: JSON.stringify(p) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'تعذر حفظ البيانات');

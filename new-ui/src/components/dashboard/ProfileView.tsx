@@ -7,7 +7,7 @@ import { ChangePasswordModal } from '../admin/AdminShell';
 
 /** «البيانات الشخصية»: name, mobile and country of the signed-in client, plus «تغيير كلمة المرور» */
 export const ProfileView: React.FC = () => {
-  const [form, setForm] = useState({ name: '', email: '', mobile: '', country: '' });
+  const [form, setForm] = useState({ name: '', email: '', mobile: '', country: '', companyName: '' });
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -25,13 +25,13 @@ export const ProfileView: React.FC = () => {
     finally { setPhotoBusy(false); }
   };
 
-  useEffect(() => { api.getProfile().then(p => { setForm({ name: p.name, email: p.email, mobile: p.mobile, country: p.country }); setAvatar(p.avatar || null); setLoaded(true); }).catch(e => setMsg({ ok: false, text: e.message })); }, []);
+  useEffect(() => { api.getProfile().then(p => { setForm({ name: p.name, email: p.email, mobile: p.mobile, country: p.country, companyName: p.companyName || '' }); setAvatar(p.avatar || null); setLoaded(true); }).catch(e => setMsg({ ok: false, text: e.message })); }, []);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true); setMsg(null);
     try {
-      await api.updateProfile({ name: form.name, mobile: form.mobile, country: form.country });
+      await api.updateProfile({ name: form.name, mobile: form.mobile, country: form.country, companyName: form.companyName });
       window.dispatchEvent(new Event(ACCOUNT_CHANGED_EVENT));
       setMsg({ ok: true, text: 'تم حفظ بياناتك.' });
     } catch (err: any) { setMsg({ ok: false, text: err.message }); }
@@ -59,6 +59,8 @@ export const ProfileView: React.FC = () => {
         </div>
         <div><label className={label}>الاسم الكامل</label>
           <input className={field} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required minLength={2} maxLength={80} disabled={!loaded} /></div>
+        <div><label className={label}>اسم الشركة (اختياري، يظهر اسماً لمساحة العمل)</label>
+          <input className={field} value={form.companyName} onChange={e => setForm({ ...form, companyName: e.target.value })} maxLength={120} disabled={!loaded} /></div>
         <div><label className={label}>البريد الإلكتروني</label>
           <input className={`${field} bg-slate-50 text-slate-500`} value={form.email} dir="ltr" readOnly /></div>
         <div><label className={label}>رقم الجوال (مع رمز الدولة)</label>
