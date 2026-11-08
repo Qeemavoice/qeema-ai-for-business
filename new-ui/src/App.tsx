@@ -66,6 +66,12 @@ import { setCommissionPercent } from '../shared/pricing';
 
 const ADMIN_DASHBOARD_PATH = '/ar/dashboard';
 
+/** idle sign-out for clients and narrators: last activity time, shared by all tabs */
+const IDLE_MS = 30 * 60 * 1000;
+const LAST_ACTIVE_KEY = 'qeema_last_active';
+const lastActive = () => { try { return Number(localStorage.getItem(LAST_ACTIVE_KEY)) || 0; } catch { return 0; } };
+const markActive = () => { try { localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now())); } catch {} };
+
 // Every audio that starts playing is remembered, so leaving a page can stop it (samples kept playing after navigation).
 // ponytail: wraps HTMLMediaElement.play once for the whole app instead of a cleanup in each of the ~20 pages with players.
 const playingMedia = new Set<HTMLMediaElement>();
@@ -226,6 +232,7 @@ export default function App() {
   };
 
   const completeAuth = async (user: User) => {
+    markActive(); // a fresh sign-in starts the idle clock again
     setAuthModalMode(null);
     setAuthRole('client');
     setIsLoggedIn(true);
@@ -257,6 +264,27 @@ export default function App() {
   };
   /** «تسجيل الخروج» inside a dashboard: sign out, then back to the home page */
   const logoutHome = async () => { await logout(); setPostAuthPath('/ar'); };
+
+  // Clients and narrators are signed out after IDLE_MS without any activity, in every tab (the clock is shared
+  // through localStorage, so a closed tab or a return the next day counts too). Admins stay until they sign out.
+  // The page they are on then asks to sign in again (SignInGate), so they can carry on where they were.
+  useEffect(() => {
+    if (!currentUser || currentUser.isPlatformAdmin) return;
+    const check = () => { const last = lastActive(); if (last && Date.now() - last > IDLE_MS) logout(); };
+    check();
+    markActive();
+    let wrote = Date.now();
+    const onActivity = () => { if (Date.now() - wrote > 15000) { wrote = Date.now(); markActive(); } };
+    const events = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, onActivity, { passive: true }));
+    document.addEventListener('visibilitychange', check);
+    const t = window.setInterval(check, 60000);
+    return () => {
+      events.forEach(e => window.removeEventListener(e, onActivity));
+      document.removeEventListener('visibilitychange', check);
+      window.clearInterval(t);
+    };
+  }, [currentUser]);
 
   // Google button on the TTS landing: straight to Google, no modal
   const loginWithGoogle = async () => {
