@@ -431,7 +431,7 @@ class NarratorController extends Controller
     }
 
     // ---------- invitations ----------
-    private static function issueInvite(array &$n, Request $r): array
+    public static function issueInvite(array &$n, Request $r): array
     {
         $n['claimToken'] = bin2hex(random_bytes(24));
         $n['claimTokenExpiresAt'] = now()->addDays(self::INVITE_DAYS)->toIso8601String();

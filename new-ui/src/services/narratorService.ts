@@ -897,6 +897,19 @@ class NarratorService {
     this.saveState();
   }
 
+  /** Admin «إضافة معلق»: a real narrator account on the server (optionally invited by e-mail), then the fresh list */
+  public async adminCreateNarrator(data: { displayName: string; email: string; phone?: string; perMinuteUsd?: number; sendInvite: boolean }): Promise<{ narrator: Narrator; invite: { link: string; emailed: boolean } | null }> {
+    await this.ready;
+    await this.saveNow();
+    const res = await fetch('/api/v1/admin/narrators', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...this.authHeaders() }, body: JSON.stringify(data)
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'تعذر إضافة المعلق');
+    await this.reload();
+    return { narrator: body.narrator, invite: body.invite || null };
+  }
+
   /** Admin «تعديل»: the narrator's name (also the account's own name) on the server, then the fresh copy */
   public async adminUpdateNarrator(narratorId: string, data: { displayName?: string; perMinuteUsd?: number }): Promise<Narrator> {
     await this.ready;

@@ -241,6 +241,35 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'customer' => $this->customerSummary($u)]);
     }
 
+    /** «إضافة معلق»: a real talent account (so library voices can be linked to it), optionally invited by e-mail.
+     *  The narrator sets their own password through the activation link (e-mail code), never the admin. */
+    public function narratorCreate(Request $r)
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', (string) $r->input('displayName')));
+        $email = mb_strtolower(trim((string) $r->input('email')));
+        $phone = preg_replace('/[^\d+]/', '', (string) $r->input('phone', ''));
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 80) return response()->json(['error' => 'اكتب اسم المعلق (من 2 إلى 80 حرفاً)'], 400);
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return response()->json(['error' => 'البريد الإلكتروني غير صحيح'], 400);
+        if ($phone !== '' && !preg_match('/^\+?\d{7,15}$/', $phone)) return response()->json(['error' => 'رقم الهاتف غير صحيح'], 400);
+        $price = $r->filled('perMinuteUsd') ? round((float) $r->input('perMinuteUsd'), 2) : null;
+        if ($price !== null && !($price > 0 && $price <= 1000)) return response()->json(['error' => 'سعر الدقيقة يجب أن يكون بين 1 و 1000 دولار'], 400);
+        if (Accounts::findByEmail($email)) return response()->json(['error' => 'هذا البريد مسجّل لحساب آخر في الموقع'], 409);
+
+        $u = Accounts::createAccount($name, $email, null, 'talent', $phone !== '' ? ['mobile' => $phone] : []);
+        $id = 'narrator_u' . $u->id;
+        $st = NarratorController::state();   // the new account joins the narrators list here
+        $i = collect($st['narrators'])->search(fn ($n) => ($n['id'] ?? '') === $id);
+        if ($i === false) return response()->json(['error' => 'تعذر إنشاء ملف المعلق'], 500);
+        $n = &$st['narrators'][$i];
+        $n['status'] = 'unclaimed';
+        if ($price !== null) $n['rates'] = array_merge((array) ($n['rates'] ?? []), ['perMinuteUsd' => $price]);
+        $invite = $r->boolean('sendInvite') ? NarratorController::issueInvite($n, $r) : null;
+        $out = $n; unset($n);
+        NarratorController::save($st);
+        Store::audit($id, 'admin', 'NARRATOR_ADDED' . ($invite ? ' (invited)' : ''), ['email' => $email]);
+        return response()->json(['success' => true, 'narrator' => $out, 'invite' => $invite]);
+    }
+
     /** «تعديل» a narrator from the admin dashboard: name and per-minute price. The name is the account's own name too
      *  (admin voices list, the narrator's dashboard); clients never see it (clip names only). */
     public function narratorUpdate(Request $r, string $id)

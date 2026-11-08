@@ -56,6 +56,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [bulkSending, setBulkSending] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 3000); };
 
@@ -139,6 +140,9 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
             <input value={query} onChange={e => setQuery(e.target.value)} placeholder="بحث بالاسم أو الهاتف أو البريد أو اللهجة"
               className="w-full pr-10 pl-3 py-2.5 bg-slate-50 rounded-xl text-xs border border-transparent focus:border-slate-300 outline-hidden" />
           </div>
+          <button onClick={() => setAdding(true)} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+            <Plus className="w-4 h-4" /><span>إضافة معلق</span>
+          </button>
           <button onClick={bulkInvite} disabled={bulkSending} className="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-orange text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
             <Send className="w-4 h-4" /><span>{bulkSending ? 'جارٍ الإرسال...' : 'دعوات جماعية'}</span>
           </button>
@@ -224,6 +228,8 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
         <Pager page={page} pages={pages} total={filtered.length} onPage={setPage} />
       </div>
 
+      {adding && <AddNarratorDrawer onClose={() => setAdding(false)} onAdded={async (n, msg) => { setAdding(false); await load(); setSelectedId(n.id); flash(msg); }} />}
+
       {selected && (
         <NarratorDrawer
           narrator={selected}
@@ -250,6 +256,53 @@ interface DrawerProps {
   onCopy: (t: string) => void; onInvite: (id: string) => void; onPreviewClaim?: (t: string) => void; onOpenSamples?: () => void;
   flash: (m: string) => void;
 }
+
+/** «إضافة معلق»: creates the narrator's account; the narrator picks their own password from the activation link */
+const AddNarratorDrawer: React.FC<{ onClose: () => void; onAdded: (n: Narrator, msg: string) => void }> = ({ onClose, onAdded }) => {
+  const [f, setF] = useState({ displayName: '', email: '', phone: '', price: '', sendInvite: true });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const set = (k: keyof typeof f, v: any) => setF(p => ({ ...p, [k]: v }));
+  const input = 'mt-1 block w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-hidden focus:border-brand';
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setError(''); setSaving(true);
+    try {
+      const price = parseFloat(f.price);
+      const { narrator, invite } = await narratorService.adminCreateNarrator({
+        displayName: f.displayName, email: f.email, phone: f.phone || undefined, perMinuteUsd: isNaN(price) ? undefined : price, sendInvite: f.sendInvite
+      });
+      onAdded(narrator, invite ? (invite.emailed ? 'تمت إضافة المعلق وإرسال رابط التفعيل إلى بريده' : 'تمت إضافة المعلق، وتعذر إرسال البريد: انسخ رابط التفعيل من ملفه') : 'تمت إضافة المعلق');
+    } catch (err) { setError(err instanceof Error ? err.message : 'تعذر إضافة المعلق'); } finally { setSaving(false); }
+  };
+  return (
+    <Drawer title="إضافة معلق" subtitle="ينشئ حساب معلق في الموقع، ويختار المعلق كلمة مروره بنفسه من رابط التفعيل" onClose={onClose} width="max-w-lg">
+      <form onSubmit={submit} className="p-6 space-y-4">
+        <label className="block text-xs font-bold text-slate-700">اسم المعلق <span className="text-rose-500">*</span>
+          <input required minLength={2} maxLength={80} value={f.displayName} onChange={e => set('displayName', e.target.value)} className={input} />
+          <span className="block text-[11px] font-normal text-slate-400 mt-1">يظهر في الإدارة ولوحة المعلق فقط، ولا يظهر للعملاء</span>
+        </label>
+        <label className="block text-xs font-bold text-slate-700">البريد الإلكتروني <span className="text-rose-500">*</span>
+          <input required type="email" dir="ltr" value={f.email} onChange={e => set('email', e.target.value)} className={input} />
+        </label>
+        <label className="block text-xs font-bold text-slate-700">رقم الهاتف
+          <input type="tel" dir="ltr" placeholder="+966..." value={f.phone} onChange={e => set('phone', e.target.value)} className={input} />
+        </label>
+        <label className="block text-xs font-bold text-slate-700">سعر المعلق / دقيقة ($)
+          <input type="number" min="1" max={MAX_RATE_USD} step="1" dir="ltr" value={f.price} onChange={e => set('price', e.target.value)} className={`${input} w-32`} />
+        </label>
+        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+          <input type="checkbox" checked={f.sendInvite} onChange={e => set('sendInvite', e.target.checked)} className="w-4 h-4 accent-brand" />
+          إرسال رابط التفعيل إلى بريد المعلق الآن
+        </label>
+        {error && <p className="text-xs font-bold text-rose-600">{error}</p>}
+        <div className="flex gap-2 pt-2">
+          <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-orange text-white text-xs font-bold cursor-pointer disabled:opacity-50">{saving ? 'جارٍ الإضافة...' : 'إضافة المعلق'}</button>
+          <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">إلغاء</button>
+        </div>
+      </form>
+    </Drawer>
+  );
+};
 
 const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, onChanged, onReload, onCopy, onInvite, onPreviewClaim, onOpenSamples, flash }) => {
   const [tab, setTab] = useState('overview');
