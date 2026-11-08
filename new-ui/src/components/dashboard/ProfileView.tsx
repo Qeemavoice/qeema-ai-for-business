@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { KeyRound, Camera, Trash2 } from 'lucide-react';
 import { UserAvatar } from '../UserAvatar';
+import { shrinkImage } from '../../lib/shrinkImage';
 import { api, ACCOUNT_CHANGED_EVENT } from '../../lib/api';
 import { ChangePasswordModal } from '../admin/AdminShell';
 
@@ -14,24 +15,10 @@ export const ProfileView: React.FC = () => {
   const [avatar, setAvatar] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
 
-  /** Square-crop and shrink to 400px JPEG in the browser, so phone photos fit the 2 MB limit */
-  const shrink = (file: File) => new Promise<Blob>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const s = Math.min(img.width, img.height), c = document.createElement('canvas');
-      c.width = c.height = Math.min(400, s);
-      c.getContext('2d')!.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(img.src);
-      c.toBlob(b => (b ? resolve(b) : reject(new Error('تعذر قراءة الصورة'))), 'image/jpeg', 0.88);
-    };
-    img.onerror = () => reject(new Error('الملف ليس صورة صالحة'));
-    img.src = URL.createObjectURL(file);
-  });
-
   const changePhoto = async (file?: File | null, remove = false) => {
     setPhotoBusy(true); setMsg(null);
     try {
-      const u = remove ? await api.deleteAvatar() : await api.uploadAvatar(await shrink(file!));
+      const u = remove ? await api.deleteAvatar() : await api.uploadAvatar(await shrinkImage(file!));
       setAvatar(u.avatar || null);
       window.dispatchEvent(new Event(ACCOUNT_CHANGED_EVENT));
     } catch (err: any) { setMsg({ ok: false, text: err.message }); }

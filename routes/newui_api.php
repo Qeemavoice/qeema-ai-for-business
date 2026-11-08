@@ -97,6 +97,8 @@ Route::prefix('narrators')->group(function () {
     Route::post('otp/send', 'NarratorController@otpSend');
     Route::post('otp/verify', 'NarratorController@otpVerify');
     Route::get('state', 'NarratorController@getState');
+    Route::post('me/rates', 'NarratorController@ratesOnce')->middleware('throttle:10,1,narrator-rates');
+    Route::post('me/consent', 'NarratorController@consentOnce')->middleware('throttle:10,1,narrator-consent');
     Route::put('state', 'NarratorController@putState');
     Route::post('claim-link', 'NarratorController@claimLink');
     Route::post('manual-review', 'NarratorController@manualReview');

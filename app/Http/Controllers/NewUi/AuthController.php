@@ -221,6 +221,7 @@ class AuthController extends Controller
         $f->move(public_path(DIR_UPLOAD . '/' . \App\Models\User::DIR_IMAGE_UPLOADS), $name);
         $this->dropOwnAvatar($u);
         $u->forceFill(['image' => $name])->save();
+        self::syncNarratorPhoto($u);
         return response()->json(['user' => Accounts::publicUser($u)]);
     }
 
@@ -229,7 +230,18 @@ class AuthController extends Controller
         $u = Accounts::currentUser($r);
         $this->dropOwnAvatar($u);
         $u->forceFill(['image' => null])->save();
+        self::syncNarratorPhoto($u);
         return response()->json(['user' => Accounts::publicUser($u)]);
+    }
+
+    /** A narrator's dashboard shows the account photo */
+    private static function syncNarratorPhoto($u): void
+    {
+        $nid = Accounts::narratorId($u);
+        if (!$nid) return;
+        $st = NarratorController::state();
+        foreach ($st['narrators'] as &$n) if (($n['id'] ?? null) === $nid) $n['avatarUrl'] = $u->image ? $u->image_url : null;
+        NarratorController::save($st);
     }
 
     /** Delete the previous photo only when this page uploaded it (old-site photos stay untouched) */

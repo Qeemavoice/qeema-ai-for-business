@@ -129,10 +129,13 @@ class NarratorController extends Controller
     private static function protect(string $key, array $mine, ?array $old): array
     {
         if ($key === 'narrators') {
-            if (!$old) return array_merge($mine, ['status' => 'active', 'kycStatus' => 'none', 'humanBadge' => ($mine['humanBadge'] ?? '') === 'pending' ? 'pending' : 'none', 'adminNotes' => []]);
+            // prices and the signed agreement change only through ratesOnce / consentOnce (or the admin), never by a state save
+            if (!$old) return array_merge($mine, ['status' => 'active', 'kycStatus' => 'none', 'humanBadge' => ($mine['humanBadge'] ?? '') === 'pending' ? 'pending' : 'none', 'adminNotes' => [],
+                'rates' => ['standardCommercialUsd' => 0, 'perWordRateUsd' => 0, 'hourlyLiveDirectingUsd' => 0, 'perMinuteUsd' => null], 'ratesSetAt' => null, 'consent' => null]);
             $claimed = in_array($old['status'] ?? '', ['invited', 'unclaimed'], true) && ($mine['status'] ?? '') === 'active';
             $out = array_merge($mine, ['status' => $claimed ? 'active' : ($old['status'] ?? 'active'), 'kycStatus' => $old['kycStatus'] ?? 'none', 'adminNotes' => $old['adminNotes'] ?? [],
-                'claimToken' => $old['claimToken'] ?? null, 'claimTokenExpiresAt' => $old['claimTokenExpiresAt'] ?? null]);
+                'claimToken' => $old['claimToken'] ?? null, 'claimTokenExpiresAt' => $old['claimTokenExpiresAt'] ?? null,
+                'rates' => $old['rates'] ?? null, 'ratesSetAt' => $old['ratesSetAt'] ?? null, 'consent' => $old['consent'] ?? null, 'avatarUrl' => $old['avatarUrl'] ?? null]);
             if (mb_strtolower((string) ($mine['email'] ?? '')) !== mb_strtolower((string) ($old['email'] ?? ''))) {
                 $verified = Cache::get('qv-email-verified:' . $old['id']);
                 if ($verified && $verified === mb_strtolower((string) ($mine['email'] ?? ''))) Cache::forget('qv-email-verified:' . $old['id']);
@@ -180,6 +183,48 @@ class NarratorController extends Controller
                 $st[$k] = $out;
             }
         }
+    }
+
+    /** The signed-in narrator's own record (not the admin, not a claim link) */
+    private static function ownNarrator(Request $r, array &$st): ?int
+    {
+        $user = Accounts::currentUser($r);
+        $nid = $user && !Accounts::isAdmin($user) ? Accounts::narratorId($user) : null;
+        if (!$nid) return null;
+        foreach ($st['narrators'] as $i => $n) if (($n['id'] ?? null) === $nid) return $i;
+        return null;
+    }
+
+    /** «سعر الدقيقة / سعر الساعة»: the narrator sets them once; later changes go through the Qeema team */
+    public function ratesOnce(Request $r)
+    {
+        $st = self::state();
+        $i = self::ownNarrator($r, $st);
+        if ($i === null) return response()->json(['error' => 'يلزم تسجيل الدخول بحساب المعلق'], 403);
+        if (!empty($st['narrators'][$i]['ratesSetAt'])) return response()->json(['error' => 'تم تحديد أسعارك مسبقاً. للتعديل تواصل مع الدعم.'], 409);
+        $min = (float) $r->input('perMinuteUsd', 0);
+        $hour = (float) $r->input('hourlyUsd', 0);
+        if ($min < 1 || $min > 1000) return response()->json(['error' => 'سعر الدقيقة بين 1 و1000 دولار'], 400);
+        if ($hour < 1 || $hour > 10000) return response()->json(['error' => 'سعر الساعة بين 1 و10000 دولار'], 400);
+        $rates = (array) ($st['narrators'][$i]['rates'] ?? []);
+        $st['narrators'][$i]['rates'] = array_merge($rates, ['perMinuteUsd' => round($min, 2), 'hourlyLiveDirectingUsd' => round($hour, 2)]);
+        $st['narrators'][$i]['ratesSetAt'] = now()->toIso8601String();
+        self::save($st);
+        return response()->json(['narrator' => $st['narrators'][$i]]);
+    }
+
+    /** «أقرّ بأنني قرأت البنود»: recorded once with the date and the real IP, then it cannot be changed */
+    public function consentOnce(Request $r)
+    {
+        $st = self::state();
+        $i = self::ownNarrator($r, $st);
+        if ($i === null) return response()->json(['error' => 'يلزم تسجيل الدخول بحساب المعلق'], 403);
+        if (!empty($st['narrators'][$i]['consent'])) return response()->json(['narrator' => $st['narrators'][$i]]);
+        if (!$r->boolean('accepted')) return response()->json(['error' => 'ضع علامة الموافقة أولاً'], 400);
+        $st['narrators'][$i]['consent'] = ['acceptedAt' => now()->toIso8601String(), 'ip' => (string) $r->ip(),
+            'name' => (string) ($st['narrators'][$i]['displayName'] ?? ''), 'version' => '2026-11'];
+        self::save($st);
+        return response()->json(['narrator' => $st['narrators'][$i]]);
     }
 
     public function getState(Request $r)
