@@ -241,7 +241,13 @@ export default function App() {
       } else if (!location.pathname.startsWith('/ar/talent-')) {
         setPostAuthPath('/ar/talent-dashboard');
       }
+      return;
     }
+    // a signed-in client lands in their dashboard (admins in theirs), except when the sign-in was asked for by the page
+    // they are on (a guide to download, a booking, the TTS studio): then they stay there and carry on
+    const stay = /^\/ar\/(guides\/|booking\/|text-to-speech|generate|account|dashboard)/.test(location.pathname);
+    if (stay) return;
+    setPostAuthPath(user.isPlatformAdmin ? (user.adminPath || ADMIN_DASHBOARD_PATH) : '/ar/account');
   };
 
   const logout = async () => {
@@ -357,7 +363,7 @@ export default function App() {
           <Route path="/ar/early" element={<EarlyAccessPage isLoggedIn={isLoggedIn} onOpenLogin={(email) => { setAuthEmail(email || ''); setAuthModalMode('login'); }} onOpenSignup={(email) => { setAuthEmail(email || ''); setAuthRole('client'); setAuthModalMode('signup'); }} onActivated={() => { loadMe().catch(() => {}); }} />} />
           <Route path="/ar/early/welcome" element={<EarlyWelcomePage isLoggedIn={isLoggedIn} onOpenLogin={() => setAuthModalMode('login')} />} />
           <Route path="/ar/waitlist" element={<WaitlistPage />} />
-          <Route path="/ar/reset-password" element={<ResetPasswordPage onSignedIn={async (user) => { await completeAuth(user); if (user.accountType !== 'talent') setPostAuthPath('/ar/account'); }} />} />
+          <Route path="/ar/reset-password" element={<ResetPasswordPage onSignedIn={completeAuth} />} />
           <Route path="/ar/saudi-voice-over" element={<SaudiVoiceOverPage />} />
           <Route path="/ar/emirati-voice-over" element={<EmiratiVoiceOverPage />} />
           <Route path="/ar/egyptian-voice-over" element={<EgyptianVoiceOverPage />} />
