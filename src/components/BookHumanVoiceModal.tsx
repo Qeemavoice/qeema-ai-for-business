@@ -16,7 +16,8 @@ export interface BookableVoice {
   quote?: string;
 }
 
-const CHARS_PER_MINUTE = 100;
+/** recording time: every 100 words of script = one minute (same rule as the server, Bookings::WORDS_PER_MINUTE) */
+const WORDS_PER_MINUTE = 100;
 const DEFAULT_PRICE_PER_MINUTE_USD = 40;
 
 /** Delivery speed: express options add a percentage of the booking value. */
@@ -29,7 +30,7 @@ const DELIVERY_OPTIONS = [
 const MAX_EXPRESS_MINUTES = 5;
 
 /** Counts characters including spaces and diacritics (tashkeel) */
-export const countScriptChars = (text: string) => Array.from(text).length;
+export const countScriptWords = (text: string) => text.trim() ? text.trim().split(/\s+/u).length : 0;
 
 /** Reads the per-minute price from strings such as "يبدأ من $45 / دقيقة" */
 const getPricePerMinute = (voice: BookableVoice) => {
@@ -99,8 +100,8 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
   }, []);
   const lockCls = 'bg-slate-100 text-slate-600 cursor-not-allowed';
 
-  const charCount = countScriptChars(formData.scriptText);
-  const durationMinutes = charCount === 0 ? 0 : Math.ceil(charCount / CHARS_PER_MINUTE);
+  const wordCount = countScriptWords(formData.scriptText);
+  const durationMinutes = wordCount === 0 ? 0 : Math.ceil(wordCount / WORDS_PER_MINUTE);
   const pricePerMinute = getPricePerMinute(voice);
   const isLongProject = durationMinutes > MAX_EXPRESS_MINUTES;
   const delivery = DELIVERY_OPTIONS.find(o => o.value === formData.delivery) || DELIVERY_OPTIONS[0];
@@ -208,8 +209,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 mt-1.5 px-0.5">
           <span>جودة التسجيل: 48kHz WAV Broadcast Standard</span>
           <span>
-            عدد الحروف: <strong className="font-mono text-slate-800">{charCount.toLocaleString('en-US')}</strong>
-            <span className="text-slate-400"> (يشمل التشكيل والمسافات)</span>
+            عدد الكلمات: <strong className="font-mono text-slate-800">{wordCount.toLocaleString('en-US')}</strong>
           </span>
         </div>
       </div>
@@ -217,7 +217,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
       {/* Duration & total */}
       <div className="grid grid-cols-2 gap-2">
         <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-          <div className="text-[10px] text-slate-500">مدة العمل (كل 100 حرف = دقيقة)</div>
+          <div className="text-[10px] text-slate-500">مدة العمل (كل 100 كلمة = دقيقة)</div>
           <div className="font-mono font-bold text-slate-900 text-sm">{durationMinutes} دقيقة</div>
         </div>
         <div className="p-2.5 rounded-xl bg-orange-50 border border-orange-200 text-center">
