@@ -165,7 +165,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
   const isNew = !voice.id;
 
   useEffect(() => {
-    narratorService.getAllNarrators().then(n => setNarrators(n.filter(x => /^narrator_u\d+$/.test(x.id)).map(x => ({ id: x.id, name: x.displayName?.trim() || `حساب بدون اسم (رقم ${x.id.replace('narrator_u', '')})` })).sort((a, b) => a.name.localeCompare(b.name, 'ar')))).catch(() => {});
+    narratorService.getAllNarrators().then(n => setNarrators(n.filter(x => /^narrator_u\d+$/.test(x.id) && x.status !== 'suspended').map(x => ({ id: x.id, name: x.displayName?.trim() || `حساب بدون اسم (رقم ${x.id.replace('narrator_u', '')})` })).sort((a, b) => a.name.localeCompare(b.name, 'ar')))).catch(() => {});
     api.listCollection('dialects').then(d => setDialects(d.map((x: any) => x.name))).catch(() => {});
   }, []);
 

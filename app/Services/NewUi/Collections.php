@@ -100,6 +100,15 @@ class Collections
         return $out;
     }
 
+    /** «إيقاف الحساب» in the admin narrators page */
+    private static function narratorSuspended(string $narratorId): bool
+    {
+        foreach (\App\Http\Controllers\NewUi\NarratorController::state()['narrators'] as $n) {
+            if (($n['id'] ?? '') === $narratorId) return ($n['status'] ?? '') === 'suspended';
+        }
+        return false;
+    }
+
     /** Whether the voice's account still exists (a deleted account has no narrator to show); ids read once, new ones checked */
     private static function userExists(int $id): bool
     {
@@ -149,6 +158,10 @@ class Collections
             if (!preg_match('/^narrator_u(\d+)$/', (string) $d['narratorId'], $nm) || !\App\Models\User::find((int) $nm[1])) {
                 return ['error' => 'اختر المعلق من القائمة (المعلقون الذين لهم حساب في الموقع)'];
             }
+            // a suspended narrator gets no new voices (the voice's current narrator may stay as is)
+            if ((int) $nm[1] !== (int) $v->getOriginal('voiceover_id') && self::narratorSuspended('narrator_u' . $nm[1])) {
+                return ['error' => 'حساب هذا المعلق موقوف: اختر معلقاً آخر'];
+            }
             $v->voiceover_id = (int) $nm[1];
         }
         if (!empty($d['dialect'])) {
@@ -180,6 +193,7 @@ class Collections
         if (!preg_match('/^narrator_u(\d+)$/', (string) ($d['narratorId'] ?? ''), $m) || !\App\Models\User::find((int) $m[1])) {
             return ['error' => 'اختر المعلق من القائمة (المعلقون الذين لهم حساب في الموقع)'];
         }
+        if (self::narratorSuspended('narrator_u' . $m[1])) return ['error' => 'حساب هذا المعلق موقوف: اختر معلقاً آخر'];
         $title = trim((string) ($d['sampleName'] ?? ''));
         if ($title === '') return ['error' => 'اكتب عنوان الصوت'];
         if ($err = self::mp3Error((string) ($d['previewUrl'] ?? ''))) return ['error' => $err];

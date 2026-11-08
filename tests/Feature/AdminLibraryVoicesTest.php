@@ -69,6 +69,15 @@ class AdminLibraryVoicesTest extends TestCase
         $api->postJson('/api/v1/admin/collections/humanVoices', ['categories' => ['غير موجود']] + $voice + ['narratorId' => 'narrator_u' . $narrator->id])->assertStatus(400);
         $this->assertSame(0, DB::table('voices')->count());
 
+        // a suspended narrator gets no new voice
+        $paused = Accounts::createAccount('معلق موقوف', 'paused@example.test', 'password-123', 'talent');
+        $st = \App\Http\Controllers\NewUi\NarratorController::state();
+        foreach ($st['narrators'] as &$sn) if ($sn['id'] === 'narrator_u' . $paused->id) $sn['status'] = 'suspended';
+        unset($sn);
+        \App\Http\Controllers\NewUi\NarratorController::save($st);
+        $api->postJson('/api/v1/admin/collections/humanVoices', $voice + ['narratorId' => 'narrator_u' . $paused->id])->assertStatus(400)->assertJsonPath('error', 'حساب هذا المعلق موقوف: اختر معلقاً آخر');
+        $this->assertSame(0, DB::table('voices')->count());
+
         $item = $api->postJson('/api/v1/admin/collections/humanVoices', $voice + ['narratorId' => 'narrator_u' . $narrator->id])->assertOk()->json('item');
         $this->assertSame('إعلان جديد', $item['sampleName']);
         $this->assertSame('active', $item['status']);
@@ -94,6 +103,7 @@ class AdminLibraryVoicesTest extends TestCase
         $listed = collect($api->getJson('/api/v1/admin/collections/humanVoices')->json('items'))->firstWhere('id', $item['id']);
         $this->assertSame(['narrator_u' . $narrator->id, 'معلق'], [$listed['narratorId'], $listed['talentName']]);
         $api->putJson('/api/v1/admin/collections/humanVoices/' . $item['id'], ['narratorId' => 'narrator_u999999'])->assertStatus(400);
+        $api->putJson('/api/v1/admin/collections/humanVoices/' . $item['id'], ['narratorId' => 'narrator_u' . $paused->id])->assertStatus(400);
         $api->putJson('/api/v1/admin/collections/humanVoices/' . $item['id'], ['narratorId' => 'narrator_u' . $other->id, 'gender' => 'child'])->assertOk()
             ->assertJsonPath('item.narratorId', 'narrator_u' . $other->id)->assertJsonPath('item.gender', 'child');
         $this->assertSame([$other->id, 1], [(int) DB::table('voices')->where('id', (int) $item['id'])->value('voiceover_id'), (int) DB::table('voices')->where('id', (int) $item['id'])->value('voice_type_id')]);
