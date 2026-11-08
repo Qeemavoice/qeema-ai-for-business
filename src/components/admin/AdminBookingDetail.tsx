@@ -23,7 +23,7 @@ interface Detail {
 }
 
 const STATUS: Record<string, { label: string; tone: Tone }> = {
-  pending: { label: 'بانتظار المراجعة', tone: 'amber' }, in_studio: { label: 'في الاستوديو', tone: 'blue' },
+  awaiting_payment: { label: 'بانتظار دفع العميل', tone: 'amber' }, pending: { label: 'بانتظار المراجعة', tone: 'amber' }, in_studio: { label: 'في الاستوديو', tone: 'blue' },
   delivered: { label: 'تم التسليم', tone: 'orange' }, approved: { label: 'معتمد ومكتمل', tone: 'green' }, canceled: { label: 'ملغي', tone: 'slate' }
 };
 const NEXT: Record<string, { to: string; label: string } | undefined> = {

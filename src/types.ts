@@ -224,7 +224,7 @@ export interface HumanBooking {
   priceUsd: number;
   talentPayoutUsd: number;
   paymentModel: 'direct_escrow_100';
-  status: 'pending' | 'in_studio' | 'delivered' | 'approved' | 'canceled';
+  status: 'awaiting_payment' | 'pending' | 'in_studio' | 'delivered' | 'approved' | 'canceled';
   deliverableAudioUrl?: string;
   review?: { rating: number; text: string; author: string; createdAt: string; status: 'pending' | 'approved' | 'rejected' };
   /** Library sample the client booked (for publishing approved reviews on its page) */

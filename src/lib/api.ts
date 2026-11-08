@@ -143,7 +143,7 @@ export const api = {
     if (!res.ok) throw new Error(data.error || 'تعذر تغيير كلمة المرور');
   },
   /** After Stripe sends the buyer back: the server checks the payment with Stripe and grants it once */
-  async confirmPayment(sessionId: string): Promise<{ success: boolean; kind: 'topup' | 'plan' | 'guide'; amountUsd: number; guideId?: string | null; newBalanceCredits: number }> {
+  async confirmPayment(sessionId: string): Promise<{ success: boolean; kind: 'topup' | 'plan' | 'guide' | 'booking'; amountUsd: number; guideId?: string | null; bookingId?: string | null; newBalanceCredits: number | null }> {
     const res = await fetch('/api/v1/payments/confirm', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ sessionId }) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'تعذر التحقق من الدفع');
@@ -466,7 +466,16 @@ export const api = {
     const res = await fetch('/api/v1/client/bookings', { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || 'تعذر إرسال طلب الحجز');
-    return body.booking;
+    // card payment on: the booking waits for its payment on Stripe's page, then goes to the team's review
+    return goToCheckout(body) ? leaving() : body.booking;
+  },
+
+  /** «ادفع الآن» for a booking that still waits for its payment */
+  async payBooking(id: string): Promise<void> {
+    const res = await fetch(`/api/v1/client/bookings/${encodeURIComponent(id)}/pay`, { method: 'POST', headers: getHeaders() });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'تعذر فتح صفحة الدفع');
+    if (goToCheckout(body)) return leaving();
   },
 
   async reviewBooking(id: string, rating: number, text: string): Promise<HumanBooking> {
