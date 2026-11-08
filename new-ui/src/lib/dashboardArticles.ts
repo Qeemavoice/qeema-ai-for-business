@@ -51,3 +51,19 @@ export const useDashboardPosts = (): { posts: BlogPostItem[]; loaded: boolean } 
   const l = useSyncExternalStore(cb => { listeners.add(cb); return () => listeners.delete(cb); }, () => loaded);
   return { posts: p, loaded: l };
 };
+
+const norm = (s: string) => s.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[ً-ْ]/g, '');
+const STOP = new Set(['في', 'من', 'الى', 'على', 'عن', 'مع', 'او', 'ثم', 'هذا', 'هذه', 'التي', 'الذي', 'كيف', 'لكل', 'بين', 'عند', 'صوت', 'صوتي', 'الصوتي', 'الصوت', 'تعليق', 'التعليق', 'قيمه', 'فويس']);
+const words = (s: string) => norm(s).split(/[^؀-ۿa-zA-Z0-9]+/)
+  .map(w => w.replace(/^(وال|بال|لل|ال|و)(?=..)/, '')).filter(w => w.length >= 3 && !STOP.has(w));
+
+/** Real articles ordered by how much they share with the given topic text (title words count most), the least related last.
+ * ponytail: plain word overlap with light Arabic normalising; swap for tags set in the dashboard if ranking needs to be exact. */
+export const rankRelated = (all: BlogPostItem[], topic: string, n = 3): BlogPostItem[] => {
+  const t = new Set(words(topic));
+  const score = (p: BlogPostItem) => {
+    const hit = (s: string, w: number) => words(s).reduce((a, x) => a + (t.has(x) ? w : 0), 0);
+    return hit(p.title, 3) + hit(`${p.category} ${p.tags.join(' ')}`, 2) + hit(p.shortDescription, 1);
+  };
+  return all.map(p => ({ p, s: score(p) })).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.p);
+};
