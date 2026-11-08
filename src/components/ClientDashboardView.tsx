@@ -280,20 +280,22 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
             />
           )}
 
-          {activeNav === 'voices' && (
-            <div className="bg-[#FFFFFF] pb-10" dir="rtl">
+          {(activeNav === 'voices' || activeNav === 'favorites') && (
+            <div key={activeNav} className="bg-[#FFFFFF] pb-10" dir="rtl">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
                 <div className="border-b border-slate-200/80 pb-4">
                   {/* Same heading and intro as the site's voice library (/ar/voices) */}
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">مكتبة أصوات المعلقين العرب</h1>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-2 max-w-3xl leading-relaxed">
-                    استمع لعينات أكثر من 1000 معلق صوتي عربي، رجالي ونسائي، بالفصحى والسعودية والإماراتية والمصرية وكل اللهجات، واختر الصوت المناسب لمشروعك.
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">{activeNav === 'favorites' ? 'الأصوات المفضلة' : 'مكتبة أصوات المعلقين العرب'}</h1>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+                    {activeNav === 'favorites'
+                      ? 'الأصوات التي حفظتها بالنجمة في مكتبة الأصوات، لتستمع إليها وتحجزها بسرعة.'
+                      : 'استمع لعينات أكثر من 1000 معلق صوتي عربي، رجالي ونسائي، بالفصحى والسعودية والإماراتية والمصرية وكل اللهجات، واختر الصوت المناسب لمشروعك.'}
                   </p>
                 </div>
               </div>
               <VoiceLibraryView
                 voices={voices}
-                initialTab="human"
+                initialTab={activeNav === 'favorites' ? 'my-voices' : 'human'}
                 isLoggedIn
                 hideJoinNarrator
                 onSelectForBooking={(voice: any) => routerNavigate(`/ar/booking/${buildSampleSlug(voice)}`)}

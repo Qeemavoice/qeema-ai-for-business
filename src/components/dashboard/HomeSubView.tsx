@@ -97,7 +97,7 @@ export const HomeSubView: React.FC<HomeSubViewProps> = ({ generations, onNavigat
             <p className="text-xs text-slate-500 leading-relaxed max-w-xl">استمع لعينات أكثر من 1000 معلق صوتي عربي، رجالي ونسائي، بالفصحى وكل اللهجات، واحجز الصوت المناسب لمشروعك.</p>
           </div>
         </div>
-        <button type="button" onClick={() => onNavigateTab('voices')} className="shrink-0 px-5 py-3 rounded-2xl bg-brand-ink hover:bg-brand-ink/90 text-white text-sm font-bold flex items-center justify-center gap-2 transition">
+        <button type="button" onClick={() => onNavigateTab('voices')} className="shrink-0 px-5 py-3 rounded-2xl bg-brand hover:bg-brand-orange text-white text-sm font-bold flex items-center justify-center gap-2 transition">
           تصفح المكتبة <ArrowLeft className="w-4 h-4" />
         </button>
       </div>
@@ -111,7 +111,7 @@ export const HomeSubView: React.FC<HomeSubViewProps> = ({ generations, onNavigat
             <p className="text-xs text-slate-400 leading-relaxed max-w-xl">حوّل نصك إلى صوت عربي بأصوات مرخّصة، واختر اللهجة والسرعة والأداء، ثم نزّل الملف جاهزاً للاستخدام.</p>
           </div>
         </div>
-        <button type="button" onClick={() => onNavigateTab('studio')} className="shrink-0 px-5 py-3 rounded-2xl bg-brand hover:bg-brand-orange text-white text-sm font-bold flex items-center justify-center gap-2 transition">
+        <button type="button" onClick={() => onNavigateTab('studio')} className="shrink-0 px-5 py-3 rounded-2xl bg-brand-ink hover:bg-brand-ink/80 border border-white/15 text-white text-sm font-bold flex items-center justify-center gap-2 transition">
           افتح الاستوديو <ArrowLeft className="w-4 h-4" />
         </button>
       </div>

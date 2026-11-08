@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Layers,
   Bot,
-  UserCircle
+  UserCircle,
+  Star
 } from 'lucide-react';
 import { UserAvatar } from '../UserAvatar';
 import { Company, User } from '../../types';
@@ -43,6 +44,7 @@ export type DashboardNavKey =
   | 'team' 
   | 'billing'
   | 'usage'
+  | 'favorites'
   | 'profile';
 
 interface DashboardSidebarProps {
@@ -82,6 +84,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const mainNavItems = [
     { key: 'home' as DashboardNavKey, label: 'الرئيسية', icon: Home, badge: undefined },
     { key: 'voices' as DashboardNavKey, label: 'مكتبة الأصوات', icon: Mic2, badge: undefined },
+    { key: 'favorites' as DashboardNavKey, label: 'المفضلة', icon: Star, badge: undefined },
     { key: 'human-bookings' as DashboardNavKey, label: 'حجوزاتي (معلقون بشريون)', icon: Users2, badge: undefined },
     { key: 'studio' as DashboardNavKey, label: 'استوديو التوليد TTS', icon: Sliders, badge: undefined },
     { key: 'flows' as DashboardNavKey, label: 'التدفقات وسير العمل', icon: GitFork, badge: undefined },

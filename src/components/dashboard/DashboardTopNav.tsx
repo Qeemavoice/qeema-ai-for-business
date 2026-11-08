@@ -110,6 +110,8 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
         return { parent: 'الأصول', current: 'التراخيص' };
       case 'human-bookings':
         return { parent: 'السوق', current: 'المعلقين البشريين' };
+      case 'favorites':
+        return { parent: 'الأصوات', current: 'المفضلة' };
       case 'profile':
         return { parent: 'حسابي', current: 'البيانات الشخصية' };
       case 'compliance':

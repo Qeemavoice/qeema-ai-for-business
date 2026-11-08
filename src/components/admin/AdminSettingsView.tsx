@@ -148,6 +148,20 @@ export const AdminSettingsView: React.FC<{ section: SettingsSection }> = ({ sect
                   <SecretInput value={stripe.testSecretKey} hint={stripe.testSecretKeyHint} onChange={v => setInt('stripe', 'testSecretKey', v)} />
                 </Field>
               </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="سر توقيع الـ Webhook (الوضع المباشر)" full>
+                  <SecretInput value={stripe.liveWebhookSecret} hint={stripe.liveWebhookSecretHint} onChange={v => setInt('stripe', 'liveWebhookSecret', v)} />
+                </Field>
+                <Field label="سر توقيع الـ Webhook (وضع الاختبار)" full>
+                  <SecretInput value={stripe.testWebhookSecret} hint={stripe.testWebhookSecretHint} onChange={v => setInt('stripe', 'testWebhookSecret', v)} />
+                </Field>
+              </div>
+              <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600 leading-relaxed space-y-1">
+                <p className="font-bold text-slate-800">طريقة عمل الدفع</p>
+                <p>يدفع العميل في صفحة الدفع الخاصة بـ Stripe، ولا تمر بيانات البطاقة على موقعنا. يُضاف الرصيد أو الباقة أو الدليل فقط بعد أن يؤكد Stripe استلام المبلغ كاملاً.</p>
+                <p>في لوحة Stripe ← Developers ← Webhooks أضف العنوان <span dir="ltr" className="font-mono">{window.location.origin}/api/v1/payments/stripe-webhook</span> مع الحدث <span dir="ltr" className="font-mono">checkout.session.completed</span>، ثم الصق «Signing secret» (يبدأ بـ whsec_) في الخانة المناسبة أعلاه. يضمن ذلك إضافة الرصيد حتى لو أغلق العميل الصفحة قبل الرجوع إلى الموقع.</p>
+                <p>«وضع الاختبار» يستخدم مفاتيح الاختبار فقط (sk_test_). إذا لم يطابق المفتاح الوضع المختار يتوقف الدفع حتى يُصحَّح.</p>
+              </div>
             </>
           )}
 
