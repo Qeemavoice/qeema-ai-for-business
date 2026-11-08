@@ -37,6 +37,15 @@ class Collections
     }
 
     /** data URL -> file under public/uploads/{dir}; returns the file name. Plain file names / URLs are kept. */
+    /** Files picked in the dashboard arrive as data: URLs; keep them as files under /uploads/qv instead of inside the record */
+    private static function filesOut(array $d): array
+    {
+        foreach ($d as $k => $v) {
+            if (is_string($v) && preg_match('#^data:(image|audio)/#', $v)) $d[$k] = '/' . DIR_UPLOAD . '/qv/' . self::upload($v, 'qv');
+        }
+        return $d;
+    }
+
     public static function upload(?string $value, string $dir, ?string $current = null): ?string
     {
         if ($value === null) return $current;
@@ -201,7 +210,7 @@ class Collections
             case 'admins':
                 return Store::create('admins', $d);
             default:
-                return Store::create($name, $d);
+                return Store::create($name, self::filesOut($d));
         }
     }
 
@@ -259,7 +268,7 @@ class Collections
                 $c->forceFill(self::careerCols($d, $c))->save();
                 return self::careerItem($c->fresh());
             default:
-                return Store::update($name, $id, $d);
+                return Store::update($name, $id, self::filesOut($d));
         }
     }
 
