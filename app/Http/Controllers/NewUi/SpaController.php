@@ -24,9 +24,22 @@ class SpaController extends Controller
         }
         $html = file_get_contents($file);
         $path = '/' . trim($request->path(), '/');
+        $status = 200;
+        // A voice page has one address, /ar/booking/{id}-{clip}: another spelling of a live voice moves there (301),
+        // a voice that is gone (deleted, hidden, never existed) answers 410 so Google drops it from the index
+        if (preg_match('#^/ar/booking/(\d+)#', $path, $m)) {
+            $want = self::voicePath($m[1]);
+            if ($want === null) {
+                $status = 410;
+                $html = str_replace('</head>', "<meta name=\"robots\" content=\"noindex\" />\n</head>", $html);
+            } elseif (rawurldecode($path) !== $want) {
+                $q = $request->getQueryString();
+                return redirect(self::encodePath($want) . ($q ? '?' . $q : ''), 301);
+            }
+        }
         $html = $this->injectSeo($html, $path);
         $html = $this->injectConfig($html);
-        return response($html)
+        return response($html, $status)
             ->header('Content-Type', 'text/html; charset=utf-8')
             ->header('Cache-Control', 'no-cache');
     }
@@ -54,7 +67,13 @@ class SpaController extends Controller
                 $title = trim((string) $v['metaTitle']) !== '' ? $brand(trim($v['metaTitle'])) : "{$v['name']} - عينة تعليق صوتي {$dialect} | قيمة فويس";
                 $desc = trim((string) $v['metaDescription']) ?: ($v['description'] ? $cut($v['description'])
                     : "استمع إلى عينة «{$v['name']}» بلهجة {$dialect}، تخصص " . ($v['category'] ?: 'تعليق احترافي') . '. احجز الصوت مباشرة بجودة 48kHz.');
-                return ['title' => $title, 'description' => $desc];
+                $audio = (string) $v['previewUrl'];
+                if ($audio !== '' && !preg_match('#^https?://#', $audio)) $audio = rtrim(self::seoMap()['site'] ?? 'https://qeemavoice.com', '/') . '/' . ltrim($audio, '/');
+                return ['title' => $title, 'description' => $desc, 'canonicalPath' => self::voicePath($m[1]),
+                    // AudioObject for Google (clip name only, like the page); no transcript: the library keeps no script text
+                    'jsonLd' => array_filter(['@context' => 'https://schema.org', '@type' => 'AudioObject', 'name' => $v['name'], 'description' => $desc,
+                        'contentUrl' => $audio ?: null, 'encodingFormat' => 'audio/mpeg', 'inLanguage' => 'ar',
+                        'publisher' => ['@type' => 'Organization', 'name' => 'قيمة فويس', 'url' => 'https://qeemavoice.com']])];
             }
             if (preg_match('#^/ar/blogs/details/(\d+)#', $path, $m) && ($a = \App\Models\Article::find((int) $m[1]))) {
                 $i = PublicController::articleItem($a);
@@ -76,6 +95,19 @@ class SpaController extends Controller
         return null;
     }
 
+    /** The one address of a public library voice (as the sitemap lists it), or null when it is not public */
+    private static function voicePath(string $id): ?string
+    {
+        if (!\App\Services\NewUi\Library::publicItem($id)) return null;
+        $v = \App\Models\Voice::with('voiceOver')->find((int) $id);
+        return $v ? '/ar/booking/' . PublicController::voiceSlug($v) : null;
+    }
+
+    private static function encodePath(string $path): string
+    {
+        return implode('/', array_map('rawurlencode', array_map('rawurldecode', explode('/', $path))));
+    }
+
     private function injectSeo(string $html, string $path): string
     {
         $routes = self::seoMap()['routes'] ?? [];
@@ -84,7 +116,7 @@ class SpaController extends Controller
         if (!$cfg) return $html;
         $e = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         $site = rtrim(self::seoMap()['site'] ?? 'https://qeemavoice.com', '/');
-        $canonical = $site . implode('/', array_map('rawurlencode', array_map('rawurldecode', explode('/', $path))));
+        $canonical = $site . self::encodePath($cfg['canonicalPath'] ?? $path);
         $title = $e($cfg['title'] ?? '');
         $desc = $e($cfg['description'] ?? '');
         $image = $e($cfg['ogImage'] ?? (self::seoMap()['defaultOgImage'] ?? ''));
@@ -97,7 +129,9 @@ class SpaController extends Controller
             . "<meta property=\"og:url\" content=\"{$e($canonical)}\" />\n"
             . ($image ? "<meta property=\"og:image\" content=\"{$image}\" />\n" : '')
             . (!empty($cfg['noindex']) ? "<meta name=\"robots\" content=\"noindex, nofollow\" />\n" : '')
-            . (!empty($cfg['keywords']) ? "<meta name=\"keywords\" content=\"{$e($cfg['keywords'])}\" />\n" : '');
+            . (!empty($cfg['keywords']) ? "<meta name=\"keywords\" content=\"{$e($cfg['keywords'])}\" />\n" : '')
+            . (!empty($cfg['jsonLd']) ? '<script type="application/ld+json" id="qeema-audio-jsonld">'
+                . json_encode($cfg['jsonLd'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n" : '');
         return str_replace('</head>', $extra . '</head>', $html);
     }
 

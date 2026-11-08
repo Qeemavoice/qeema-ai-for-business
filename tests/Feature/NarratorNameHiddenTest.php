@@ -45,8 +45,23 @@ class NarratorNameHiddenTest extends TestCase
         $this->assertStringNotContainsString(rawurlencode('محمد'), $this->get('/sitemap.xml')->getContent());
 
         // the booking pages' server-side title (what Google reads): the clip name, never the narrator's
-        $page = $this->get('/ar/booking/601-x')->assertOk()->getContent();
+        $page = $this->get('/ar/booking/601-إعلان-حماسي')->assertOk()->getContent();
         $this->assertStringContainsString('<title>إعلان حماسي - عينة تعليق صوتي', $page);
-        $this->assertStringNotContainsString($secret, $this->get('/ar/booking/602-x')->getContent());
+        $this->assertStringNotContainsString($secret, $this->get('/ar/booking/602')->assertOk()->getContent());
+
+        // one address per voice: the canonical is that address, any other spelling moves there (301), a gone voice answers 410
+        $url = 'https://qeemavoice.com/ar/booking/601-' . rawurlencode('إعلان') . '-' . rawurlencode('حماسي');
+        $this->assertStringContainsString('<link rel="canonical" href="' . $url . '"', $page);
+        $this->assertStringContainsString('<meta property="og:url" content="' . $url . '"', $page);
+        $this->get('/ar/booking/601-old-title?ref=x')->assertStatus(301)->assertRedirect('/ar/booking/601-' . rawurlencode('إعلان') . '-' . rawurlencode('حماسي') . '?ref=x');
+        $this->get('/ar/booking/601')->assertStatus(301);
+        $this->get('/ar/booking/602-' . rawurlencode($secret))->assertStatus(301)->assertRedirect('/ar/booking/602');
+        $this->get('/ar/booking/999-gone')->assertStatus(410)->assertSee('noindex', false);
+
+        // AudioObject schema in the HTML for crawlers, clip name only
+        preg_match('#<script type="application/ld\+json" id="qeema-audio-jsonld">(.*?)</script>#s', $page, $m);
+        $ld = json_decode($m[1] ?? '', true);
+        $this->assertSame(['AudioObject', 'إعلان حماسي', 'audio/mpeg', 'ar', 'قيمة فويس'], [$ld['@type'], $ld['name'], $ld['encodingFormat'], $ld['inLanguage'], $ld['publisher']['name']]);
+        $this->assertStringNotContainsString($secret, $m[1]);
     }
 }

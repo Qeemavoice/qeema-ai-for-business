@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { Voice } from '../types';
 import { useSeo } from '../seo/useSeo';
 import { Breadcrumbs } from '../components/Breadcrumbs';
-import { getShortDialect } from '../components/VoiceLibraryView';
+import { getShortDialect, buildSampleSlug } from '../components/VoiceLibraryView';
 import { useHumanVoices } from '../lib/humanVoices';
 import { BookingForm } from '../components/BookHumanVoiceModal';
 
@@ -106,7 +106,7 @@ export const BookingVoicePage: React.FC<BookingVoicePageProps> = ({ voices }) =>
     : 'استمع إلى عينات التعليق الصوتي المعتمدة واحجز صوتك اليوم عبر قيمة فويس.';
 
   useSeo({
-    path: `/ar/booking/${slug || ''}`,
+    path: `/ar/booking/${sample ? buildSampleSlug({ id: sample.id, sampleName: sample.title, name: sample.title }) : slug || ''}`,
     title: pageTitle,
     h1: pageH1,
     description: pageDesc,
@@ -124,11 +124,12 @@ export const BookingVoicePage: React.FC<BookingVoicePageProps> = ({ voices }) =>
     const audioSchema = {
       '@context': 'https://schema.org',
       '@type': 'AudioObject',
-      name: `${sample.title} - عينة تعليق صوتي`,
+      name: sample.title,
       description: pageDesc,
-      contentUrl: sample.previewUrl,
+      contentUrl: new URL(sample.previewUrl, window.location.origin).href,
       encodingFormat: 'audio/mpeg',
-      inLanguage: 'ar'
+      inLanguage: 'ar',
+      publisher: { '@type': 'Organization', name: 'قيمة فويس', url: 'https://qeemavoice.com' }
     };
     let script = document.getElementById('qeema-audio-jsonld') as HTMLScriptElement | null;
     if (!script) {
