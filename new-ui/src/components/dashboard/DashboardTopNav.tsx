@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { RowadBadge } from '../RowadBadge';
 import { useRowad } from '../../lib/rowad';
 import { findPlan } from '../../../shared/plans';
+import { api, getToken } from '../../lib/api';
+import type { HumanBooking } from '../../types';
 import { 
   Search, 
   Sparkles, 
@@ -202,15 +204,8 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
             <Folder className="w-4 h-4" />
           </button>
 
-          {/* Notification Bell with blue dot */}
-          <button
-            onClick={() => alert('لا توجد إشعارات جديدة في مساحة عملك.')}
-            className="relative p-2 text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors"
-            title="الإشعارات"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full ring-2 ring-white" />
-          </button>
+          {/* Notices: each of the client's bookings at its latest stage */}
+          <NoticeBell onOpenBookings={() => onNavigateTab('human-bookings')} />
 
           {/* User Profile Avatar with Dropdown Trigger */}
           <div className="relative" ref={menuRef}>
@@ -395,5 +390,66 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
 
       {isFeedbackOpen && <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />}
     </>
+  );
+};
+
+/** what each booking stage tells the client */
+const NOTICE: Record<HumanBooking['status'], string> = {
+  awaiting_payment: 'بانتظار الدفع لتأكيده',
+  pending: 'وصلنا وهو قيد المراجعة',
+  in_studio: 'بدأ تسجيله في الاستوديو',
+  delivered: 'تم تسليم التسجيل، استمع واعتمده',
+  approved: 'اكتمل واعتُمد',
+  canceled: 'أُلغي',
+};
+const SEEN_KEY = 'qeema_notices_seen';
+
+/** The bell: the client's latest booking updates (newest first); a dot while one changed since the bell was last opened.
+ *  ponytail: built from the bookings list on each open and every 2 minutes, no notices table; add one when other events need notices. */
+const NoticeBell: React.FC<{ onOpenBookings: () => void }> = ({ onOpenBookings }) => {
+  const [items, setItems] = useState<HumanBooking[]>([]);
+  const [open, setOpen] = useState(false);
+  const [seen, setSeen] = useState(() => { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch { return 0; } });
+  const ref = useRef<HTMLDivElement>(null);
+  const load = () => { if (getToken()) api.getMyBookings().then(r => setItems([...r.bookings].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)).slice(0, 8))).catch(() => {}); };
+  useEffect(() => { load(); const t = window.setInterval(load, 120000); return () => window.clearInterval(t); }, []);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+  const unread = items.some(b => Date.parse(b.updatedAt) > seen);
+  const toggle = () => {
+    if (!open) { load(); const now = Date.now(); setSeen(now); try { localStorage.setItem(SEEN_KEY, String(now)); } catch {} }
+    setOpen(!open);
+  };
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={toggle} title="الإشعارات" aria-label="الإشعارات" aria-expanded={open}
+        className="relative p-2 text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors cursor-pointer">
+        <Bell className="w-4 h-4" />
+        {unread && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand rounded-full ring-2 ring-white" />}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden" dir="rtl">
+          <div className="px-4 py-3 border-b border-slate-100 text-sm font-bold text-slate-900">الإشعارات</div>
+          {items.length === 0 ? (
+            <p className="px-4 py-6 text-xs text-slate-500 text-center">لا توجد إشعارات بعد. ستظهر هنا تحديثات حجوزاتك.</p>
+          ) : (
+            <ul className="max-h-96 overflow-y-auto divide-y divide-slate-100">
+              {items.map(b => (
+                <li key={b.id}>
+                  <button onClick={() => { setOpen(false); onOpenBookings(); }} className="w-full text-right px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                    <div className="text-xs font-bold text-slate-900">حجزك {b.id} {NOTICE[b.status] || ''}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">{b.sampleName ? `${b.sampleName} · ` : ''}{new Date(b.updatedAt).toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 };

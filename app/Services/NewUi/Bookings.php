@@ -306,8 +306,44 @@ class Bookings
         if (!$o) return;
         $o->forceFill(['payment_method_id' => PaymentMethod::STRIPE])->save();
         $m = self::meta($o->id);
-        self::saveMeta($o->id, ['qv_status' => ($m->qv_status ?? '') === 'awaiting_payment' ? 'pending' : ($m->qv_status ?? 'pending')]);
+        $wasWaiting = ($m->qv_status ?? '') === 'awaiting_payment';
+        self::saveMeta($o->id, ['qv_status' => $wasWaiting ? 'pending' : ($m->qv_status ?? 'pending')]);
         Store::audit('c' . $o->customer_id, 'client', 'BOOKING_PAID: ' . self::id($o));
+        if ($wasWaiting) self::emailConfirmation($o->fresh(['items.details', 'voiceActor', 'customer']));
+    }
+
+    /** «وصلنا حجزك» to the client once the booking is confirmed (paid, or saved when card payment is off).
+     *  The voice is named by its clip name only: clients never see the narrator's name. */
+    public static function emailConfirmation(Order $o): bool
+    {
+        try {
+            return self::sendConfirmation($o);
+        } catch (\Throwable $e) {
+            report($e);   // the booking itself is saved: a mail problem must never undo or fail it
+            return false;
+        }
+    }
+
+    private static function sendConfirmation(Order $o): bool
+    {
+        $m = self::meta($o->id);
+        $b = self::clientView($o, Library::byId()[$m->sample_id ?? ''] ?? null);
+        $to = (string) $o->customer_email;
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) return false;
+        $delivery = ['48h' => 'خلال 48 ساعة', '24h' => 'خلال 24 ساعة', '6h' => 'خلال 6 ساعات'][$b['delivery']] ?? 'حسب الاتفاق مع فريقنا';
+        $name = trim((string) $o->customer_full_name);
+        $text = implode("\n", [
+            'مرحباً' . ($name !== '' ? " {$name}" : '') . '،', '',
+            'وصلنا حجزك في قيمة فويس، وفريقنا يراجعه الآن قبل بدء التسجيل.', '',
+            "رقم الحجز: {$b['id']}",
+            'الصوت: ' . ($b['sampleName'] ?: 'تعليق صوتي'),
+            "مدة التسجيل: {$b['durationMinutes']} دقيقة",
+            "مدة التسليم: {$delivery}",
+            'المبلغ: $' . rtrim(rtrim(number_format((float) $b['priceUsd'], 2, '.', ''), '0'), '.'), '',
+            'تابع مراحل حجزك في «حجوزاتي» داخل حسابك:', Payments::siteUrl() . '/ar/account', '',
+            'فريق قيمة فويس',
+        ]);
+        return Mailer::trySend($to, "وصلنا حجزك {$b['id']} - قيمة فويس", $text);
     }
 
     /** Starts (or restarts) the card payment of a booking that waits for it; returns Stripe's page URL */

@@ -300,6 +300,26 @@ class ClientController extends Controller
 
     public function book(Request $r)
     {
+        try {
+            return $this->bookNow($r);
+        } catch (\Throwable $e) {
+            // never a bare «Server Error»: the client gets a clear message, the admin overview's log gets the cause
+            report($e);
+            self::logBookingError('BOOKING_FAILED', $e);
+            return response()->json(['error' => 'تعذر إرسال طلب الحجز بسبب خطأ عندنا، لم يُخصم منك أي مبلغ. حاول بعد قليل أو تواصل معنا.'], 500);
+        }
+    }
+
+    private static function logBookingError(string $what, \Throwable $e): void
+    {
+        try {
+            \App\Services\NewUi\Store::audit('system', 'system', $what . ': ' . class_basename($e) . ': ' . mb_substr($e->getMessage(), 0, 150),
+                ['at' => basename($e->getFile()) . ':' . $e->getLine()]);
+        } catch (\Throwable $ignored) {}
+    }
+
+    private function bookNow(Request $r)
+    {
         $user = Accounts::currentUser($r);
         $res = Bookings::create($r->all(), $user);
         if (isset($res['error'])) return response()->json(['error' => $res['error']], $res['status']);
@@ -312,10 +332,14 @@ class ClientController extends Controller
                 $url = Bookings::startPayment($o, $o->customer, $user ? '/ar/account' : '/ar/voices');
             } catch (\Throwable $e) {
                 report($e);
+                self::logBookingError('BOOKING_PAYMENT_FAILED ' . Bookings::id($o), $e);
                 return response()->json(['error' => 'حُفظ طلبك لكن تعذر فتح صفحة الدفع الآن. ادفع لاحقاً من «حجوزاتي» أو تواصل معنا.'], 502);
             }
             return response()->json(['success' => true, 'booking' => Bookings::clientView($o->fresh()), 'checkoutUrl' => $url]);
         }
+        // no card step: the booking is confirmed now (with card payment the e-mail goes when Stripe confirms, Bookings::markPaid)
+        $o = Bookings::query()->find(Bookings::orderId($res['booking']['id']));
+        if ($o) Bookings::emailConfirmation($o);
         return response()->json(['success' => true, 'booking' => $res['booking']]);
     }
 

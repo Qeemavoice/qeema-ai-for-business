@@ -136,7 +136,7 @@ class Payments
     }
 
     /** Site address for Stripe's return links: the request host only when it is ours (a forged Host header cannot redirect buyers away) */
-    private static function siteUrl(): string
+    public static function siteUrl(): string
     {
         $host = request()->getHost();
         if ($host === 'qeemavoice.com' || Str::endsWith($host, '.qeemavoice.com') || in_array($host, ['localhost', '127.0.0.1'], true)) {

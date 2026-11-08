@@ -139,7 +139,16 @@ class PaymentsTest extends TestCase
         $this->assertSame((int) round($res->json('booking.priceUsd') * 100), $this->stripe->created[$sid]['line_items'][0]['price_data']['unit_amount']);
 
         $this->stripe->paid[$sid] = ['payment_status' => 'paid'];
+        $sent = fn () => collect(app('mail.manager')->mailer('array')->getSwiftMailer()->getTransport()->messages());
+        $this->assertCount(0, $sent());   // nothing before the payment
         $this->postJson('/api/v1/payments/confirm', ['sessionId' => $sid])->assertOk()->assertJsonPath('kind', 'booking');   // a guest return works for bookings
+        // the paid booking e-mails the client once, with the booking number and the clip name (never the narrator's name)
+        $this->postJson('/api/v1/payments/confirm', ['sessionId' => $sid])->assertOk();
+        $this->assertCount(1, $sent());
+        $mail = $sent()->first();
+        $this->assertSame(['buyer@example.test'], array_keys($mail->getTo()));
+        $this->assertStringContainsString($res->json('booking.id'), $mail->getSubject());
+        $this->assertStringNotContainsString('معلق', $mail->getBody());
         $this->assertSame('pending', collect($this->getJson('/api/v1/client/bookings', $h)->json('bookings'))->first()['status']);
     }
 
