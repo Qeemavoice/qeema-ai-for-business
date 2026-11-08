@@ -208,8 +208,13 @@ const GlassyVoiceOrb: React.FC<{
 };
 
 /** Builds the URL slug of a voice sample's booking page */
-export const buildSampleSlug = (voice: { id: string; sampleName?: string; name: string }) =>
-  `${voice.id}-${encodeURIComponent((voice.sampleName || voice.name || 'voice').trim().replace(/\s+/g, '-'))}`;
+// Same address the server gives a voice (PHP slugify of «id clip»), so links never land on a 301
+export const buildSampleSlug = (voice: { id: string; sampleName?: string; name: string }) => {
+  const clip = (voice.sampleName || voice.name || '').trim();
+  if (!clip || clip === 'عينة صوتية') return voice.id;
+  const part = clip.toLowerCase().replace(/[^\p{L}\p{N}_\s-]/gu, '').replace(/[\s-]+/g, ' ').replace(/[\s_]/g, '-');
+  return `${voice.id}-${encodeURIComponent(part)}`;
+};
 
 // Human voice samples catalog (shared with the per-sample booking page)
 
