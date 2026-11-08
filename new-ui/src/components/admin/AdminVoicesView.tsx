@@ -153,7 +153,9 @@ const Label: React.FC<{ text: string; required?: boolean; children: React.ReactN
 
 const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number; onCancel: () => void; onSaved: () => void }> = ({ voice, commission, onCancel, onSaved }) => {
   const [form, setForm] = useState<Partial<VoiceSampleRow>>(voice);
-  const [narrators, setNarrators] = useState<string[]>([]);
+  // narrators with an account on the site: a library voice is linked to the narrator's account
+  const [narrators, setNarrators] = useState<{ id: string; name: string }[]>([]);
+  const [narratorId, setNarratorId] = useState('');
   const [dialects, setDialects] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -161,7 +163,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
   const isNew = !voice.id;
 
   useEffect(() => {
-    narratorService.getAllNarrators().then(n => setNarrators(n.map(x => x.displayName))).catch(() => {});
+    narratorService.getAllNarrators().then(n => setNarrators(n.filter(x => /^narrator_u\d+$/.test(x.id)).map(x => ({ id: x.id, name: x.displayName })).sort((a, b) => a.name.localeCompare(b.name, 'ar')))).catch(() => {});
     api.listCollection('dialects').then(d => setDialects(d.map((x: any) => x.name))).catch(() => {});
   }, []);
 
@@ -171,6 +173,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isNew && !narratorId) return setError('اختر المعلق الصوتي');
     if (!form.previewUrl) return setError('يرجى رفع الملف الصوتي (MP3)');
     if (!(price > 0)) return setError('يرجى إدخال سعر الدقيقة');
     if (!form.categories?.length) return setError('اختر تصنيفاً واحداً على الأقل');
@@ -180,7 +183,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
         ...form, narratorPriceUsd: price,
         name: form.talentName, accent: form.dialect, category: form.categories[0], tags: form.categories
       };
-      if (isNew) await api.createCollectionItem('humanVoices', { createdAt: new Date().toISOString(), ...data });
+      if (isNew) await api.createCollectionItem('humanVoices', { createdAt: new Date().toISOString(), ...data, narratorId, status: 'active' });
       else await api.updateCollectionItem('humanVoices', voice.id!, data);
       onSaved();
     } catch (err: any) { setError(err.message || 'تعذر الحفظ'); } finally { setSaving(false); }
@@ -207,9 +210,15 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
                   <option value="female">امرأة</option>
                 </select>
               </Label>
-              <Label text="المعلق صوتي" required>
-                <input required list="narrators-list" value={form.talentName || ''} onChange={e => set('talentName', e.target.value)} className={input} />
-                <datalist id="narrators-list">{narrators.map(n => <option key={n} value={n} />)}</datalist>
+              <Label text="المعلق صوتي" required hint={isNew ? 'يظهر الصوت في لوحة هذا المعلق ضمن «أصواتي في مكتبة الأصوات»' : undefined}>
+                {isNew ? (
+                  <select required value={narratorId} onChange={e => { setNarratorId(e.target.value); set('talentName', narrators.find(n => n.id === e.target.value)?.name || ''); }} className={`${input} cursor-pointer`}>
+                    <option value="" disabled>اختر المعلق</option>
+                    {narrators.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
+                  </select>
+                ) : (
+                  <input readOnly value={form.talentName || ''} className={`${input} bg-slate-100 text-slate-700`} />
+                )}
               </Label>
             </div>
             <div>
@@ -261,7 +270,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
         </div>
 
         <Card title="الملف الصوتي">
-          <UploadField label="الملف الصوتي" required kind="audio" accept=".mp3,audio/mpeg" maxMb={8}
+          <UploadField label="الملف الصوتي" required kind="audio" accept=".mp3,audio/mpeg" maxMb={5}
             value={form.previewUrl || ''} fileName={form.fileName}
             hint="يتم قبول ملفات الصوت mp3 فقط"
             onChange={(v, name) => {

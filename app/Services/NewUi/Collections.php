@@ -144,6 +144,41 @@ class Collections
         return self::voiceAdminItem(Library::fromVoice($v, Plans::commissionPercent()), (int) $v->voice_status_id === \App\Models\VoiceStatus::ACCEPTED ? 'active' : 'hidden');
     }
 
+    /** «إضافة صوت» from the admin dashboard: a library voice of the chosen narrator (old `voices` table, voiceover_id = the
+     *  narrator's account). It is in the library at once and in the narrator's dashboard under «أصواتي في مكتبة الأصوات». */
+    private static function createVoice(array $d): array
+    {
+        if (!preg_match('/^narrator_u(\d+)$/', (string) ($d['narratorId'] ?? ''), $m) || !\App\Models\User::find((int) $m[1])) {
+            return ['error' => 'اختر المعلق من القائمة (المعلقون الذين لهم حساب في الموقع)'];
+        }
+        $title = trim((string) ($d['sampleName'] ?? ''));
+        if ($title === '') return ['error' => 'اكتب عنوان الصوت'];
+        $audio = (string) ($d['previewUrl'] ?? '');
+        if (!preg_match('#^data:audio/(mpeg|mp3);base64,#', $audio)) return ['error' => 'ارفع الملف الصوتي بصيغة MP3'];
+        if (strlen($audio) > 7 * 1024 * 1024) return ['error' => 'حجم الملف الصوتي أكبر من 5 ميجابايت'];
+        $price = (float) ($d['narratorPriceUsd'] ?? 0);
+        if (!($price > 0 && $price <= 1000)) return ['error' => 'سعر الدقيقة يجب أن يكون بين 1 و 1000 دولار'];
+        $cats = Category::all()->keyBy(fn ($c) => PublicController::tr($c, 'name'));
+        if (!collect((array) ($d['categories'] ?? []))->first(fn ($n) => $cats->has(trim((string) $n)))) return ['error' => 'اختر تصنيفاً واحداً على الأقل من التصنيفات الموجودة'];
+
+        $v = new \App\Models\Voice();
+        $v->forceFill([
+            'title' => self::tr($title), 'price_per_minute' => $price, 'total_price' => $price,   // the model's mutator adds the platform commission
+            'voiceover_id' => (int) $m[1], 'is_sample' => YES, 'voice_status_id' => \App\Models\VoiceStatus::ACCEPTED,
+            'number_of_orders' => 0, 'number_of_listened' => 0, 'number_of_likes' => 0,
+            'meta_title' => self::tr(''), 'meta_description' => self::tr(''),
+        ]);
+        $lang = trim((string) (($d['languages'] ?? [])[0] ?? 'العربية'));
+        $l = Language::all()->first(fn ($x) => in_array($lang, [PublicController::tr($x, 'name'), 'اللغة ' . PublicController::tr($x, 'name')], true) || PublicController::tr($x, 'name') === 'اللغة ' . $lang);
+        if ($l) $v->language_id = $l->id;
+        $v->save();
+        // the rest (gender, dialect, categories, the MP3 file, meta texts) through the same path as an edit
+        $out = self::updateVoice((string) $v->id, $d);
+        if (!$out || isset($out['error'])) { $v->forceDelete(); Library::forget(); return $out ?: ['error' => 'تعذر حفظ الصوت']; }
+        Store::audit('admin', 'admin', 'VOICE_ADDED: ' . $v->id . ' -> narrator_u' . $m[1]);
+        return $out;
+    }
+
     private static function pageItem(Page $p): array
     {
         $key = array_search($p->slug, PublicController::PAGE_KEYS, true) ?: $p->slug;
@@ -170,7 +205,7 @@ class Collections
     public static function create(string $name, array $d): array
     {
         switch ($name) {
-            case 'humanVoices': return ['error' => 'الأصوات الجديدة تُضاف من ملف المعلق: «المعلقون الصوتيون» أو من لوحة المعلق نفسه، ثم تظهر هنا بعد الموافقة.'];
+            case 'humanVoices': return self::createVoice($d);
             case 'articles':
                 $a = new Article();
                 $a->forceFill(self::articleCols($d, null))->save();

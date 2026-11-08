@@ -47,4 +47,39 @@ class AdminLibraryVoicesTest extends TestCase
 
         $api->postJson('/api/v1/admin/collections/humanVoices', ['sampleName' => 'جديد'])->assertStatus(400);
     }
+
+    public function test_admin_adds_a_voice_that_shows_in_the_library_and_the_narrators_dashboard()
+    {
+        foreach ([1 => 'admin', 2 => 'client', 3 => 'voice-actor', 4 => 'both'] as $id => $slug) DB::table('user_types')->insert(['id' => $id, 'name' => $slug, 'slug' => $slug]);
+        foreach (range(1, 4) as $id) DB::table('user_statuses')->insert(['id' => $id, 'name' => 'status ' . $id]);
+        foreach ([1 => 'draft', 2 => 'review', 3 => 'accepted', 4 => 'rejected'] as $id => $n) DB::table('voice_statuses')->insert(['id' => $id, 'name' => json_encode(['ar' => $n])]);
+        foreach ([1 => 'child', 2 => 'man', 3 => 'women'] as $id => $n) DB::table('voice_types')->insert(['id' => $id, 'name' => json_encode(['ar' => $n])]);
+        DB::table('categories')->insert(['id' => 7, 'name' => json_encode(['ar' => 'إعلانات', 'en' => 'إعلانات'])]);
+        $admin = Accounts::createAccount('مشرف', 'admin@example.test', 'password-123', 'client');
+        $admin->forceFill(['user_type_id' => 1])->save();
+        $narrator = Accounts::createAccount('معلق', 'narrator@example.test', 'password-123', 'talent');
+        $api = $this->withHeader('Authorization', 'Bearer ' . Accounts::issueToken($admin))->withHeader('Accept', 'application/json');
+        $mp3 = 'data:audio/mpeg;base64,' . base64_encode('ID3' . str_repeat("\0", 2000));
+        $voice = ['sampleName' => 'إعلان جديد', 'gender' => 'male', 'categories' => ['إعلانات'], 'narratorPriceUsd' => 30, 'previewUrl' => $mp3, 'metaTitle' => 'عنوان جوجل'];
+
+        // only admins, only a narrator with an account, only an MP3, and nothing half-saved on a refusal
+        $this->postJson('/api/v1/admin/collections/humanVoices', $voice + ['narratorId' => 'narrator_u' . $narrator->id], ['Authorization' => 'Bearer ' . Accounts::issueToken($narrator)])->assertStatus(403);
+        $api->postJson('/api/v1/admin/collections/humanVoices', $voice + ['narratorId' => 'narrator_u999999'])->assertStatus(400);
+        $api->postJson('/api/v1/admin/collections/humanVoices', ['previewUrl' => 'data:audio/wav;base64,AAAA'] + $voice + ['narratorId' => 'narrator_u' . $narrator->id])->assertStatus(400);
+        $api->postJson('/api/v1/admin/collections/humanVoices', ['categories' => ['غير موجود']] + $voice + ['narratorId' => 'narrator_u' . $narrator->id])->assertStatus(400);
+        $this->assertSame(0, DB::table('voices')->count());
+
+        $item = $api->postJson('/api/v1/admin/collections/humanVoices', $voice + ['narratorId' => 'narrator_u' . $narrator->id])->assertOk()->json('item');
+        $this->assertSame('إعلان جديد', $item['sampleName']);
+        $this->assertSame('active', $item['status']);
+        $row = DB::table('voices')->where('id', (int) $item['id'])->first();
+        $this->assertSame($narrator->id, (int) $row->voiceover_id);
+        $this->assertFileExists(public_path(DIR_UPLOAD . '/' . \App\Models\Voice::DIR_VOICES_UPLOADS . '/' . $row->audio_file));
+
+        // in the public library, and in the narrator's own dashboard («أصواتي في مكتبة الأصوات»)
+        $this->assertNotNull(collect($this->getJson('/api/v1/human-voices')->json('items'))->firstWhere('id', $item['id']));
+        $mine = $this->getJson('/api/v1/narrators/state', ['Authorization' => 'Bearer ' . Accounts::issueToken($narrator), 'Accept' => 'application/json'])->assertOk()->json('libraryVoices');
+        $this->assertSame([$item['id']], collect($mine)->pluck('id')->all());
+        @unlink(public_path(DIR_UPLOAD . '/' . \App\Models\Voice::DIR_VOICES_UPLOADS . '/' . $row->audio_file));
+    }
 }
