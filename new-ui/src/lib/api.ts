@@ -54,6 +54,19 @@ export interface PlanOffer {
   topup: { price: number; listPrice: number; chars: number; bonusChars: number; offer: 'rowad' | null };
 }
 
+/** Card payment: the server answers with Stripe's hosted payment page; go there (only Stripe's own address is followed) */
+const goToCheckout = (data: any): boolean => {
+  const url = String(data?.checkoutUrl || '');
+  if (!/^https:\/\/checkout\.stripe\.com\//.test(url)) return false;
+  window.location.assign(url);
+  return true;
+};
+/** Never settles: the page is leaving for Stripe, so callers keep their «جارٍ…» state */
+const leaving = <T,>(): Promise<T> => new Promise<T>(() => {});
+
+/** window event fired after a returning card payment is confirmed (detail: the confirm answer) */
+export const PAYMENT_CONFIRMED_EVENT = 'qv:payment-confirmed';
+
 /** window event: the balance or plan changed outside App (App reloads the account) */
 export const ACCOUNT_CHANGED_EVENT = 'qv:account-changed';
 
@@ -128,6 +141,28 @@ export const api = {
     const res = await fetch('/api/v1/auth/password', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ currentPassword, newPassword }) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'تعذر تغيير كلمة المرور');
+  },
+  /** After Stripe sends the buyer back: the server checks the payment with Stripe and grants it once */
+  async confirmPayment(sessionId: string): Promise<{ success: boolean; kind: 'topup' | 'plan' | 'guide'; amountUsd: number; guideId?: string | null; newBalanceCredits: number }> {
+    const res = await fetch('/api/v1/payments/confirm', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ sessionId }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر التحقق من الدفع');
+    return data;
+  },
+  /** A guide's file: free guides need sign-in, paid ones a purchase (owned: false) */
+  async guideFile(id: string): Promise<{ file?: string; owned: boolean }> {
+    const res = await fetch(`/api/v1/guides/${encodeURIComponent(id)}/file`, { headers: getHeaders() });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 402) return { owned: false };
+    if (!res.ok) throw new Error(data.error || 'تعذر فتح الدليل');
+    return data;
+  },
+  /** «ادفع واحصل على الدليل»: goes to Stripe, or answers owned when already bought */
+  async buyGuide(id: string, name: string, email: string): Promise<{ owned?: boolean }> {
+    const res = await fetch(`/api/v1/guides/${encodeURIComponent(id)}/checkout`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ name, email }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'تعذر فتح صفحة الدفع');
+    return goToCheckout(data) ? leaving() : data;
   },
   /** «البيانات الشخصية» */
   /** Profile photo (already resized in the browser); returns the updated user */
@@ -256,7 +291,8 @@ export const api = {
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'فشل شحن الرصيد');
-    return res.json();
+    const data = await res.json();
+    return goToCheckout(data) ? leaving() : data;
   },
 
   // Usage & Analytics
@@ -287,7 +323,8 @@ export const api = {
       body: JSON.stringify({ planId })
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'فشل تغيير الباقة');
-    return res.json();
+    const data = await res.json();
+    return goToCheckout(data) ? leaving() : data;
   },
 
   async getSitePage(key: string): Promise<any> {

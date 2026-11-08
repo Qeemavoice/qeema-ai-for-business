@@ -48,7 +48,7 @@ Route::get('human-voices', 'PublicController@humanVoices');
 Route::get('human-voices/{id}/reviews', 'PublicController@voiceReviews');
 Route::post('contact', 'PublicController@contact');
 Route::post('join', 'PublicController@join');
-Route::post('newsletter', 'PublicController@newsletter')->middleware('throttle:6,1');
+Route::post('newsletter', 'PublicController@newsletter')->middleware('throttle:6,1,newsletter');
 
 // ---- TTS voices, previews, trial, stored audio ----
 Route::get('voices', 'VoicesController@index');
@@ -149,4 +149,12 @@ Route::prefix('admin')->middleware('qv.admin')->group(function () {
     Route::post('rowad/invites/{id}/resend', 'AdminController@rowadResend');
     Route::post('rowad/invites/{id}/extend', 'AdminController@rowadExtend');
     Route::post('rowad/invites/{id}/cancel', 'AdminController@rowadCancel');
+});
+
+// ---- card payments (Stripe Checkout) and paid guides ----
+Route::post('payments/stripe-webhook', 'PaymentsController@webhook')->middleware('throttle:120,1,stripe-webhook');
+Route::middleware('qv.user')->group(function () {
+    Route::post('payments/confirm', 'PaymentsController@confirm')->middleware('throttle:20,1,pay-confirm');
+    Route::post('guides/{id}/checkout', 'PaymentsController@guideCheckout')->middleware('throttle:10,1,guide-checkout');
+    Route::get('guides/{id}/file', 'PaymentsController@guideFile')->middleware('throttle:30,1,guide-file');
 });

@@ -82,7 +82,8 @@ class PublicController extends Controller
         $paid = (int) $g->type === Guide::TYPE_PAID;
         return [
             'id' => (string) $g->id, 'slug' => slugify($g->id . ' ' . self::tr($g, 'name')), 'title' => self::tr($g, 'name'), 'description' => self::tr($g, 'details'),
-            'cover' => $g->image ? (string) $g->image_url : '', 'file' => (!$paid || $admin) && $g->file ? (string) $g->file_url : '', 'fileName' => (string) $g->file,
+            'cover' => $g->image ? (string) $g->image_url : '', // the file itself is handed out by guides/{id}/file (sign-in for free guides, purchase for paid ones)
+            'file' => $admin && $g->file ? (string) $g->file_url : '', 'hasFile' => (bool) $g->file, 'fileName' => $admin ? (string) $g->file : '',
             'type' => $paid ? 'paid' : 'free', 'price' => (float) $g->unit_price, 'status' => 'published', 'link' => '',
             'likes' => (int) $g->number_of_likes, 'comments' => (int) $g->number_of_comments, 'downloads' => (int) $g->number_of_downloads,
             'createdAt' => Store::iso(Store::created($g, 'created_at')),

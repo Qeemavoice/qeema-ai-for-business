@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { openTalentSignup } from '../lib/talentJoin';
+import { openTalentSignup, openClientLogin, SIGNED_IN_EVENT } from '../lib/talentJoin';
+import { api, getToken, PAYMENT_CONFIRMED_EVENT } from '../lib/api';
 import { Link, useParams } from 'react-router-dom';
 import { CheckCircle2, ArrowLeft, XCircle } from 'lucide-react';
 import { useSeo } from '../seo/useSeo';
@@ -134,7 +135,7 @@ const DbGuidePage: React.FC<{ slug: string }> = ({ slug }) => {
   useSeo({ ...STATIC_SEO_ROUTES['/ar/guides'], path: `/ar/guides/${slug}`, title: g ? `${g.title} | قيمة فويس` : STATIC_SEO_ROUTES['/ar/guides'].title, description: g?.description || STATIC_SEO_ROUTES['/ar/guides'].description });
   if (!state.loaded) return <div className="min-h-[50vh]" />;
   if (!g) return <NotFoundPage />;
-  const card = { slug: g.slug, title: g.title, desc: g.description || '', link: g.file || '', cover: g.cover || '', priceUsd: g.type === 'free' ? null : Number(g.price) || 0, gradient: '' };
+  const card = { slug: g.slug, title: g.title, desc: g.description || '', link: '', cover: g.cover || '', priceUsd: g.type === 'free' ? null : Number(g.price) || 0, gradient: '' };
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
@@ -146,17 +147,77 @@ const DbGuidePage: React.FC<{ slug: string }> = ({ slug }) => {
           <GuidePriceBadge priceUsd={card.priceUsd} />
           <h1 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight leading-snug">{g.title}</h1>
           {g.description && <p className="text-base text-slate-600 leading-relaxed whitespace-pre-line">{g.description}</p>}
-          {card.priceUsd === null && g.file ? (
-            <a href={g.file} target="_blank" rel="noopener" className="inline-flex items-center px-6 py-3 rounded-full bg-brand-ink text-white text-sm font-bold">تحميل الدليل</a>
-          ) : (
+          {g.hasFile ? <GuideAccess guide={g} price={card.priceUsd} /> : (
             <a href="/ar/contact-us" className="inline-flex items-center px-6 py-3 rounded-full bg-brand-ink text-white text-sm font-bold">اطلب هذا الدليل</a>
-          )}
-          {/* free PDF guides are readable right on the page */}
-          {card.priceUsd === null && /\.pdf($|\?)/i.test(g.file || '') && (
-            <iframe src={g.file} title={g.title} className="w-full h-[80vh] rounded-3xl border border-slate-200 bg-slate-50" loading="lazy" />
           )}
         </div>
       </section>
     </div>
+  );
+};
+
+/**
+ * Who may read the file: free guides open for any signed-in account; a paid guide shows a short buy form
+ * (name, e-mail, then card payment on Stripe's own page) and opens like a free one once bought.
+ */
+const GuideAccess: React.FC<{ guide: any; price: number | null }> = ({ guide, price }) => {
+  const [signedIn, setSignedIn] = useState(() => Boolean(getToken()));
+  const [file, setFile] = useState<string | null>(null);
+  const [owned, setOwned] = useState<boolean | null>(null);
+  const [form, setForm] = useState({ name: '', email: '' });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const load = () => {
+    if (!getToken()) { setSignedIn(false); return; }
+    setSignedIn(true);
+    api.guideFile(guide.id).then(r => { setOwned(r.owned); setFile(r.file || null); }).catch(e => setErr(e.message));
+    api.getProfile().then(p => setForm(f => ({ name: f.name || p.name || '', email: f.email || p.email || '' }))).catch(() => {});
+  };
+  useEffect(() => {
+    load();
+    window.addEventListener(SIGNED_IN_EVENT, load);
+    window.addEventListener(PAYMENT_CONFIRMED_EVENT, load);
+    return () => { window.removeEventListener(SIGNED_IN_EVENT, load); window.removeEventListener(PAYMENT_CONFIRMED_EVENT, load); };
+  }, [guide.id]);
+
+  const buy = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true); setErr('');
+    try { const r = await api.buyGuide(guide.id, form.name, form.email); if (r.owned) load(); }
+    catch (ex: any) { setErr(ex.message); }
+    finally { setBusy(false); }
+  };
+
+  const btn = 'inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold cursor-pointer';
+  const priceText = price === null ? '' : `$${price}`;
+  if (!signedIn) return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 space-y-3">
+      <p className="text-sm font-bold text-slate-800">{price === null ? 'الدليل مجاني، سجّل الدخول لتحميله وقراءته.' : `سعر الدليل ${priceText}. سجّل الدخول لشرائه وتحميله.`}</p>
+      <button type="button" onClick={openClientLogin} className={`${btn} bg-brand hover:bg-brand-orange text-white`}>تسجيل الدخول</button>
+    </div>
+  );
+  if (owned === null) return err ? <p className="text-xs font-bold text-rose-600">{err}</p> : <div className="h-12" />;
+  if (owned && file) return (
+    <div className="space-y-5">
+      <a href={file} target="_blank" rel="noopener" download className={`${btn} bg-brand-ink text-white`}>تحميل الدليل</a>
+      {/\.pdf($|\?)/i.test(file) && <iframe src={file} title={guide.title} className="w-full h-[80vh] rounded-3xl border border-slate-200 bg-slate-50" loading="lazy" />}
+    </div>
+  );
+  return (
+    <form onSubmit={buy} className="rounded-3xl border border-slate-200 bg-white shadow-xs p-6 space-y-4">
+      <div className="space-y-1">
+        <h2 className="text-lg font-black text-slate-950">اشترِ الدليل: {priceText}</h2>
+        <p className="text-xs text-slate-500 leading-relaxed">دفعة واحدة، ثم يبقى الدليل متاحاً في حسابك للتحميل في أي وقت. الدفع ببطاقة ائتمانية أو Apple Pay عبر صفحة دفع آمنة، ولا نحتفظ ببيانات بطاقتك.</p>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <label className="block text-xs font-bold text-slate-600 space-y-1.5"><span>الاسم الكامل</span>
+          <input required minLength={2} maxLength={120} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand" /></label>
+        <label className="block text-xs font-bold text-slate-600 space-y-1.5"><span>البريد الإلكتروني (تصلك عليه الفاتورة)</span>
+          <input required type="email" dir="ltr" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand" /></label>
+      </div>
+      {err && <p className="text-xs font-bold text-rose-600">{err}</p>}
+      <button type="submit" disabled={busy} className={`${btn} bg-brand hover:bg-brand-orange text-white disabled:opacity-60`}>{busy ? 'جارٍ فتح صفحة الدفع...' : `ادفع ${priceText} واحصل على الدليل`}</button>
+    </form>
   );
 };

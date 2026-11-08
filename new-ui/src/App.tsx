@@ -50,11 +50,12 @@ import { BookHumanVoiceModal } from './components/BookHumanVoiceModal';
 import { ProjectChangelogModal } from './components/ProjectChangelogModal';
 import { AuthModal } from './components/AuthModal';
 import { JobsPage } from './pages/JobsPage';
-import { TALENT_SIGNUP_EVENT, openTalentSignup } from './lib/talentJoin';
+import { TALENT_SIGNUP_EVENT, openTalentSignup, CLIENT_LOGIN_EVENT, SIGNED_IN_EVENT } from './lib/talentJoin';
 import { narratorService } from './services/narratorService';
 
 import { Voice, Company, User, Generation, Plan } from './types';
 import { api, getToken, ACCOUNT_CHANGED_EVENT } from './lib/api';
+import { PaymentReturn } from './components/PaymentReturn';
 import { getGoogleAccessToken } from './lib/googleSignIn';
 import { SignInGate } from './components/SignInGate';
 import { NewFeaturesGate } from './components/NewFeaturesGate';
@@ -181,7 +182,9 @@ export default function App() {
   useEffect(() => {
     const open = () => { setAuthRole('talent'); setAuthModalMode('signup'); };
     window.addEventListener(TALENT_SIGNUP_EVENT, open);
-    return () => window.removeEventListener(TALENT_SIGNUP_EVENT, open);
+    const login = () => { setAuthRole('client'); setAuthModalMode('login'); };
+    window.addEventListener(CLIENT_LOGIN_EVENT, login);
+    return () => { window.removeEventListener(TALENT_SIGNUP_EVENT, open); window.removeEventListener(CLIENT_LOGIN_EVENT, login); };
   }, []);
 
   // Signed-in account (session token kept by lib/api)
@@ -234,6 +237,7 @@ export default function App() {
     setAuthRole('client');
     setIsLoggedIn(true);
     await loadMe();
+    window.dispatchEvent(new Event(SIGNED_IN_EVENT));
     narratorService.reload();
     if (user.accountType === 'talent') {
       if (!user.narratorId) {
@@ -501,6 +505,7 @@ export default function App() {
       )}
 
       {postAuthPath && <GoTo to={postAuthPath} onDone={() => setPostAuthPath(null)} />}
+      <PaymentReturn isLoggedIn={isLoggedIn} />
 
       <InsufficientCreditsDialog onOpenTopUp={() => setIsTopUpOpen(true)} />
       {authModalMode && (

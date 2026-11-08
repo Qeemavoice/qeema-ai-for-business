@@ -135,34 +135,59 @@ class ClientController extends Controller
             'transactions' => Accounts::transactions($ctx['companyUser']->id)]);
     }
 
-    /** No payment gateway yet: a top-up or plan change would hand out credit for free, so only admins may do it for now */
-    private static function paymentBlocked(array $ctx)
+    /**
+     * Admins (and the grant flag on test setups) get credit directly; everyone else pays by card first (Stripe Checkout,
+     * Payments::start). Without a configured gateway nothing is handed out for free.
+     */
+    private static function grantsWithoutPayment(array $ctx): bool
     {
-        if (Accounts::isAdmin($ctx['user']) || config('services.newui_grant_without_payment')) return null;
-        return response()->json(['error' => 'الدفع الإلكتروني غير متاح بعد. تواصل معنا عبر واتساب أو البريد لتفعيل باقتك أو شحن رصيدك.',
+        return Accounts::isAdmin($ctx['user']) || (bool) config('services.newui_grant_without_payment');
+    }
+
+    private static function paymentUnavailable()
+    {
+        return response()->json(['error' => 'الدفع الإلكتروني غير متاح حالياً. تواصل معنا عبر واتساب أو البريد لتفعيل باقتك أو شحن رصيدك.',
             'suggestedAction' => 'contact_sales'], 402);
     }
 
     public function topup(Request $r)
     {
         $ctx = Accounts::context($r);
-        if ($blocked = self::paymentBlocked($ctx)) return $blocked;
         $plan = Plans::find((string) $r->input('packId', ''));
         if (!$plan || !$plan['priceUsd'] || !$plan['monthlyCredits']) return response()->json(['error' => 'الباقة المختارة غير متاحة'], 400);
-        $method = (string) $r->input('paymentMethod', 'card');
-        Accounts::saveAccount($ctx['companyUser'], ['planId' => $plan['id']]);
-        // Rowad top-up gift (RowadService::topupPrice); applies to this top-up only
+        // price set here on the server (Rowad top-up gift included), never taken from the browser
         $q = RowadService::topupPrice($ctx['companyUser'], (float) $plan['priceUsd'], (int) $plan['monthlyCredits']);
-        $gift = $q['bonusChars'] ? ' + هدية روّاد قيمة ' . number_format($q['bonusChars']) . ' حرف' : '';
-        // ponytail: no payment gateway yet, credits are added on request; connect Stripe here before launch
-        $new = Accounts::addCredits($ctx['companyUser']->id, $ctx['user']->id, $q['chars'], 'purchase',
-            "شحن رصيد: باقة {$plan['nameAr']} ({$q['price']} USD عبر {$method}){$gift}", 'pay-' . round(microtime(true) * 1000),
-            // plan credit: this month plus one rollover month
-            ['source' => 'topup', 'expiresAt' => now()->addMonths(self::TOPUP_VALID_MONTHS), 'meta' => ['kind' => 'topup', 'planId' => $plan['id'], 'priceUsd' => $q['price'], 'listPriceUsd' => $q['listPrice'],
-                'offer' => $q['offer'], 'bonusChars' => $q['bonusChars']]]);
+        $meta = ['planId' => $plan['id'], 'q' => $q];
+        if (!self::grantsWithoutPayment($ctx)) {
+            if (!\App\Services\NewUi\Payments::enabled()) return self::paymentUnavailable();
+            try {
+                $url = \App\Services\NewUi\Payments::start('topup', $ctx['user'], $ctx['companyUser'], (float) $q['price'],
+                    "شحن رصيد قيمة فويس: " . number_format($q['chars']) . " حرف ({$plan['nameAr']})", $meta, '/ar/account');
+            } catch (\Throwable $e) {
+                report($e);
+                return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 502);
+            }
+            return response()->json(['checkoutUrl' => $url]);
+        }
+        $new = self::applyTopup($ctx['companyUser'], $ctx['user'], $meta, (string) $r->input('paymentMethod', 'card'));
         return response()->json(['success' => true, 'addedCredits' => $q['chars'], 'bonusCredits' => $q['bonusChars'], 'priceUsd' => $q['price'],
             'offer' => $q['offer'], 'newBalanceCredits' => $new,
             'message' => 'تم إضافة ' . number_format($q['chars']) . ' حرف إلى رصيدك بنجاح.']);
+    }
+
+    /** Adds a paid top-up (called after the payment is verified, or directly for admins); returns the new balance */
+    public static function applyTopup(\App\Models\User $cu, \App\Models\User $actor, array $meta, string $via): int
+    {
+        $plan = Plans::find((string) ($meta['planId'] ?? ''));
+        $q = $meta['q'];
+        if ($plan) Accounts::saveAccount($cu, ['planId' => $plan['id']]);
+        $name = $plan['nameAr'] ?? (string) ($meta['planId'] ?? '');
+        $gift = !empty($q['bonusChars']) ? ' + هدية روّاد قيمة ' . number_format($q['bonusChars']) . ' حرف' : '';
+        return Accounts::addCredits($cu->id, $actor->id, (int) $q['chars'], 'purchase',
+            "شحن رصيد: باقة {$name} ({$q['price']} USD عبر {$via}){$gift}", 'pay-' . round(microtime(true) * 1000),
+            // plan credit: this month plus one rollover month
+            ['source' => 'topup', 'expiresAt' => now()->addMonths(self::TOPUP_VALID_MONTHS), 'meta' => ['kind' => 'topup', 'planId' => $meta['planId'] ?? null, 'priceUsd' => $q['price'],
+                'listPriceUsd' => $q['listPrice'] ?? $q['price'], 'offer' => $q['offer'] ?? null, 'bonusChars' => $q['bonusChars'] ?? 0]]);
     }
 
     public function billing(Request $r)
@@ -195,26 +220,46 @@ class ClientController extends Controller
     public function changePlan(Request $r)
     {
         $ctx = Accounts::context($r);
-        if ($blocked = self::paymentBlocked($ctx)) return $blocked;
         $plan = Plans::find((string) $r->input('planId', ''));
         if (!$plan) return response()->json(['error' => 'الخطة غير متوفرة'], 404);
         if (!empty($plan['isCustom'])) return response()->json(['error' => 'باقة الشركات بتسعير مخصص، تواصل مع فريق المبيعات لتفعيلها'], 400);
         $cu = $ctx['companyUser'];
-        Accounts::saveAccount($cu, ['planId' => $plan['id']]);
-        // Rowad price (locked until rowad_price_until, used again on every renewal)
+        // Rowad price (locked until rowad_price_until, used again on every renewal); priced here, never by the browser
         $q = RowadService::subscriptionPrice($cu, $plan);
-        if ($q['lock']) {
-            DB::table('qv_client_accounts')->where('user_id', $cu->id)->update(['locked_plan_id' => $q['lock']['plan_id'],
-                'locked_price' => $q['lock']['price'], 'locked_until' => $q['lock']['until'], 'updated_at' => now()]);
+        $meta = ['planId' => $plan['id'], 'q' => $q];
+        if ((float) $q['price'] > 0 && !self::grantsWithoutPayment($ctx)) {
+            if (!\App\Services\NewUi\Payments::enabled()) return self::paymentUnavailable();
+            try {
+                $url = \App\Services\NewUi\Payments::start('plan', $ctx['user'], $cu, (float) $q['price'],
+                    "اشتراك قيمة فويس: باقة {$plan['nameAr']} (شهر)", $meta, '/ar/account');
+            } catch (\Throwable $e) {
+                report($e);
+                return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 502);
+            }
+            return response()->json(['checkoutUrl' => $url]);
         }
-        $new = $plan['monthlyCredits'] > 0
-            ? Accounts::addCredits($cu->id, $ctx['user']->id, $plan['monthlyCredits'], 'purchase',
-                "تجديد/ترقية الاشتراك إلى {$plan['nameAr']} (+" . number_format($plan['monthlyCredits']) . " حرف، {$q['price']} USD)", null,
-                ['source' => 'plan', 'meta' => ['kind' => 'subscription', 'planId' => $plan['id'], 'priceUsd' => $q['price'], 'listPriceUsd' => $q['listPrice'],
-                    'offer' => $q['offer'], 'discountPct' => $q['discountPct']]])
-            : $ctx['balance'];
+        $result = self::applyPlan($cu, $ctx['user'], $meta);
         return response()->json(['success' => true, 'company' => Accounts::company($cu), 'currentPlan' => $plan, 'priceUsd' => $q['price'], 'offer' => $q['offer'],
-            'newBalanceCredits' => $new, 'message' => "تم الترقية بنجاح إلى {$plan['nameAr']}"]);
+            'newBalanceCredits' => $result, 'message' => "تم الترقية بنجاح إلى {$plan['nameAr']}"]);
+    }
+
+    /** Switches to a paid plan and adds its month of credit (after the verified payment, or directly for admins); returns the balance */
+    public static function applyPlan(\App\Models\User $cu, \App\Models\User $actor, array $meta): int
+    {
+        $plan = Plans::find((string) ($meta['planId'] ?? ''));
+        $q = $meta['q'];
+        if (!$plan) return Accounts::balance($cu->id);
+        Accounts::saveAccount($cu, ['planId' => $plan['id']]);
+        if (!empty($q['lock'])) {
+            DB::table('qv_client_accounts')->where('user_id', $cu->id)->update(['locked_plan_id' => $q['lock']['plan_id'],
+                'locked_price' => $q['lock']['price'], 'locked_until' => $q['lock']['until'] ? \Carbon\Carbon::parse($q['lock']['until']) : null, 'updated_at' => now()]);
+        }
+        return $plan['monthlyCredits'] > 0
+            ? Accounts::addCredits($cu->id, $actor->id, $plan['monthlyCredits'], 'purchase',
+                "تجديد/ترقية الاشتراك إلى {$plan['nameAr']} (+" . number_format($plan['monthlyCredits']) . " حرف، {$q['price']} USD)", null,
+                ['source' => 'plan', 'meta' => ['kind' => 'subscription', 'planId' => $plan['id'], 'priceUsd' => $q['price'], 'listPriceUsd' => $q['listPrice'] ?? $q['price'],
+                    'offer' => $q['offer'] ?? null, 'discountPct' => $q['discountPct'] ?? 0]])
+            : Accounts::balance($cu->id);
     }
 
     public function usage(Request $r)

@@ -59,7 +59,9 @@ class Store
     {
         return [
             'stripe' => ['enabled' => false, 'displayName' => 'Stripe', 'testMode' => true,
-                'livePublishableKey' => '', 'liveSecretKey' => '', 'testPublishableKey' => '', 'testSecretKey' => ''],
+                'livePublishableKey' => '', 'liveSecretKey' => '', 'testPublishableKey' => '', 'testSecretKey' => '',
+                // signing secret of the Stripe webhook endpoint (/api/v1/payments/stripe-webhook)
+                'liveWebhookSecret' => '', 'testWebhookSecret' => ''],
             'smtp' => ['driver' => 'smtp', 'fromName' => 'Qeemavoice', 'fromAddress' => '', 'host' => '', 'port' => 465,
                 'username' => '', 'password' => '', 'encryption' => 'SSL'],
             'elevenlabs' => ['apiKey' => '', 'agentId' => ''],
@@ -69,7 +71,7 @@ class Store
     }
 
     /** Keys and passwords: stored encrypted with the app key (APP_KEY), never shown back in full */
-    public const SECRET_FIELDS = ['stripe' => ['liveSecretKey', 'testSecretKey'], 'smtp' => ['password'], 'elevenlabs' => ['apiKey'], 'munsit' => ['apiKey']];
+    public const SECRET_FIELDS = ['stripe' => ['liveSecretKey', 'testSecretKey', 'liveWebhookSecret', 'testWebhookSecret'], 'smtp' => ['password'], 'elevenlabs' => ['apiKey'], 'munsit' => ['apiKey']];
     private const ENC = 'enc:';
 
     public static function integrations(): array
