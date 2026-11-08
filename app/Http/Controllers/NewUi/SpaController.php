@@ -25,9 +25,9 @@ class SpaController extends Controller
         $html = file_get_contents($file);
         $path = '/' . trim($request->path(), '/');
         $status = 200;
-        // A voice page has one address, /ar/booking/{id}-{clip}: another spelling of a live voice moves there (301),
+        // A voice page has one address, /ar/voices/{id}-{clip}: another spelling of a live voice moves there (301),
         // a voice that is gone (deleted, hidden, never existed) answers 410 so Google drops it from the index
-        if (preg_match('#^/ar/booking/(\d+)#', $path, $m)) {
+        if (preg_match('#^/ar/voices/(\d+)#', $path, $m)) {
             $want = self::voicePath($m[1]);
             if ($want === null) {
                 $status = 410;
@@ -62,7 +62,7 @@ class SpaController extends Controller
         $brand = fn (string $t) => mb_substr($t, -9) === 'قيمة فويس' ? $t : "{$t} | قيمة فويس";
         $cut = fn (string $t) => mb_strlen($t) > 155 ? mb_substr($t, 0, 152) . '...' : $t;
         try {
-            if (preg_match('#^/ar/booking/(\d+)#', $path, $m) && ($v = \App\Services\NewUi\Library::publicItem($m[1]))) {
+            if (preg_match('#^/ar/voices/(\d+)#', $path, $m) && ($v = \App\Services\NewUi\Library::publicItem($m[1]))) {
                 $dialect = $v['dialect'] ?: 'عربية';
                 $title = trim((string) $v['metaTitle']) !== '' ? $brand(trim($v['metaTitle'])) : "{$v['name']} - عينة تعليق صوتي {$dialect} | قيمة فويس";
                 $desc = trim((string) $v['metaDescription']) ?: ($v['description'] ? $cut($v['description'])
@@ -96,14 +96,14 @@ class SpaController extends Controller
     }
 
     /** The one address of a public library voice (as the sitemap lists it), or null when it is not public */
-    private static function voicePath(string $id): ?string
+    public static function voicePath(string $id): ?string
     {
         if (!\App\Services\NewUi\Library::publicItem($id)) return null;
         $v = \App\Models\Voice::with('voiceOver')->find((int) $id);
-        return $v ? '/ar/booking/' . PublicController::voiceSlug($v) : null;
+        return $v ? '/ar/voices/' . PublicController::voiceSlug($v) : null;
     }
 
-    private static function encodePath(string $path): string
+    public static function encodePath(string $path): string
     {
         return implode('/', array_map('rawurlencode', array_map('rawurldecode', explode('/', $path))));
     }

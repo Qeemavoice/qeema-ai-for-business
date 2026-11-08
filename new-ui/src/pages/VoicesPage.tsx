@@ -63,7 +63,7 @@ export const VoicesPage: React.FC<VoicesPageProps> = ({
 
   // Each voice sample has its own booking page
   const handleBooking = (voice: any) => {
-    navigate(`/ar/booking/${buildSampleSlug(voice)}`);
+    navigate(`/ar/voices/${buildSampleSlug(voice)}`);
   };
 
   const handleGeneration = (voice: any) => {

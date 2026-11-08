@@ -19,7 +19,16 @@ Route::get('/ar/dashboard', 'SpaController');
 Route::get('/ar/dashboard/{any}', fn () => redirect('/ar/dashboard'))->where('any', '.*');
 Route::permanentRedirect('/ar/booking', '/ar/voices');   // target of the old /booking/... rules in public/.htaccess
 Route::permanentRedirect('/ar/voice-templates', '/ar/voice-models');
-Route::get('/ar/voices/{slug}', fn () => redirect('/ar/voices', 301))->where('slug', '.+');
+// voice pages live at /ar/voices/{id}-{clip} (narrator samples: /ar/voices/ns-…); any other /ar/voices/… goes to the library
+Route::get('/ar/voices/{slug}', function ($slug) {
+    return preg_match('#^(\d+|ns-)#', $slug) ? app(\App\Http\Controllers\NewUi\SpaController::class)(request()) : redirect('/ar/voices', 301);
+})->where('slug', '.+');
+// the voice pages' former address /ar/booking/… moves to /ar/voices/… (straight to the voice's own address when known)
+Route::get('/ar/booking/{slug}', function ($slug) {
+    $to = preg_match('#^(\d+)#', $slug, $m) ? \App\Http\Controllers\NewUi\SpaController::voicePath($m[1]) : null;
+    $q = request()->getQueryString();
+    return redirect(\App\Http\Controllers\NewUi\SpaController::encodePath($to ?? '/ar/voices/' . $slug) . ($q ? '?' . $q : ''), 301);
+})->where('slug', '.+');
 Route::get('/ar/categories/{slug}', fn () => redirect('/ar/categories', 301))->where('slug', '.+');
 Route::get('/ar/blogs/{slug}', fn () => redirect('/ar/blogs', 301))->where('slug', '^(?!details/).+');
 Route::get('/ar/contact-us/{slug}', fn () => redirect('/ar/contact-us', 301))->where('slug', '.+');
@@ -50,7 +59,7 @@ Route::get('/ar/blogs/details/{slug}', function ($slug) {
 $spa = [
     '/', '/ar', '/ar/voices', '/ar/voice-models', '/ar/voice-models/{slug}', '/ar/text-to-speech', '/ar/pricing',
     '/ar/our-works', '/ar/blogs', '/ar/guides', '/ar/guides/{slug}', '/ar/jobs',
-    '/ar/categories', '/ar/booking-steps', '/ar/booking/{slug}', '/ar/faqs', '/ar/contact-us',
+    '/ar/categories', '/ar/booking-steps', '/ar/faqs', '/ar/contact-us',
     '/ar/p/about-us', '/ar/p/terms-of-use', '/ar/p/privacy-policy', '/ar/p/revisions-policy',
     '/ar/saudi-voice-over', '/ar/emirati-voice-over', '/ar/egyptian-voice-over', '/ar/generate', '/ar/chatbot',
     '/ar/account', '/ar/talent-dashboard', '/ar/talent-profile', '/ar/talent-earnings', '/ar/talent-samples',

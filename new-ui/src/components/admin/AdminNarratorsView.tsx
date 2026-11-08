@@ -446,7 +446,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
                       <p className="font-bold text-sm text-slate-900">{v.title || 'بدون اسم'}</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">{[v.category, v.dialect, v.language, v.gender === 'female' ? 'نسائي' : 'رجالي'].filter(Boolean).join(' • ')}</p>
                     </div>
-                    <a href={`/ar/booking/${buildSampleSlug({ id: v.id, sampleName: v.title, name: v.title })}`} target="_blank" rel="noopener noreferrer"
+                    <a href={`/ar/voices/${buildSampleSlug({ id: v.id, sampleName: v.title, name: v.title })}`} target="_blank" rel="noopener noreferrer"
                       className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-brand-text hover:underline"><ExternalLink className="w-3 h-3" />صفحة الصوت</a>
                   </div>
                   {v.audioUrl && <SamplePlayer url={v.audioUrl} />}

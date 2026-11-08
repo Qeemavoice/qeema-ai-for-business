@@ -62,7 +62,7 @@ class Library
         $narratorPrice = (float) $v->price_per_minute;
         $gender = (int) $v->voice_type_id === VoiceType::VOICE_TYPE_WOMEN ? 'female' : 'male';
         return [
-            'id' => (string) $v->id,            // numeric like the old site, so old /ar/booking/{id}-{title} URLs still match
+            'id' => (string) $v->id,            // numeric like the old site, so old /booking/{id}/{title} URLs still match
             'name' => $actor ? Accounts::name($actor) : $title,
             'talentName' => $actor ? Accounts::name($actor) : '',
             'sampleName' => $title,

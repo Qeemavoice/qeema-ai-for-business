@@ -86,7 +86,7 @@ export const AdminReviewsView: React.FC = () => {
                 <p className="text-sm text-slate-800 leading-relaxed">{r.text || <span className="text-slate-400">بدون تعليق نصي</span>}</p>
                 <p className="text-[11px] text-slate-500">
                   {r.author} · {r.companyName} — الصوت: <b className="text-slate-700">{r.sampleName}</b> ({r.talentName})
-                  {r.sampleId && <a href={`/ar/booking/${r.sampleId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 mr-2 text-brand-text hover:underline">صفحة الصوت <ExternalLink className="w-3 h-3" /></a>}
+                  {r.sampleId && <a href={`/ar/voices/${r.sampleId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 mr-2 text-brand-text hover:underline">صفحة الصوت <ExternalLink className="w-3 h-3" /></a>}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

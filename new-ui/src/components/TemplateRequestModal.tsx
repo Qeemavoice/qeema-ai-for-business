@@ -28,7 +28,7 @@ export const TemplateRequestModal: React.FC<{ template: VoiceTemplate; onClose: 
         <div className="p-5 space-y-3">
           <p className="text-xs text-slate-600 leading-relaxed">اختر الصوت الذي يناسب مشروعك، ثم أرسل النص واحجز التسجيل من صفحة الصوت.</p>
           {suggestions.map(v => (
-            <Link key={v.id} to={`/ar/booking/${buildSampleSlug(v)}`} onClick={onClose}
+            <Link key={v.id} to={`/ar/voices/${buildSampleSlug(v)}`} onClick={onClose}
               className="flex items-center gap-3 p-3 rounded-2xl border border-slate-200 hover:border-brand/50 hover:shadow-sm transition-all">
               <span className="w-10 h-10 rounded-xl bg-brand-ink text-white flex items-center justify-center shrink-0"><Mic className="w-4 h-4" /></span>
               <span className="min-w-0 flex-1">

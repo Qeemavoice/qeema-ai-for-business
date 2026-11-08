@@ -80,7 +80,7 @@ const ServiceSamples: React.FC<{ category?: string }> = ({ category }) => {
             <h3 className="font-black text-base sm:text-lg text-slate-900 truncate">{main.sampleName || main.name}</h3>
             <p className="text-xs text-slate-500 truncate">{caption(main)}</p>
           </div>
-          <Link to={`/ar/booking/${buildSampleSlug(main)}`} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white font-bold text-xs whitespace-nowrap transition-colors">احجز هذا الصوت</Link>
+          <Link to={`/ar/voices/${buildSampleSlug(main)}`} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white font-bold text-xs whitespace-nowrap transition-colors">احجز هذا الصوت</Link>
         </div>
         {rest.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -91,7 +91,7 @@ const ServiceSamples: React.FC<{ category?: string }> = ({ category }) => {
                   <h3 className="font-bold text-sm text-slate-900 truncate">{v.sampleName || v.name}</h3>
                   <p className="text-[11px] text-slate-500 truncate">{caption(v)}</p>
                 </div>
-                <Link to={`/ar/booking/${buildSampleSlug(v)}`} className="text-[11px] font-bold text-brand-text hover:underline whitespace-nowrap">احجز</Link>
+                <Link to={`/ar/voices/${buildSampleSlug(v)}`} className="text-[11px] font-bold text-brand-text hover:underline whitespace-nowrap">احجز</Link>
               </div>
             ))}
           </div>
