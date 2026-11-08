@@ -717,14 +717,21 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
     similarFilterVoice
   ]);
 
-  // Render 50 voices at a time («استمع للمزيد من الأصوات» adds 50); back to 50 whenever the filters change
+  // 50 voices per page with page numbers under the list; back to page 1 whenever the filters change
   const PAGE_SIZE = 50;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [
+  const [page, setPage] = useState(1);
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { setPage(1); }, [
     currentCatalog, subTab, selectedCategory, selectedDialect, selectedLanguage, activeMainTab, filterQuality, filterGender, filterAge,
     filterNoticePeriod, filterCustomRates, filterLiveModeration, searchQuery, sortBy, similarFilterVoice
   ]);
-  const visibleVoices = filteredVoices.slice(0, visibleCount);
+  const pageCount = Math.max(1, Math.ceil(filteredVoices.length / PAGE_SIZE));
+  const visibleVoices = filteredVoices.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const goToPage = (n: number) => {
+    setPage(n);
+    const top = (listRef.current?.getBoundingClientRect().top ?? 0) + window.scrollY - 140;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  };
 
   // Handle Play/Pause Audio preview
   const handleTogglePlay = (voice: UnifiedVoiceItem) => {
@@ -1347,7 +1354,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
         {/* ========================================================================= */}
         {/* 5. VOICE CARDS LISTING — High-Density Sleek Single-Line Row Layout        */}
         {/* ========================================================================= */}
-        <div className="space-y-1.5" dir="rtl">
+        <div ref={listRef} className="space-y-1.5" dir="rtl">
           {visibleVoices.map(voice => {
             const isPlaying = playingVoiceId === voice.id;
             const isSaved = savedVoiceIds.has(voice.id);
@@ -1657,18 +1664,22 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
           })}
         </div>
 
-        {filteredVoices.length > visibleCount && (
-          <div className="pt-4 text-center space-y-2">
-            <button
-              type="button"
-              onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-900 text-sm font-bold shadow-2xs transition cursor-pointer"
-            >
-              <Volume2 className="w-4 h-4 text-brand-text" />
-              استمع للمزيد من الأصوات
-            </button>
-            <p className="text-[11px] text-slate-400">يعرض {visibleVoices.length.toLocaleString('en-US')} من {filteredVoices.length.toLocaleString('en-US')} صوت</p>
-          </div>
+        {pageCount > 1 && (
+          <nav aria-label="صفحات الأصوات" className="pt-4 flex flex-wrap items-center justify-end gap-1.5" dir="rtl">
+            {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => goToPage(n)}
+                aria-current={n === page ? 'page' : undefined}
+                className={`min-w-9 h-9 px-2.5 rounded-xl text-xs font-bold font-mono border transition cursor-pointer ${
+                  n === page ? 'bg-brand-ink text-white border-brand-ink' : 'bg-white text-slate-700 border-slate-200 hover:border-brand'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </nav>
         )}
 
         {/* Empty State */}
