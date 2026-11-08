@@ -52,13 +52,12 @@ export const Header: React.FC<HeaderProps> = ({
   const currentPath = location.pathname;
 
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
-  // the signed-in user's own pages, by account type (admins see both)
-  const accountLinks = [
-    currentUser?.accountType === 'talent'
+  // the signed-in user's own dashboard, by account type (admins: the admin dashboard only)
+  const accountLinks = currentUser?.isPlatformAdmin && currentUser.adminPath
+    ? [{ to: currentUser.adminPath, label: 'لوحة الإدارة', icon: ShieldCheck }]
+    : [currentUser?.accountType === 'talent'
       ? { to: '/ar/talent-dashboard', label: 'لوحة المعلق الصوتي', icon: Mic2 }
-      : { to: '/ar/account', label: 'حسابي', icon: LayoutDashboard },
-    ...(currentUser?.isPlatformAdmin && currentUser.adminPath ? [{ to: currentUser.adminPath, label: 'لوحة الإدارة', icon: ShieldCheck }] : []),
-  ];
+      : { to: '/ar/account', label: 'حسابي', icon: LayoutDashboard }];
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Dropdown states for Desktop

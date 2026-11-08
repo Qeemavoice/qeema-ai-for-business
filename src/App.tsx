@@ -113,14 +113,7 @@ function AppLayout({
   const onAdminPage = path === ADMIN_DASHBOARD_PATH || (Boolean(adminPathCfg) && path === adminPathCfg);
   const isAdminLogin = onAdminPage && !currentUser;
   const hideChrome = isWorkspaceDashboard || isAdminLogin;
-  // مساعد قيمة is off on the public site for now; the admin dashboard loads it so it can be developed there
-  useEffect(() => {
-    if (!onAdminPage || !currentUser?.isPlatformAdmin || document.getElementById('qv-chat-script')) return;
-    const s = document.createElement('script');
-    s.id = 'qv-chat-script'; s.src = '/qv-chat/qv-chat.js'; s.defer = true;
-    s.dataset.position = 'right'; s.dataset.mock = 'true';
-    document.body.appendChild(s);
-  }, [onAdminPage, currentUser?.isPlatformAdmin]);
+  // مساعد قيمة is off everywhere for now (public site and admin dashboard); public/qv-chat stays for when it returns
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FFFFFF] text-[#0F172A] font-['IBM_Plex_Sans_Arabic','Cairo',sans-serif]">
@@ -373,7 +366,9 @@ export default function App() {
           <Route 
             path="/ar/account" 
             element={
-              currentUser?.accountType === 'talent' && !currentUser.isPlatformAdmin ? <Navigate to="/ar/talent-dashboard" replace /> :
+              // admins work in the admin dashboard, narrators in theirs: the client dashboard is for clients only
+              currentUser?.isPlatformAdmin ? <Navigate to={currentUser.adminPath || ADMIN_DASHBOARD_PATH} replace /> :
+              currentUser?.accountType === 'talent' ? <Navigate to="/ar/talent-dashboard" replace /> :
               <SignInGate user={currentUser} allow={() => true} isLoggedIn={isLoggedIn} title="لوحة العميل" hint="سجّل الدخول لفتح لوحتك ومتابعة رصيدك وتوليداتك وحجوزاتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}>
               <ClientDashboardView
                 currentCompany={currentCompany}
