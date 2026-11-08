@@ -27,7 +27,7 @@ import { narratorService } from '../../services/narratorService';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useSiteLists } from '../../lib/siteLists';
 import { api, setToken } from '../../lib/api';
-import { getGoogleAccessToken } from '../../lib/googleSignIn';
+import { getGoogleAccessToken, GOOGLE_SIGNIN_ON } from '../../lib/googleSignIn';
 import { Narrator, ActiveView } from '../../types';
 
 interface NarratorClaimViewProps {
@@ -523,7 +523,7 @@ export const NarratorClaimView: React.FC<NarratorClaimViewProps> = ({
               </div>
 
               {/* Toggle Buttons */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className={`grid ${GOOGLE_SIGNIN_ON ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-6`}>
                 <button
                   type="button"
                   onClick={() => setLoginMethod('password')}
@@ -537,7 +537,7 @@ export const NarratorClaimView: React.FC<NarratorClaimViewProps> = ({
                   <span>كلمة مرور سرية</span>
                 </button>
 
-                <button
+                {GOOGLE_SIGNIN_ON && <button
                   type="button"
                   onClick={() => setLoginMethod('google')}
                   className={`p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
@@ -553,7 +553,7 @@ export const NarratorClaimView: React.FC<NarratorClaimViewProps> = ({
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                   </svg>
                   <span>حساب قوقل</span>
-                </button>
+                </button>}
               </div>
 
               {loginMethod === 'password' ? (

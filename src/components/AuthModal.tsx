@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getGoogleAccessToken } from '../lib/googleSignIn';
+import { getGoogleAccessToken, GOOGLE_SIGNIN_ON } from '../lib/googleSignIn';
 import { api } from '../lib/api';
 import type { User as AppUser } from '../types';
 import { X, Sparkles, Mail, Lock, User, Building2, CheckCircle2, ArrowRight, ShieldCheck, Mic2, Phone } from 'lucide-react';
@@ -171,6 +171,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
+        {GOOGLE_SIGNIN_ON && (<>
         <button
           type="button"
           onClick={handleGoogle}
@@ -190,6 +191,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
           <div className="relative flex justify-center"><span className="px-3 bg-white text-slate-400 text-[11px]">أو بالبريد الإلكتروني</span></div>
         </div>
+        </>)}
 
         {/* Auth Form */}
         <form onSubmit={handleSubmit} noValidate className="space-y-3.5">

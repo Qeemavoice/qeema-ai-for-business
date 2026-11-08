@@ -69,6 +69,9 @@ import { SAMPLE_RULES } from '../../../shared/sampleRules';
 import { fmtUsd, commissionPercent } from '../../../shared/pricing';
 import { fmtDate, fmtDateTime } from '../../lib/format';
 import { narratorService } from '../../services/narratorService';
+import { api } from '../../lib/api';
+import { UserAvatar } from '../UserAvatar';
+import { shrinkImage } from '../../lib/shrinkImage';
 import { audioSynth } from '../../utils/audioSynthesizer';
 import { useSiteLists } from '../../lib/siteLists';
 import { VOICE_CATEGORY_FILTERS } from '../../data/humanVoices';
@@ -823,9 +826,84 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
 
   // Consent section values (from the signed contract)
   const noticeDays = contract?.noticePeriodDays || 365;
+  // ---- the narrator's own account (an admin previewing a narrator cannot set prices, sign, or change the photo) ----
+  const [meNarratorId, setMeNarratorId] = useState<string | null>(null);
+  useEffect(() => { api.getMe().then(r => setMeNarratorId(r.user?.narratorId || null)).catch(() => {}); }, []);
+  const isSelf = Boolean(narrator && meNarratorId === narrator.id);
+  const consent: { acceptedAt: string; ip?: string; name?: string } | null = (narrator as any)?.consent || null;
+
+  // own photo: same upload as the client profile; the server copies it to the narrator record
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const changeNarratorPhoto = async (file: File | null) => {
+    if (!narrator) return;
+    setPhotoBusy(true);
+    try {
+      if (file) await api.uploadAvatar(await shrinkImage(file)); else await api.deleteAvatar();
+      await narratorService.reload();
+      await loadNarratorData(narrator.id);
+    } catch (e: any) { showToast(e.message); } finally { setPhotoBusy(false); }
+  };
+
+  // prices: set once
+  const canSetRates = isSelf && !(narrator as any)?.ratesSetAt;
+  const [ratesDraft, setRatesDraft] = useState({ min: '', hour: '' });
+  const [ratesBusy, setRatesBusy] = useState(false);
+  useEffect(() => {
+    if (narrator) setRatesDraft({ min: String(narrator.rates?.perMinuteUsd || ''), hour: String(narrator.rates?.hourlyLiveDirectingUsd || '') });
+  }, [narrator?.id]);
+  const handleSaveRates = async () => {
+    if (!narrator) return;
+    const min = Number(ratesDraft.min), hour = Number(ratesDraft.hour);
+    if (!(min >= 1 && min <= 1000) || !(hour >= 1 && hour <= 10000)) { showToast('اكتب سعر الدقيقة (1 إلى 1000) وسعر الساعة (1 إلى 10000) بالدولار'); return; }
+    if (!window.confirm(`سيُحفظ سعر الدقيقة $${min} وسعر الساعة $${hour}، ولا يمكن تغييرهما بعد ذلك إلا عبر الدعم. متابعة؟`)) return;
+    setRatesBusy(true);
+    try {
+      const res = await fetch('/api/v1/narrators/me/rates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perMinuteUsd: min, hourlyUsd: hour }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'تعذر حفظ الأسعار');
+      await narratorService.reload();
+      await loadNarratorData(narrator.id);
+      showToast('تم حفظ أسعارك');
+    } catch (e: any) { showToast(e.message); } finally { setRatesBusy(false); }
+  };
+
+  // agreement: ticked and saved once
+  const [consentTick, setConsentTick] = useState(false);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const handleSaveConsent = async () => {
+    if (!narrator || !consentTick) return;
+    setConsentBusy(true);
+    try {
+      const res = await fetch('/api/v1/narrators/me/consent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accepted: true }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'تعذر حفظ الموافقة');
+      await narratorService.reload();
+      await loadNarratorData(narrator.id);
+      showToast('تم توثيق موافقتك');
+    } catch (e: any) { showToast(e.message); } finally { setConsentBusy(false); }
+  };
+
+  // «تحميل وثيقة العقد»: the agreement card itself as an A4 PDF (buttons left out)
+  const agreementRef = useRef<HTMLDivElement>(null);
+  const [agreementBusy, setAgreementBusy] = useState(false);
+  const downloadAgreement = async () => {
+    if (!agreementRef.current) return;
+    setAgreementBusy(true);
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas-pro'), import('jspdf')]);
+      const canvas = await html2canvas(agreementRef.current, { scale: 2, backgroundColor: '#ffffff', ignoreElements: el => el.hasAttribute('data-no-pdf') });
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+      const w = 190, h = Math.min(277, (canvas.height * w) / canvas.width);
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 10, 10, w, h);
+      pdf.save(`Qeemavoice-agreement-${(narrator?.displayName || 'narrator').replace(/\s+/g, '-')}.pdf`);
+    } catch { showToast('تعذر تجهيز الوثيقة، حاول مرة أخرى'); } finally { setAgreementBusy(false); }
+  };
+
+  // the narrator as the shared avatar expects it: own photo, otherwise initials on the account's colour
+  const narratorAsUser = narrator ? ({ id: narrator.id, email: narrator.email || narrator.id, name: narrator.displayName, avatar: narrator.avatarUrl || undefined } as any) : null;
   // the share the admin set on the narrator's studio voices (the one earnings are paid at); the narrator cannot change it
   const consentShare = studioVoices.find(v => v.sharePercent > 0)?.sharePercent;
-  const consentStart = contract?.signedAt || '2026-02-15T10:00:00Z';
+  const consentStart = (narrator as any)?.consent?.acceptedAt || contract?.signedAt || new Date().toISOString();
   const consentEnd = (() => { const d = new Date(consentStart); d.setFullYear(d.getFullYear() + 1); return d.toISOString(); })();
 
 
@@ -869,11 +947,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
               <div className="px-1.5">
             {/* Narrator Profile Widget in Sidebar */}
             <div className="flex items-center gap-3">
-              <img
-                src={narrator?.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120'}
-                alt={narrator?.displayName}
-                className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shrink-0"
-              />
+              <UserAvatar user={narratorAsUser} className="w-12 h-12 text-base" />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-bold text-sm text-slate-900 truncate">
@@ -969,6 +1043,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                   <Sliders className={`w-4 h-4 shrink-0 ${currentSubPage === 'settings' ? 'text-brand-text' : 'text-slate-400 group-hover:text-slate-700'}`} />
                   <span className="truncate">أصواتي في الاستوديو</span>
                 </div>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${currentSubPage === 'settings' ? 'bg-brand text-white' : 'bg-orange-50 text-brand-text border border-orange-100'}`}>قريبًا</span>
               </button>
               </nav>
             </div>
@@ -1088,11 +1163,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                 className="flex items-center gap-2 p-1 pl-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/60 transition-colors cursor-pointer"
                 title="قائمة الحساب"
               >
-                <img
-                  src={narrator?.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80'}
-                  alt={narrator?.displayName}
-                  className="w-7 h-7 rounded-lg object-cover border border-slate-200"
-                />
+                <UserAvatar user={narratorAsUser} className="w-7 h-7 text-[10px]" />
                 <span className="text-xs font-bold text-slate-800 hidden md:inline">
                   {narrator?.displayName ? narrator.displayName.split(' ')[0] : 'المعلق'}
                 </span>
@@ -1103,7 +1174,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                 <div className="absolute left-0 top-11 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 text-xs space-y-1 animate-fade-in">
                   <div className="px-3 py-2.5 border-b border-slate-100 space-y-1.5">
                     <div className="flex items-center gap-2.5">
-                      <img src={narrator?.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80'} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-200" />
+                      <UserAvatar user={narratorAsUser} className="w-10 h-10 text-sm" />
                       <div className="min-w-0">
                         <p className="font-bold text-slate-900 truncate">{narrator?.displayName}</p>
                         <p className="text-[10px] text-slate-400 truncate" dir="ltr">{narrator?.email}</p>
@@ -1399,6 +1470,20 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                     <span className="text-[10px] text-slate-400">تحديث فوري مع تحقق أمني</span>
                   </div>
 
+                  {/* the narrator's own photo (shown in the dashboard instead of initials) */}
+                  {isSelf && (
+                    <div className="flex items-center gap-4">
+                      <UserAvatar user={narratorAsUser} className="w-16 h-16 text-xl" />
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <label className={`px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold cursor-pointer ${photoBusy ? 'opacity-60 pointer-events-none' : ''}`}>
+                          {photoBusy ? 'جارٍ الرفع...' : narrator?.avatarUrl ? 'تغيير الصورة' : 'إضافة صورة'}
+                          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) changeNarratorPhoto(f); }} />
+                        </label>
+                        {narrator?.avatarUrl && <button type="button" disabled={photoBusy} onClick={() => changeNarratorPhoto(null)} className="px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-bold cursor-pointer">إزالة</button>}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-4 text-xs">
                     {/* Full Name (right) + Email (left) on one row */}
                     <div className="grid sm:grid-cols-2 gap-4">
@@ -1531,19 +1616,31 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                       </div>
                     </div>
 
-                    {/* Prices (set by the Qeema team) */}
+                    {/* Prices: the narrator sets them once; later changes go through the Qeema team */}
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-slate-700 font-bold mb-1.5">سعر الدقيقة ($)</label>
-                        <input type="text" readOnly value={fmtUsd(narrator?.rates?.perMinuteUsd ?? 0)} dir="ltr"
-                          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-600 cursor-not-allowed" />
+                        <input type="number" min={1} max={1000} step="0.5" dir="ltr" readOnly={!canSetRates}
+                          value={canSetRates ? ratesDraft.min : fmtUsd(narrator?.rates?.perMinuteUsd ?? 0)}
+                          onChange={e => setRatesDraft({ ...ratesDraft, min: e.target.value })}
+                          className={`w-full px-4 py-2.5 border rounded-xl text-xs font-mono font-bold ${canSetRates ? 'bg-white border-slate-300 text-slate-900 focus:border-brand outline-none' : 'bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed'}`} />
                       </div>
                       <div>
                         <label className="block text-slate-700 font-bold mb-1.5">سعر الساعة ($)</label>
-                        <input type="text" readOnly value={fmtUsd(narrator?.rates?.hourlyLiveDirectingUsd ?? 0)} dir="ltr"
-                          className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-600 cursor-not-allowed" />
+                        <input type="number" min={1} max={10000} step="1" dir="ltr" readOnly={!canSetRates}
+                          value={canSetRates ? ratesDraft.hour : fmtUsd(narrator?.rates?.hourlyLiveDirectingUsd ?? 0)}
+                          onChange={e => setRatesDraft({ ...ratesDraft, hour: e.target.value })}
+                          className={`w-full px-4 py-2.5 border rounded-xl text-xs font-mono font-bold ${canSetRates ? 'bg-white border-slate-300 text-slate-900 focus:border-brand outline-none' : 'bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed'}`} />
                       </div>
-                      <p className="sm:col-span-2 text-[10px] text-slate-400 -mt-2">* الأسعار يحدّدها فريق قيمة، ويرى العميل سعر الدقيقة شاملاً عمولة المنصة. للتعديل تواصل مع الدعم.</p>
+                      {canSetRates ? (
+                        <div className="sm:col-span-2 -mt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3">
+                          <p className="text-[11px] text-amber-800 font-bold">حدّد سعرك مرة واحدة فقط. بعد الحفظ لا يمكن تغييره إلا عبر الدعم. يرى العميل سعر الدقيقة شاملاً عمولة المنصة.</p>
+                          <button type="button" onClick={handleSaveRates} disabled={ratesBusy}
+                            className="shrink-0 px-4 py-2 rounded-xl bg-brand hover:bg-brand-orange text-white text-xs font-bold cursor-pointer disabled:opacity-60">{ratesBusy ? '...' : 'حفظ الأسعار'}</button>
+                        </div>
+                      ) : (
+                        <p className="sm:col-span-2 text-[10px] text-slate-400 -mt-2">* تم تحديد أسعارك، ويرى العميل سعر الدقيقة شاملاً عمولة المنصة. للتعديل تواصل مع الدعم.</p>
+                      )}
                     </div>
 
                     <div className="pt-2">
@@ -2355,12 +2452,8 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
             {currentSubPage === 'settings' && (
               <div className="space-y-6 animate-fade-in">
                 <div className="border-b border-slate-200/80 pb-4">
-                  <h2 className="text-xl font-black text-slate-900">أصواتي في الاستوديو</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">الأصوات التي اعتمدتها إدارة قيمة فويس للتوليد في استوديو TTS. استمع إليها لتعرف أي صوت تحصل على أرباح عند استخدامه.</p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 leading-relaxed">
-                  عند استخدام أي صوت من أصواتك في الاستوديو تُضاف حصتك إلى أرباحك، وتظهر في «سجل الأرباح».
+                  <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">أصواتي في الاستوديو <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-brand-text border border-orange-100">قريبًا</span></h2>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">الأصوات التي اعتمدتها إدارة قيمة فويس للتوليد في استوديو TTS. استمع إليها لتعرف أي صوت تحصل على أرباح عند استخدامه. عند استخدام أي صوت من أصواتك في الاستوديو تُضاف حصتك إلى أرباحك، وتظهر في «سجل الأرباح».</p>
                 </div>
 
                 {studioVoices.length === 0 ? (
@@ -2382,7 +2475,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                 )}
 
                 {/* قسم "الموافقة والإقرار الرقمي المعتمد" */}
-                <div className="bg-white rounded-3xl p-6 border-2 border-orange-500/30 shadow-sm space-y-5">
+                <div ref={agreementRef} className="bg-white rounded-3xl p-6 border-2 border-orange-500/30 shadow-sm space-y-5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -2394,24 +2487,22 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>اتفاق ساري</span>
-                      </span>
+                      {consent ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>اتفاق ساري</span>
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">بانتظار موافقتك</span>
+                      )}
                       <button
-                        onClick={() => window.print()}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-                        title="طباعة العقد"
-                      >
-                        <Printer className="w-3.5 h-3.5 text-slate-600" />
-                        <span>طباعة</span>
-                      </button>
-                      <button
-                        onClick={() => showToast('تم إعداد وتحميل نسخة وثيقة العقد الرقمية المعتمدة')}
-                        className="px-3.5 py-1.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        onClick={downloadAgreement}
+                        data-no-pdf
+                        disabled={agreementBusy}
+                        className="px-3.5 py-1.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
                       >
                         <Download className="w-3.5 h-3.5 text-orange-400" />
-                        <span>تحميل وثيقة العقد</span>
+                        <span>{agreementBusy ? 'جارٍ التجهيز...' : 'تحميل وثيقة العقد'}</span>
                       </button>
                     </div>
                   </div>
@@ -2440,27 +2531,33 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                     </li>
                   </ul>
 
-                  {/* Acknowledgement and signature */}
-                  <div className="p-4 rounded-2xl bg-orange-50/40 border border-orange-200/90 flex items-start gap-3">
-                    <div className="mt-0.5 w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center shrink-0" title="إقرار معتمد ولا يمكن تعديله">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    </div>
-                    <div className="space-y-1 text-xs">
-                      <p className="font-bold text-slate-900 text-sm leading-relaxed">أقرّ بأنني قرأتُ هذه البنود ووافقتُ عليها.</p>
-                      <p className="text-slate-500">الإقرار موثّق ولا يمكن تعديله.</p>
-                    </div>
-                  </div>
+                  {/* Acknowledgement: open until the narrator ticks it and saves; recorded on the server with the date and IP, then locked */}
+                  <label className={`p-4 rounded-2xl bg-orange-50/40 border border-orange-200/90 flex items-start gap-3 ${consent ? '' : 'cursor-pointer'}`}>
+                    <input type="checkbox" className="mt-1 w-5 h-5 accent-blue-600 shrink-0" checked={Boolean(consent) || consentTick}
+                      disabled={Boolean(consent) || !isSelf} onChange={e => setConsentTick(e.target.checked)} />
+                    <span className="space-y-1 text-xs">
+                      <span className="block font-bold text-slate-900 text-sm leading-relaxed">أقرّ بأنني قرأتُ هذه البنود ووافقتُ عليها.</span>
+                      <span className="block text-slate-500">{consent ? 'الإقرار موثّق ولا يمكن تعديله.' : 'بعد الحفظ يُوثّق الإقرار بتاريخه ولا يمكن تعديله.'}</span>
+                    </span>
+                  </label>
 
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    <div className="space-y-0.5">
-                      <span className="text-[11px] text-slate-400 block font-medium">وقّع إلكترونيًا:</span>
-                      <strong className="text-slate-900 font-black text-sm">{contract?.signatureName || narrator?.displayName}</strong>
+                  {consent ? (
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] text-slate-400 block font-medium">وقّع إلكترونيًا:</span>
+                        <strong className="text-slate-900 font-black text-sm">{consent.name || narrator?.displayName}</strong>
+                      </div>
+                      <div className="text-right sm:text-left font-mono text-[11px] text-slate-500 space-y-0.5">
+                        <p>بتاريخ {fmtDateTime(consent.acceptedAt)}{consent.ip ? ` • IP: ${consent.ip}` : ''}</p>
+                        <p className="text-emerald-700 font-bold">ختم زمني رقمي موثّق</p>
+                      </div>
                     </div>
-                    <div className="text-right sm:text-left font-mono text-[11px] text-slate-500 space-y-0.5">
-                      <p>بتاريخ {fmtDate(consentStart)} • IP: {contract?.ipAddress || '151.254.12.89'}</p>
-                      <p className="text-emerald-700 font-bold">ختم زمني رقمي موثّق</p>
-                    </div>
-                  </div>
+                  ) : isSelf ? (
+                    <button type="button" onClick={handleSaveConsent} disabled={!consentTick || consentBusy} data-no-pdf
+                      className="w-full py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white font-bold text-xs cursor-pointer disabled:opacity-50">
+                      {consentBusy ? '...' : 'حفظ الموافقة'}
+                    </button>
+                  ) : null}
 
                   <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-100">
                     لسحب الموافقة أو إيقاف أحد أصواتك تواصل مع إدارة قيمة فويس، وتُطبَّق فترة الإشعار المذكورة أعلاه.
