@@ -20,7 +20,14 @@ use Illuminate\Support\Facades\DB;
  */
 class Bookings
 {
-    public const CHARS_PER_MINUTE = 100;
+    /** recording time: every 100 words of script = one minute */
+    public const WORDS_PER_MINUTE = 100;
+
+    public static function words(string $s): int
+    {
+        $t = trim($s);
+        return $t === '' ? 0 : count(preg_split('/\s+/u', $t));
+    }
     public const DEFAULT_PRICE_PER_MINUTE_USD = 40;
     public const MAX_EXPRESS_MINUTES = 5;
     public const DELIVERY = ['48h' => [2, 0], '24h' => [1, 10], '6h' => [1, 15]];
@@ -128,7 +135,7 @@ class Bookings
         $detail = $item ? $item->details : null;
         $script = (string) ($item->item ?? '');
         $chars = $meta->char_count ?? mb_strlen($script);
-        $minutes = $meta->duration_minutes ?? ($detail->number_of_minutes ?? max(1, (int) ceil($chars / self::CHARS_PER_MINUTE)));
+        $minutes = $meta->duration_minutes ?? ($detail->number_of_minutes ?? max(1, (int) ceil(self::words($script) / self::WORDS_PER_MINUTE)));
         $voiceActor = $o->voiceActor;
         $customer = $o->customer;
         $review = $meta && $meta->review ? json_decode($meta->review, true) : null;
@@ -222,7 +229,8 @@ class Bookings
         }
 
         $chars = mb_strlen($script);
-        $minutes = max(1, (int) ceil($chars / self::CHARS_PER_MINUTE));
+        $words = self::words($script);
+        $minutes = max(1, (int) ceil($words / self::WORDS_PER_MINUTE));
         $isLong = $minutes > self::MAX_EXPRESS_MINUTES;
         $delivery = $isLong ? 'custom' : (isset(self::DELIVERY[$in['delivery'] ?? '']) ? $in['delivery'] : '48h');
         $opt = self::DELIVERY[$delivery] ?? [0, 0];
@@ -239,7 +247,7 @@ class Bookings
 
         try { $currencyId = CurrencyHelper::getId(); } catch (\Throwable $e) { $currencyId = 1; }
 
-        $order = DB::transaction(function () use ($customer, $voice, $contact, $script, $notes, $chars, $minutes, $narratorPrice, $perMinute, $pct, $base, $price, $payout, $delivery, $license, $sampleId, $currencyId, $opt) {
+        $order = DB::transaction(function () use ($customer, $voice, $contact, $script, $notes, $chars, $words, $minutes, $narratorPrice, $perMinute, $pct, $base, $price, $payout, $delivery, $license, $sampleId, $currencyId, $opt) {
             $o = new Order();
             $o->forceFill([
                 'voice_actor_id' => $voice['talentUserId'],
@@ -255,7 +263,7 @@ class Bookings
                 'total' => $price,
                 'currency_id' => $currencyId,
                 'list_of_price' => json_encode([
-                    'source' => 'new-ui', 'script' => ['numberOfWords' => str_word_count($script) ?: count(preg_split('/\s+/u', $script)), 'numberOfMinutes' => $minutes,
+                    'source' => 'new-ui', 'script' => ['numberOfWords' => $words, 'numberOfMinutes' => $minutes,
                         'pricePerMinute' => $narratorPrice, 'platFormCommission' => ['percentage' => $pct, 'value' => round($perMinute - $narratorPrice, 2)],
                         'subTotal' => round($minutes * $narratorPrice, 2), 'total' => $base],
                     'delivery' => ['option' => $delivery, 'surchargePct' => $opt[1]], 'total' => $price, 'talentPayoutUsd' => $payout,
@@ -274,7 +282,7 @@ class Bookings
             $d->forceFill([
                 'item_id' => $item->id, 'voice_audio_file' => $voice['audioFile'], 'notes' => $notes, 'language_id' => $voice['languageId'],
                 'category_id' => $voice['categoryId'], 'dialect_id' => $voice['dialectId'], 'voice_type_id' => $voice['voiceTypeId'],
-                'word_count' => count(preg_split('/\s+/u', $script)), 'number_of_minutes' => $minutes,
+                'word_count' => $words, 'number_of_minutes' => $minutes,
             ])->save();
 
             self::saveMeta($o->id, [

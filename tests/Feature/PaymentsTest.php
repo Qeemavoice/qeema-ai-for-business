@@ -129,6 +129,11 @@ class PaymentsTest extends TestCase
         $res = $this->postJson('/api/v1/client/bookings', ['sampleId' => '501', 'scriptText' => 'نص الإعلان', 'customerName' => 'مشتري',
             'customerEmail' => 'buyer@example.test', 'customerWhatsapp' => '+966500000000'], $h)->assertOk();
         $this->assertSame('awaiting_payment', $res->json('booking.status'));
+        $this->assertSame(1, $res->json('booking.durationMinutes'));
+        // minutes follow the words: 150 words = 2 minutes (every 100 words a minute), however long the words are
+        $long = $this->postJson('/api/v1/client/bookings', ['sampleId' => '501', 'scriptText' => trim(str_repeat('كلمةطويلةجدا ', 150)), 'customerName' => 'مشتري',
+            'customerEmail' => 'buyer@example.test', 'customerWhatsapp' => '+966500000000'], $h)->assertOk();
+        $this->assertSame(2, $long->json('booking.durationMinutes'));
         $this->assertStringStartsWith('https://checkout.stripe.com/', $res->json('checkoutUrl'));
         $sid = array_key_first($this->stripe->created);
         $this->assertSame((int) round($res->json('booking.priceUsd') * 100), $this->stripe->created[$sid]['line_items'][0]['price_data']['unit_amount']);

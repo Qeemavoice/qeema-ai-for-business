@@ -35,7 +35,7 @@ import { useHumanVoices } from '../lib/humanVoices';
 import { useSiteLists } from '../lib/siteLists';
 import { usePageText } from '../lib/pageTexts';
 
-const CHARS_PER_MINUTE = 100;
+const WORDS_PER_MINUTE = 100;
 
 /** Final per-minute prices (narrator price + platform commission) of narrators in this category; falls back to all narrators. */
 const estimateProjectCost = (samples: UnifiedVoiceItem[], category: string, minutes: number) => {
@@ -305,7 +305,7 @@ export const PricingPage: React.FC = () => {
             <p className="text-center text-[11px] text-slate-500 leading-6">
               السعر النهائي شامل الهندسة الصوتية والترخيص التجاري، ومبني على أسعار المعلقين في المنصة.
               <br />
-              الدقيقة تعادل نحو {CHARS_PER_MINUTE} حرف من النص (المسافات والتشكيل تُحسب).
+              الدقيقة تعادل نحو {WORDS_PER_MINUTE} كلمة من النص.
             </p>
           </div>
         </div>

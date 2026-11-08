@@ -23,8 +23,9 @@ export const BlogDetailsPage: React.FC = () => {
   const { posts: dashPosts, loaded } = useDashboardPosts();
   const decodedSlug = (() => { try { return decodeURIComponent(slug || ''); } catch { return slug || ''; } })();
   // Built-in posts first (their URLs never change), then articles written in the dashboard
-  const article = getArticleBySlug(slug || '')
-    ?? dashPosts.find(p => p.slug === decodedSlug || decodedSlug.startsWith(`${p.recordId}-`));
+  // the real dashboard article wins; a built-in post only when no real one matches
+  const article = dashPosts.find(p => p.slug === decodedSlug || decodedSlug.startsWith(`${p.recordId}-`))
+    ?? (loaded ? getArticleBySlug(slug || '') : undefined);
 
   // Truncate description to 155 chars for SEO snippet
   const rawDesc = article?.shortDescription || '';
