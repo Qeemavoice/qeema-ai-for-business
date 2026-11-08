@@ -2,7 +2,7 @@
 export const SAMPLE_RULES = {
   format: 'mp3',
   maxDurationSec: 40,
-  maxSizeMb: 20,
+  maxSizeMb: 5,
   maxSamplesPerNarrator: 3
 } as const;
 

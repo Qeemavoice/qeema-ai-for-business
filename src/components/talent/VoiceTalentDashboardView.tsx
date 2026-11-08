@@ -314,7 +314,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
   const SAMPLE_CATEGORIES = siteLists.categories;
   const DIALECTS = siteLists.dialects;
   const [newSampleCategory, setNewSampleCategory] = useState(SAMPLE_CATEGORIES[0]);
-  const [newSampleDialect, setNewSampleDialect] = useState('سعودي نجدي');
+  const [newSampleDialect, setNewSampleDialect] = useState('');
   const [newSampleFileName, setNewSampleFileName] = useState<string | null>(null);
   const [newSampleFile, setNewSampleFile] = useState<File | null>(null);
   const [notifications, setNotifications] = useState<NarratorNotification[]>([]);
@@ -685,15 +685,28 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
     setSampleFormError(null);
 
     try {
-      // ponytail: object URL lives only in this browser session; real upload goes to storage once the backend exists
-      const audioUrl = newSampleFile ? URL.createObjectURL(newSampleFile) : undefined;
+      if (!newSampleFile) { setSampleFormError('اختر ملف العينة الصوتية'); setIsSubmittingSample(false); return; }
+      if (!newSampleDialect.trim()) { setSampleFormError('اكتب لهجة العينة'); setIsSubmittingSample(false); return; }
+      // prices are set once: a narrator without prices sets them here before the first sample
+      if (canSetRates && !(await handleSaveRates())) { setIsSubmittingSample(false); return; }
+      // the MP3 goes to the server (uploads/samples) so the review team and clients can hear it;
+      // another format is not uploaded: the sample is saved and rejected automatically by the MP3 rule
+      const isMp3 = /\.mp3$/i.test(newSampleFile.name) || /audio\/(mpeg|mp3)/.test(newSampleFile.type);
+      let audioUrl: string | undefined;
+      if (isMp3) {
+        const dataUrl = await new Promise<string>((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result)); fr.onerror = () => reject(new Error('تعذر قراءة الملف')); fr.readAsDataURL(newSampleFile); });
+        const up = await fetch('/api/v1/narrators/me/sample-file', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: dataUrl.replace(/^data:[^;]*;/, 'data:audio/mpeg;') }) });
+        const upBody = await up.json().catch(() => ({}));
+        if (!up.ok) throw new Error(upBody.error || 'تعذر رفع الملف الصوتي');
+        audioUrl = upBody.url;
+      }
       const created = await narratorService.addVoiceSample({
         narratorId: narrator.id,
         title: newSampleTitle.trim(),
         category: newSampleCategory,
         dialect: newSampleDialect,
         audioUrl,
-        durationSec: audioUrl ? await readAudioDuration(audioUrl) : 30,
+        durationSec: await readAudioDuration(URL.createObjectURL(newSampleFile)),
         format: (newSampleFileName?.split('.').pop() || 'mp3').toLowerCase(),
         sizeMb: newSampleFile ? Math.round(newSampleFile.size / 1048576 * 100) / 100 : undefined
       });
@@ -701,6 +714,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
       await loadNarratorData(narrator.id);
       setIsAddSampleModalOpen(false);
       setNewSampleTitle('');
+      setNewSampleDialect('');
       setNewSampleFileName(null);
       setNewSampleFile(null);
       showToast(created.status === 'rejected'
@@ -852,11 +866,11 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
   useEffect(() => {
     if (narrator) setRatesDraft({ min: String(narrator.rates?.perMinuteUsd || ''), hour: String(narrator.rates?.hourlyLiveDirectingUsd || '') });
   }, [narrator?.id]);
-  const handleSaveRates = async () => {
-    if (!narrator) return;
+  const handleSaveRates = async (): Promise<boolean> => {
+    if (!narrator) return false;
     const min = Number(ratesDraft.min), hour = Number(ratesDraft.hour);
-    if (!(min >= 1 && min <= 1000) || !(hour >= 1 && hour <= 10000)) { showToast('اكتب سعر الدقيقة (1 إلى 1000) وسعر الساعة (1 إلى 10000) بالدولار'); return; }
-    if (!window.confirm(`سيُحفظ سعر الدقيقة $${min} وسعر الساعة $${hour}، ولا يمكن تغييرهما بعد ذلك إلا عبر الدعم. متابعة؟`)) return;
+    if (!(min >= 1 && min <= 1000) || !(hour >= 1 && hour <= 10000)) { showToast('اكتب سعر الدقيقة (1 إلى 1000) وسعر الساعة (1 إلى 10000) بالدولار'); return false; }
+    if (!window.confirm(`سيُحفظ سعر الدقيقة $${min} وسعر الساعة $${hour}، ولا يمكن تغييرهما بعد ذلك إلا عبر الدعم. متابعة؟`)) return false;
     setRatesBusy(true);
     try {
       const res = await fetch('/api/v1/narrators/me/rates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perMinuteUsd: min, hourlyUsd: hour }) });
@@ -865,7 +879,8 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
       await narratorService.reload();
       await loadNarratorData(narrator.id);
       showToast('تم حفظ أسعارك');
-    } catch (e: any) { showToast(e.message); } finally { setRatesBusy(false); }
+      return true;
+    } catch (e: any) { showToast(e.message); return false; } finally { setRatesBusy(false); }
   };
 
   // agreement: ticked and saved once
@@ -2119,7 +2134,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                       <ul className="space-y-1 text-slate-700 text-[11px] list-disc list-inside">
                         <li><strong>نقاء التسجيل:</strong> خلو التسجيل بنسبة 100% من صدى الصوت والضوضاء والتشويش الخلفي.</li>
                         <li><strong>صوت خام نقي:</strong> عدم إضافة أي مؤثرات موسيقية أو أصداء غير طبيعية في الخلفية.</li>
-                        <li><strong>جودة الملف:</strong> صيغة إم بي ثري الصوتية فقط (الحد الأقصى 20 ميجابايت) وبجودة استوديو احترافية.</li>
+                        <li><strong>جودة الملف:</strong> صيغة إم بي ثري الصوتية فقط (الحد الأقصى {SAMPLE_RULES.maxSizeMb} ميجابايت) وبجودة استوديو احترافية.</li>
                       </ul>
                     </div>
                   )}
@@ -2799,7 +2814,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                   type="text"
                   value={newSampleDialect}
                   onChange={(e) => setNewSampleDialect(e.target.value)}
-                  placeholder="مثال: سعودي نجدي، فصحى معاصرة، خليجي عام..."
+                  placeholder="مثال: سعودي نجدي، فصحى معاصرة، خليجي عام"
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:border-orange-500"
                   required
                 />
@@ -2811,15 +2826,29 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                   <span className="text-slate-700 font-bold block">سعر الدقيقة المعتمد:</span>
                   <span className="text-[10px] text-slate-500">سعرك الخاص. يرى العميل السعر شاملاً عمولة المنصة ({commissionPercent()}%)</span>
                 </div>
-                <div className="px-3 py-1 rounded-lg bg-white border border-slate-200 font-mono font-black text-slate-900 text-sm">
-                  ${fmtUsd(narrator?.rates?.perMinuteUsd ?? 0)} / دقيقة
-                </div>
+                {canSetRates ? (
+                  <div className="flex items-center gap-1.5">
+                    <input type="number" min={1} max={1000} step="0.5" dir="ltr" required value={ratesDraft.min} placeholder="0"
+                      onChange={e => setRatesDraft({ ...ratesDraft, min: e.target.value })}
+                      className="w-20 px-2 py-1.5 rounded-lg bg-white border border-slate-300 font-mono font-black text-slate-900 text-sm focus:outline-hidden focus:border-orange-500" />
+                    <span className="text-[11px] text-slate-500">$ / دقيقة</span>
+                    <input type="number" min={1} max={10000} step="1" dir="ltr" required value={ratesDraft.hour} placeholder="0"
+                      onChange={e => setRatesDraft({ ...ratesDraft, hour: e.target.value })}
+                      className="w-20 px-2 py-1.5 rounded-lg bg-white border border-slate-300 font-mono font-black text-slate-900 text-sm focus:outline-hidden focus:border-orange-500" />
+                    <span className="text-[11px] text-slate-500">$ / ساعة</span>
+                  </div>
+                ) : (
+                  <div className="px-3 py-1 rounded-lg bg-white border border-slate-200 font-mono font-black text-slate-900 text-sm">
+                    ${fmtUsd(narrator?.rates?.perMinuteUsd ?? 0)} / دقيقة
+                  </div>
+                )}
               </div>
+              {canSetRates && <p className="text-[10px] text-amber-700 font-bold -mt-2">حدّد سعر الدقيقة والساعة مرة واحدة فقط، ويُطبّق على كل عيناتك. بعد الحفظ لا يتغير إلا عبر الدعم.</p>}
 
               {/* File Upload Simulation (Strictly MP3 only, Max 20MB) */}
               <div>
                 <label className="block text-slate-700 font-bold mb-1">
-                  رفع الملف الصوتي (<span className="text-orange-700 font-black">صيغة إم بي ثري الصوتية فقط</span>، الحد الأقصى 20 ميجابايت) *
+                  رفع الملف الصوتي (<span className="text-orange-700 font-black">صيغة إم بي ثري الصوتية فقط</span>، الحد الأقصى {SAMPLE_RULES.maxSizeMb} ميجابايت) *
                 </label>
                 <div 
                   onClick={() => fileInputRef.current?.click()}
@@ -2851,21 +2880,6 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                         : `صيغة MP3 فقط، ومدة لا تتجاوز ${SAMPLE_RULES.maxDurationSec} ثانية. العينة المخالفة تُرفض تلقائياً`}
                     </span>
                   </div>
-                  {!newSampleFileName && (
-                    <div className="pt-1">
-                      <span 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSampleFormError(null);
-                          setNewSampleFile(null);
-                          setNewSampleFileName('عينة_صوتية_استوديو_نقية.mp3');
-                        }}
-                        className="inline-block text-[10px] font-bold text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-lg border border-orange-200 cursor-pointer"
-                      >
-                        ⚡ تجربة عينة صوتية جاهزة للمعاينة
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
 
