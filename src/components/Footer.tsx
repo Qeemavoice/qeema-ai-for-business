@@ -236,14 +236,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenChangelog }) => {
 
           <SocialLinks tone="light" />
 
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>أصوات مرخصة وتراخيص تجارية موثقة</span>
-            </span>
-            <span>•</span>
-            <span className="font-mono text-slate-400">https://qeemavoice.com</span>
-          </div>
         </div>
 
       </div>
