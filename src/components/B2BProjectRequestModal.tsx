@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { countScriptWords } from './BookHumanVoiceModal';
 import { useSiteLists } from '../lib/siteLists';
 import { 
   X, 
@@ -20,7 +21,8 @@ import {
 
 // Same dialect list as the voice library filter (single source: src/data/dialects.ts)
 
-const CHARS_PER_MINUTE = 100;
+/** human recording: every 100 words = one minute (same rule as the voice booking) */
+const WORDS_PER_MINUTE = 100;
 const PRICE_PER_MINUTE_USD = 40;
 
 interface B2BProjectRequestModalProps {
@@ -61,8 +63,8 @@ export const B2BProjectRequestModal: React.FC<B2BProjectRequestModalProps> = ({
   });
 
   // Duration & cost: every 100 characters = 1 minute of work
-  const charCount = formData.projectBrief.trim().length;
-  const durationMinutes = charCount === 0 ? 0 : Math.ceil(charCount / CHARS_PER_MINUTE);
+  const wordCount = countScriptWords(formData.projectBrief);
+  const durationMinutes = wordCount === 0 ? 0 : Math.ceil(wordCount / WORDS_PER_MINUTE);
   const finalCostUsd = durationMinutes * PRICE_PER_MINUTE_USD;
 
   const [sendError, setSendError] = useState('');
@@ -363,11 +365,11 @@ export const B2BProjectRequestModal: React.FC<B2BProjectRequestModalProps> = ({
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none resize-none"
                 />
 
-                {/* Duration & cost counter (every 100 characters = 1 minute) */}
+                {/* Duration & cost counter (every 100 words = 1 minute) */}
                 <div className="mt-2 grid grid-cols-3 gap-2">
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                    <div className="text-[10px] text-slate-500">عدد الحروف</div>
-                    <div className="font-mono font-bold text-slate-900 text-sm">{charCount.toLocaleString('en-US')}</div>
+                    <div className="text-[10px] text-slate-500">عدد الكلمات</div>
+                    <div className="font-mono font-bold text-slate-900 text-sm">{wordCount.toLocaleString('en-US')}</div>
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
                     <div className="text-[10px] text-slate-500">مدة العمل (دقيقة)</div>
@@ -378,7 +380,7 @@ export const B2BProjectRequestModal: React.FC<B2BProjectRequestModalProps> = ({
                     <div className="font-mono font-black text-brand-text text-sm">${finalCostUsd.toLocaleString('en-US')}</div>
                   </div>
                 </div>
-                <p className="mt-1 text-[10px] text-slate-400">كل 100 حرف تعادل دقيقة عمل واحدة • ${PRICE_PER_MINUTE_USD} للدقيقة</p>
+                <p className="mt-1 text-[10px] text-slate-400">كل 100 كلمة تعادل دقيقة عمل واحدة • ${PRICE_PER_MINUTE_USD} للدقيقة</p>
               </div>
 
               {/* Action Buttons */}
