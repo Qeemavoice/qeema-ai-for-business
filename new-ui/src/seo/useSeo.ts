@@ -105,7 +105,7 @@ export function useSeo(config: SeoConfigItem) {
         '@context': 'https://schema.org',
         '@type': 'Organization',
         'name': 'قيمة فويس',
-        'alternateName': 'Qeema Voice',
+        'alternateName': 'Qeemavoice',
         'url': BASE_SITE_URL,
         'logo': `${BASE_SITE_URL}/assets/logo.png`,
         'description': 'منصة التعليق الصوتي العربي المتكاملة التي تجمع نخبة من المعلقين المحترفين بكل اللهجات مع تقنيات الذكاء الاصطناعي الأخلاقي المرخص.',

@@ -29,14 +29,14 @@ class Mailer
                 'username' => $smtp['username'] ?: null, 'password' => $smtp['password'] ?: null, 'timeout' => 20, 'auth_mode' => null,
             ]]);
             $name = 'qv_smtp';
-            if (!empty($smtp['fromAddress'])) $from = [$smtp['fromAddress'], $smtp['fromName'] ?: 'Qeema Voice'];
+            if (!empty($smtp['fromAddress'])) $from = [$smtp['fromAddress'], $smtp['fromName'] ?: 'Qeemavoice'];
         } elseif (env('MAIL_MAILER') === 'log') {
             config(['mail.driver' => null, 'mail.mailers.qv_log' => ['transport' => 'log']]);
             $name = 'qv_log';
         }
         if (!$from) {
             $addr = config('mail.from.address') ?: (string) env('MAIL_FROM_ADDRESS', '');
-            if ($addr) $from = [$addr, config('mail.from.name') ?: (string) env('MAIL_FROM_NAME', 'Qeema Voice')];
+            if ($addr) $from = [$addr, config('mail.from.name') ?: (string) env('MAIL_FROM_NAME', 'Qeemavoice')];
         }
         $pending = $name ? Mail::mailer($name) : Mail::mailer();
         $pending->raw($text, function ($m) use ($to, $subject, $from) {

@@ -60,7 +60,7 @@ class Store
         return [
             'stripe' => ['enabled' => false, 'displayName' => 'Stripe', 'testMode' => true,
                 'livePublishableKey' => '', 'liveSecretKey' => '', 'testPublishableKey' => '', 'testSecretKey' => ''],
-            'smtp' => ['driver' => 'smtp', 'fromName' => 'Qeema Voice', 'fromAddress' => '', 'host' => '', 'port' => 465,
+            'smtp' => ['driver' => 'smtp', 'fromName' => 'Qeemavoice', 'fromAddress' => '', 'host' => '', 'port' => 465,
                 'username' => '', 'password' => '', 'encryption' => 'SSL'],
             'elevenlabs' => ['apiKey' => '', 'agentId' => ''],
             'munsit' => ['apiKey' => ''],
