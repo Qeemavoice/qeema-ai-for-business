@@ -948,15 +948,10 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
           <aside className="relative h-full w-64 shrink-0 flex flex-col bg-white border-l border-slate-200/80 select-none z-30">
             {/* Brand */}
             <div className="p-3.5 border-b border-slate-100">
-              <div onClick={() => onNavigate('home')} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-brand-ink text-white flex items-center justify-center font-black text-sm shrink-0">
-                  <span className="text-brand-text">ق</span>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-xs font-bold text-slate-900 truncate">قيمة فويس</h3>
-                  <p className="text-[10px] text-slate-400 truncate">منصة المعلقين الصوتيين</p>
-                </div>
-              </div>
+              {/* the Qeema Voice logo, back to the site's home page */}
+              <a href="/ar" className="flex items-center p-2 rounded-xl hover:bg-slate-50 transition-colors" aria-label="قيمة فويس: الصفحة الرئيسية">
+                <img src="/assets/aistudio/qeemavoice_logo_5d0c91ae.png" alt="قيمة فويس - Qeemavoice" width="145" height="50" className="h-10 w-auto object-contain" />
+              </a>
             </div>
 
             <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-5 custom-scrollbar">
