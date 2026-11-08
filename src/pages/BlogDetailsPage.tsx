@@ -5,8 +5,6 @@ import {
   Clock, 
   User, 
   Tag, 
-  ArrowLeft, 
-  Sparkles, 
   Share2, 
   BookOpen, 
   CheckCircle2,
@@ -198,32 +196,6 @@ export const BlogDetailsPage: React.FC = () => {
                 {p}
               </p>
             ))}
-        </div>
-
-        {/* Section 6.A: Mid-Article Commercial Box CTA (يربط إلى الصفحة التجارية المناسبة) */}
-        <div className="my-10 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50 border border-orange-200/80 shadow-sm text-right space-y-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-brand-text">
-            <Sparkles className="w-4 h-4" />
-            <span>حلول قيمة فويس للأعمال</span>
-          </div>
-
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900">
-            {article.targetCommercialTitle}
-          </h3>
-
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
-            {article.targetCommercialSubtitle}
-          </p>
-
-          <div className="pt-2">
-            <Link
-              to={article.targetCommercialRoute}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand hover:bg-brand-orange text-white text-xs font-bold shadow-md shadow-brand/25 transition"
-            >
-              <span>اكتشف المزيد واحجز الآن</span>
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-          </div>
         </div>
 
         {/* Second Half Paragraphs */}
