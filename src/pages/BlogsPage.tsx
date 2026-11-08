@@ -11,7 +11,7 @@ import {
   Tag, 
   User 
 } from 'lucide-react';
-import { BLOG_POSTS, BlogPostItem } from '../data/blogData';
+import { BlogPostItem } from '../data/blogData';
 import { useDashboardPosts } from '../lib/dashboardArticles';
 import { useSeo } from '../seo/useSeo';
 import { STATIC_SEO_ROUTES } from '../seo/seoConfig';
@@ -47,9 +47,9 @@ export const BlogsPage: React.FC = () => {
     { id: 'ذكاء اصطناعي وتقنية', label: 'ذكاء اصطناعي وتقنية' }
   ];
 
-  // Dashboard articles first (newest), then the built-in posts
-  const { posts: dashPosts } = useDashboardPosts();
-  const filteredPosts = [...dashPosts, ...BLOG_POSTS].filter(post => {
+  // Only the real articles written in the dashboard (newest first); a placeholder shows until they arrive
+  const { posts: dashPosts, loaded: dashLoaded } = useDashboardPosts();
+  const filteredPosts = dashPosts.filter(post => {
     const matchesCat = selectedCategory === 'all' || post.category === selectedCategory;
     const matchesSearch = searchQuery === '' || 
       post.title.includes(searchQuery) || 
@@ -137,7 +137,11 @@ export const BlogsPage: React.FC = () => {
       {/* Blog Articles Grid */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {filteredPosts.length === 0 ? (
+          {!dashLoaded ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" aria-busy="true" aria-label="جاري تحميل المقالات">
+              {[0, 1, 2].map(i => <div key={i} className="h-[460px] rounded-3xl bg-slate-100 animate-pulse" />)}
+            </div>
+          ) : filteredPosts.length === 0 ? (
             <div className="text-center py-16 space-y-3">
               <p className="text-sm text-slate-500">لم نجد مقالات تطابق بحثك.</p>
               <button
