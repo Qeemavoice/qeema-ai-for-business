@@ -254,6 +254,8 @@ class NarratorController extends Controller
     {
         $st = self::state();
         $who = self::actorFor($r, $st);
+        // a signed-in client has no narrator data: an empty state (the dashboards load this for every account)
+        if (!$who && Accounts::currentUser($r)) return response()->json(['aiVoices' => (object) [], 'contracts' => (object) []] + array_fill_keys(self::KEYS, []) + ['libraryVoices' => []]);
         if (!$who) return response()->json(['error' => 'يلزم تسجيل الدخول'], 401);
         if ($who === 'all') {
             $st['aiVoices'] = (object) $st['aiVoices']; $st['contracts'] = (object) $st['contracts'];

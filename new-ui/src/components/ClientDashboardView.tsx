@@ -75,6 +75,10 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [envMode, setEnvMode] = useState<'production' | 'sandbox'>('production');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // phones and tablets: the sidebar is a drawer opened from the menu button (it took most of the screen before)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => { document.title = 'حسابي | قيمة فويس'; }, []);
+  const toggleMenu = () => (window.innerWidth < 1024 ? setMobileNavOpen(o => !o) : setIsSidebarCollapsed(c => !c));
 
   // Studio Pre-fill state
   const [studioInitialText, setStudioInitialText] = useState('');
@@ -227,10 +231,12 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
       {/* Global Hidden Audio element for previewing */}
       <audio ref={audioRef} preload="metadata" />
 
-      {/* 1. ElevenLabs Left Sidebar */}
+      {/* 1. Sidebar: fixed column on large screens, a drawer on phones and tablets */}
+      {mobileNavOpen && <div className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" onClick={() => setMobileNavOpen(false)} />}
+      <div className={`fixed inset-y-0 right-0 z-50 h-full transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${mobileNavOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}`}>
       <DashboardSidebar
         activeNav={activeNav}
-        onSelectNav={(nav) => goNav(nav)}
+        onSelectNav={(nav) => { goNav(nav); setMobileNavOpen(false); }}
         currentCompany={currentCompany}
         currentUser={currentUser}
         availableCompanies={availableCompanies}
@@ -242,6 +248,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
+      </div>
 
       {/* 2. Main Workspace Body (TopNav + Scrollable Views) */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
@@ -256,6 +263,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
           onOpenAssistant={onOpenAssistant || (() => onNavigate('generate'))}
           onOpenTopUp={onOpenTopUp}
           onNavigateTab={(tab) => goNav(tab)}
+          onToggleMenu={toggleMenu}
           currentCompany={currentCompany}
           currentUser={currentUser}
           availableCompanies={availableCompanies}

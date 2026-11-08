@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
+  Menu,
   Sparkles, 
   Play, 
   Pause, 
@@ -224,8 +225,11 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
   });
 
   // Sync subpage with browser path and popstate
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => { document.title = 'لوحة المعلق | قيمة فويس'; }, []);
   const navigateToSubPage = (subPage: 'main' | 'profile' | 'samples' | 'earnings' | 'settings') => {
     setCurrentSubPage(subPage);
+    setMobileNavOpen(false);
     try {
       const routeMap: Record<string, string> = {
         main: '/ar/talent-dashboard',
@@ -945,7 +949,9 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
         </div>
       )}
 
-          <aside className="relative h-full w-64 shrink-0 flex flex-col bg-white border-l border-slate-200/80 select-none z-30">
+          {/* phones and tablets: the sidebar is a drawer opened from the menu button */}
+          {mobileNavOpen && <div className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" onClick={() => setMobileNavOpen(false)} />}
+          <aside className={`fixed inset-y-0 right-0 z-50 h-full w-64 shrink-0 flex flex-col bg-white border-l border-slate-200/80 select-none transition-transform duration-200 lg:relative lg:z-30 lg:translate-x-0 ${mobileNavOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}`}>
             {/* Brand */}
             <div className="p-3.5 border-b border-slate-100">
               {/* the Qeema Voice logo, back to the site's home page */}
@@ -1099,10 +1105,15 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
       {/* Top Mobile/Header Strip */}
       <header className="relative z-40 shrink-0 bg-white border-b border-slate-200/80">
         <div className="px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Current page title (the logo moved to the sidebar) */}
-          <h1 className="text-sm sm:text-base font-black text-slate-900">
+          {/* Menu (phones) + current page title (the logo moved to the sidebar) */}
+          <div className="flex items-center gap-2 min-w-0">
+          <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="القائمة" className="lg:hidden p-2 -mr-1 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer">
+            <Menu className="w-5 h-5" />
+          </button>
+          <h1 className="text-sm sm:text-base font-black text-slate-900 truncate">
             {{ main: 'لوحة المعلق', profile: 'ملفي الشخصي', samples: 'عيناتي الصوتية', earnings: 'سجل الأرباح', settings: 'أصواتي في الاستوديو' }[currentSubPage]}
           </h1>
+          </div>
 
           {/* Top Actions: Notification bell + Quick preview switcher */}
           <div className="flex items-center gap-3">

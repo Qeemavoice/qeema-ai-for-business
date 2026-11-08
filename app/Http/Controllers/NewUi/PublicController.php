@@ -124,7 +124,8 @@ class PublicController extends Controller
     {
         $slug = self::PAGE_KEYS[$key] ?? $key;
         $p = Page::where('slug', $slug)->first();
-        if (!$p) return response()->json(['error' => 'الصفحة غير موجودة'], 404);
+        // no CMS row (e.g. «من نحن» on a fresh database): the page keeps its built-in text, so this is not an error
+        if (!$p) return response()->json(['page' => null]);
         return response()->json(['page' => ['id' => $key, 'slug' => $slug, 'title' => self::tr($p, 'title'), 'intro' => '', 'content' => self::tr($p, 'content'),
             'status' => 'published', 'updatedAt' => Store::iso(Store::created($p, 'updated_at'))]]);
     }
