@@ -55,6 +55,8 @@ interface DashboardTopNavProps {
   onSwitchCompany?: (companyId: string) => void;
   onNavigate?: (view: ActiveView, extra?: any) => void;
   onLogout?: () => void;
+  /** the menu button: opens the sidebar drawer on phones, folds the sidebar on large screens */
+  onToggleMenu?: () => void;
 }
 
 export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
@@ -72,7 +74,8 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
   availableCompanies = [],
   onSwitchCompany,
   onNavigate,
-  onLogout
+  onLogout,
+  onToggleMenu
 }) => {
   // Profile dropdown menu state
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -109,7 +112,13 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
       case 'assets':
         return { parent: 'الأصول', current: 'التراخيص' };
       case 'human-bookings':
-        return { parent: 'السوق', current: 'المعلقين البشريين' };
+        return { parent: 'حسابي', current: 'حجوزاتي' };
+      case 'billing':
+        return { parent: 'حسابي', current: 'الباقة والفوترة' };
+      case 'team':
+        return { parent: 'حسابي', current: 'فريق العمل' };
+      case 'usage':
+        return { parent: 'حسابي', current: 'الاستهلاك' };
       case 'favorites':
         return { parent: 'الأصوات', current: 'المفضلة' };
       case 'profile':
@@ -132,8 +141,9 @@ export const DashboardTopNav: React.FC<DashboardTopNavProps> = ({
         {/* 1. Right Side (in RTL): Sidebar Toggle & Breadcrumbs */}
         <div className="flex items-center gap-3 min-w-0">
           <button 
-            onClick={() => onNavigateTab('voices')}
+            onClick={() => (onToggleMenu ? onToggleMenu() : onNavigateTab('voices'))}
             className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="القائمة"
             title="القائمة"
           >
             <PanelLeft className="w-4 h-4" />
