@@ -57,13 +57,11 @@ const STOP = new Set(['في', 'من', 'الى', 'على', 'عن', 'مع', 'او'
 const words = (s: string) => norm(s).split(/[^؀-ۿa-zA-Z0-9]+/)
   .map(w => w.replace(/^(وال|بال|لل|ال|و)(?=..)/, '')).filter(w => w.length >= 3 && !STOP.has(w));
 
-/** Real articles ordered by how much they share with the given topic text (title words count most), the least related last.
+/** Real articles ordered by how much they share with the topic (main words count three times the extra words), the least related last.
  * ponytail: plain word overlap with light Arabic normalising; swap for tags set in the dashboard if ranking needs to be exact. */
-export const rankRelated = (all: BlogPostItem[], topic: string, n = 3): BlogPostItem[] => {
-  const t = new Set(words(topic));
-  const score = (p: BlogPostItem) => {
-    const hit = (s: string, w: number) => words(s).reduce((a, x) => a + (t.has(x) ? w : 0), 0);
-    return hit(p.title, 3) + hit(`${p.category} ${p.tags.join(' ')}`, 2) + hit(p.shortDescription, 1);
-  };
+export const rankRelated = (all: BlogPostItem[], main: string, extra = '', n = 3): BlogPostItem[] => {
+  const strong = new Set(words(main)), weak = new Set(words(extra));
+  const hit = (s: string, w: number) => words(s).reduce((a, x) => a + (strong.has(x) ? 3 * w : weak.has(x) ? w : 0), 0);
+  const score = (p: BlogPostItem) => hit(p.title, 3) + hit(`${p.category} ${p.tags.join(' ')}`, 2) + hit(p.shortDescription, 1);
   return all.map(p => ({ p, s: score(p) })).sort((a, b) => b.s - a.s).slice(0, n).map(x => x.p);
 };

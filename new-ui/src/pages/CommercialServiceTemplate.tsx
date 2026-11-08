@@ -161,7 +161,7 @@ export const CommercialServiceTemplate: React.FC<CommercialServiceTemplateProps>
 
   // related articles: the real ones (written in the dashboard), most related to this page first
   const { posts: dashPosts } = useDashboardPosts();
-  const relatedBlogs = rankRelated(dashPosts, `${data.title} ${data.h1} ${data.voiceCategory || ''} ${data.badge} ${data.description}`, 3);
+  const relatedBlogs = rankRelated(dashPosts, `${data.title} ${data.h1} ${data.voiceCategory || ''}`, `${data.badge} ${data.description}`, 3);
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20" dir="rtl">
