@@ -828,7 +828,8 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
   const noticeDays = contract?.noticePeriodDays || 365;
   // ---- the narrator's own account (an admin previewing a narrator cannot set prices, sign, or change the photo) ----
   const [meNarratorId, setMeNarratorId] = useState<string | null>(null);
-  useEffect(() => { api.getMe().then(r => setMeNarratorId(r.user?.narratorId || null)).catch(() => {}); }, []);
+  const [meIsAdmin, setMeIsAdmin] = useState(false);
+  useEffect(() => { api.getMe().then(r => { setMeNarratorId(r.user?.narratorId || null); setMeIsAdmin(Boolean(r.user?.isPlatformAdmin)); }).catch(() => {}); }, []);
   const isSelf = Boolean(narrator && meNarratorId === narrator.id);
   const consent: { acceptedAt: string; ip?: string; name?: string } | null = (narrator as any)?.consent || null;
 
@@ -1095,23 +1096,21 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
 
           {/* Top Actions: Notification bell + Quick preview switcher */}
           <div className="flex items-center gap-3">
-            {/* Demo Narrator Switcher */}
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-xl text-xs">
-              <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">معاينة الحساب:</span>
-              <select
-                value={selectedNarratorId}
-                onChange={(e) => setSelectedNarratorId(e.target.value)}
-                className="bg-transparent text-slate-800 font-bold text-xs focus:outline-hidden cursor-pointer"
-              >
-                <option value="narrator_tareq_01">طارق الشمري (صوت ذكي منشور)</option>
-                <option value="narrator_sara_02">سارة الدوسري (صوت ذكي لم يبدأ)</option>
-                <option value="narrator_karim_03">كريم المنصور (صوت ذكي متوقف مؤقتاً)</option>
-                <option value="narrator_nour_04">نور الهدى إبراهيم (حساب تجريبي)</option>
-                {narratorList.filter(n => !n.id.startsWith('narrator_') || !/_0\d$/.test(n.id)).map(n => (
-                  <option key={n.id} value={n.id}>{n.displayName} (حساب جديد)</option>
-                ))}
-              </select>
-            </div>
+            {/* Admins previewing narrators pick a real narrator here; a narrator never sees this list */}
+            {meIsAdmin && narratorList.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-xl text-xs">
+                <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">معاينة حساب معلق:</span>
+                <select
+                  value={selectedNarratorId}
+                  onChange={(e) => setSelectedNarratorId(e.target.value)}
+                  className="bg-transparent text-slate-800 font-bold text-xs focus:outline-hidden cursor-pointer max-w-56"
+                >
+                  {narratorList.map(n => (
+                    <option key={n.id} value={n.id}>{n.displayName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Notification Bell */}
             <button
