@@ -1,6 +1,4 @@
 StockSnap photos, CC0 (no attribution required)
-ivr.webp  cc0  https://stocksnap.io/photo/headphones-headset-7GXEM17E34
-ads.webp  cc0  https://stocksnap.io/photo/architecture-building-VAYIV58Q3X
 explainer.webp  cc0  https://stocksnap.io/photo/macbook-laptop-DUAHA1V312
 elearning.webp  cc0  https://stocksnap.io/photo/working-typing-0E0M5W9O3V
 ugc.webp  cc0  https://stocksnap.io/photo/youtube-iphone-NGXN7V7UDZ
@@ -8,10 +6,12 @@ promo.webp  cc0  https://stocksnap.io/photo/architecture-building-LZDG3B8SXI
 podcast.webp  cc0  https://stocksnap.io/photo/microphone-audio-IQVHQYS3GL
 news.webp  cc0  https://stocksnap.io/photo/business-newspaper-3H21KUXVT4
 documentary.webp  cc0  https://stocksnap.io/photo/nature-landscape-Y65WP68WKD
-cartoon-dubbing.webp  cc0  https://stocksnap.io/photo/teddybear-toy-AAPS1PYWT4
 doc-dubbing.webp  cc0  https://stocksnap.io/photo/mixer-equalizer-X1MLC0C690
-audiobooks.webp  cc0  https://stocksnap.io/photo/notebook-notepad-816KPMNUS2
-stories.webp  cc0  https://stocksnap.io/photo/teacup-teacups-TTOEJQHHZ1
-drama.webp  cc0  https://stocksnap.io/photo/mask-theatre-70L5UYL0FO
 poetry.webp  cc0  https://stocksnap.io/photo/writing-paper-KU273L0WTW
 religious.webp  cc0  https://stocksnap.io/photo/mosque-people-1MRH5HY5VD
+cartoon-dubbing-2.webp  cc0  rawpixel  https://www.rawpixel.com/image/6033267/robot-toy-free-public-domain-cc0-photo
+drama-2.webp  cc0  stocksnap  https://stocksnap.io/photo/auditorium-stadium-7TO5UMVM58
+stories-2.webp  cc0  rawpixel  https://www.rawpixel.com/image/5950448/free-public-domain-cc0-photo
+audiobooks-2.webp  cc0  stocksnap  https://stocksnap.io/photo/headphones-music-PETJ1QQXKE
+ads-2.webp  cc0  stocksnap  https://stocksnap.io/photo/radios-vintage-62CBB24BEE
+ivr-2.webp  cc0  rawpixel  https://www.rawpixel.com/image/8764801/photo-image-person-camera-portrait
