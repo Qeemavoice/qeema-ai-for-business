@@ -36,6 +36,12 @@ export const PaymentReturn: React.FC<{ isLoggedIn: boolean }> = ({ isLoggedIn })
     }).catch(e => setNotice({ tone: 'error', text: e.message })).finally(clean);
   }, [location.search, isLoggedIn]);
 
+  useEffect(() => {
+    if (notice?.tone !== 'ok') return;
+    const t = window.setTimeout(() => setNotice(null), 6000);
+    return () => window.clearTimeout(t);
+  }, [notice]);
+
   if (!notice) return null;
   const tone = notice.tone === 'ok' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : notice.tone === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-white border-slate-200 text-slate-700';
   const Icon = notice.tone === 'ok' ? CheckCircle2 : notice.tone === 'error' ? XCircle : Loader2;

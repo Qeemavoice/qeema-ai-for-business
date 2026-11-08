@@ -29,6 +29,10 @@ const STATUS: Record<string, { label: string; tone: Tone }> = {
 const NEXT: Record<string, { to: string; label: string } | undefined> = {
   pending: { to: 'in_studio', label: 'قبول ونقل للاستوديو' }, in_studio: { to: 'delivered', label: 'تسليم الملف' }, delivered: { to: 'approved', label: 'اعتماد نهائي' }
 };
+/** «حجوزاتي» stages: 1 received and reviewed, 2 recording, 3 delivered, 4 approved */
+const STAGES = ['استلام الطلب ومراجعته', 'جاري التسجيل', 'تسليم التسجيل', 'اعتماد المشروع'];
+const stageOf = (status: string) => ({ awaiting_payment: -1, pending: 0, in_studio: 1, delivered: 2, approved: 4 } as Record<string, number>)[status] ?? 0;
+
 const LICENSE: Record<string, string> = {
   commercial_ads: 'إعلانات تجارية', internal_corporate: 'استخدام داخلي', broadcast_tv: 'بث تلفزيوني', elearning: 'تعليم إلكتروني', ivr: 'رد آلي IVR', global_license: 'ترخيص عالمي'
 };
@@ -116,6 +120,28 @@ export const AdminBookingDetail: React.FC<{ bookingId: string; onBack: () => voi
         )}
       </div>
       {error && <p className="p-3 rounded-2xl bg-rose-50 text-rose-700 text-xs font-bold">{error}</p>}
+
+      {/* The same 4 stages the client follows in «حجوزاتي»: each button above moves the booking (and the client's view) one stage on */}
+      {d.status !== 'canceled' && (
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-5 space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {STAGES.map((label, i) => {
+              const done = i < stageOf(d.status), now = i === stageOf(d.status);
+              return (
+                <div key={label} className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold border ${now ? 'border-brand bg-orange-50 text-slate-900' : done ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-400'}`}>
+                  <span className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[11px] ${now ? 'bg-brand text-white' : done ? 'bg-emerald-500 text-white' : 'bg-slate-100'}`}>{done ? '✓' : i + 1}</span>
+                  {label}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-slate-500">
+            {d.status === 'awaiting_payment' ? 'لم يدفع العميل بعد: لا تبدأ العمل على هذا الحجز حتى يكتمل الدفع.'
+              : next ? `المرحلة التالية: «${next.label}». العميل يرى نفس المراحل في «حجوزاتي» وتتحدث عنده فور الضغط.`
+              : 'اكتمل المشروع.'}
+          </p>
+        </div>
+      )}
 
       {/* Money */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
