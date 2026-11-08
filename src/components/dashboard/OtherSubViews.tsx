@@ -216,7 +216,7 @@ export const bookingInvoice = (b: HumanBooking, customer: { name: string; countr
       detail: `عدد الحروف: ${chars.toLocaleString('en-US')} · المدة التقريبية: ${b.durationMinutes ?? Math.max(1, Math.ceil(chars / 100))} دقيقة · ${DELIVERY_AR[b.delivery || ''] || `التسليم خلال ${b.deadlineDays} أيام`}`,
       amountUsd: b.priceUsd
     }],
-    paymentMethod: 'بطاقة عبر Stripe',
+    paymentMethod: 'بطاقة ائتمانية',
     status: 'مدفوعة'
   };
 };

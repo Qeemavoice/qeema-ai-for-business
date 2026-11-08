@@ -27,7 +27,7 @@ import {
   GraduationCap 
 } from 'lucide-react';
 import { CommercialServiceData } from '../data/commercialServicesData';
-import { BLOG_POSTS } from '../data/blogData';
+import { useDashboardPosts, rankRelated } from '../lib/dashboardArticles';
 import { useSeo } from '../seo/useSeo';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { useHumanVoices } from '../lib/humanVoices';
@@ -159,8 +159,9 @@ export const CommercialServiceTemplate: React.FC<CommercialServiceTemplateProps>
   // State for FAQs accordion
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  // Cross-linked related blogs
-  const relatedBlogs = BLOG_POSTS.filter(post => data.relatedBlogIds.includes(post.id));
+  // related articles: the real ones (written in the dashboard), most related to this page first
+  const { posts: dashPosts } = useDashboardPosts();
+  const relatedBlogs = rankRelated(dashPosts, `${data.title} ${data.h1} ${data.voiceCategory || ''} ${data.badge} ${data.description}`, 3);
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] text-slate-900 pb-20" dir="rtl">

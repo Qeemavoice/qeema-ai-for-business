@@ -42,7 +42,7 @@ export const BillingTab: React.FC<Props> = ({ balanceCredits, currentPlanId, onO
           number: `INV-${t.referenceId || t.id.slice(0, 8).toUpperCase()}`,
           date: t.createdAt, customer,
           lines: [{ description: t.description.split(' (')[0], detail: `${fmtNum(t.delta)} حرف رصيد`, amountUsd: price }],
-          paymentMethod: 'بطاقة عبر Stripe', status: 'مدفوعة'
+          paymentMethod: 'بطاقة ائتمانية', status: 'مدفوعة'
         };
       });
       const paidPurchases = fromPurchases.filter(i => i.lines[0].amountUsd > 0);
