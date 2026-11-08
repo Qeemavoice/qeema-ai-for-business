@@ -252,6 +252,8 @@ export default function App() {
     signedOut();
     narratorService.reload();
   };
+  /** «تسجيل الخروج» inside a dashboard: sign out, then back to the home page */
+  const logoutHome = async () => { await logout(); setPostAuthPath('/ar'); };
 
   // Google button on the TTS landing: straight to Google, no modal
   const loginWithGoogle = async () => {
@@ -383,6 +385,7 @@ export default function App() {
                 onOpenDemo={() => setIsDemoOpen(true)}
                 onOpenLogin={() => setAuthModalMode('login')}
                 onOpenSignup={() => setAuthModalMode('signup')}
+                onLogout={logoutHome}
               />
               </SignInGate>
             } 
@@ -390,18 +393,18 @@ export default function App() {
 
           <Route 
             path="/ar/talent-dashboard" 
-            element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView onNavigate={() => {}} /></SignInGate>} 
+            element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView onLogout={logoutHome} onNavigate={() => {}} /></SignInGate>} 
           />
           <Route 
             path="/ar/talent-profile" 
-            element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView initialSubPage="profile" onNavigate={() => {}} /></SignInGate>} 
+            element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView onLogout={logoutHome} initialSubPage="profile" onNavigate={() => {}} /></SignInGate>} 
           />
           <Route 
             path="/ar/talent-earnings" 
-            element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView initialSubPage="earnings" onNavigate={() => {}} /></SignInGate>} 
+            element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView onLogout={logoutHome} initialSubPage="earnings" onNavigate={() => {}} /></SignInGate>} 
           />
-          <Route path="/ar/talent-samples" element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView initialSubPage="samples" onNavigate={() => {}} /></SignInGate>} />
-          <Route path="/ar/talent-voices" element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView initialSubPage="settings" onNavigate={() => {}} /></SignInGate>} />
+          <Route path="/ar/talent-samples" element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView onLogout={logoutHome} initialSubPage="samples" onNavigate={() => {}} /></SignInGate>} />
+          <Route path="/ar/talent-voices" element={<SignInGate user={currentUser} allow={u => u.accountType === 'talent' || Boolean(u.isPlatformAdmin)} isLoggedIn={isLoggedIn} title="لوحة المعلق الصوتي" hint="سجّل الدخول بحساب المعلق لفتح لوحتك." onOpenLogin={() => setAuthModalMode('login')} onLogout={logout}><VoiceTalentDashboardView onLogout={logoutHome} initialSubPage="settings" onNavigate={() => {}} /></SignInGate>} />
           <Route path="/ar/talent-settings" element={<Navigate to="/ar/talent-voices" replace />} />
           <Route path="/narrator/dashboard" element={<Navigate to="/ar/talent-dashboard" replace />} />
           <Route path="/narrator/profile" element={<Navigate to="/ar/talent-profile" replace />} />

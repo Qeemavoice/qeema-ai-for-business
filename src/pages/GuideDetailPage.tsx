@@ -151,6 +151,10 @@ const DbGuidePage: React.FC<{ slug: string }> = ({ slug }) => {
           ) : (
             <a href="/ar/contact-us" className="inline-flex items-center px-6 py-3 rounded-full bg-brand-ink text-white text-sm font-bold">اطلب هذا الدليل</a>
           )}
+          {/* free PDF guides are readable right on the page */}
+          {card.priceUsd === null && /\.pdf($|\?)/i.test(g.file || '') && (
+            <iframe src={g.file} title={g.title} className="w-full h-[80vh] rounded-3xl border border-slate-200 bg-slate-50" loading="lazy" />
+          )}
         </div>
       </section>
     </div>
