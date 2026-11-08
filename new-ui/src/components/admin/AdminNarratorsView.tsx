@@ -74,7 +74,8 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
     const q = query.trim().toLowerCase();
     return narrators.filter(n =>
       (filter === 'all' || n.status === filter) &&
-      (!q || n.displayName.toLowerCase().includes(q) || n.phone.includes(q) || (n.email || '').toLowerCase().includes(q) || n.dialects.some(d => d.includes(q)))
+      // old imported accounts can lack a name, phone or dialects: search what each narrator has
+      (!q || [n.displayName, n.phone, n.email, ...(n.dialects || [])].some(v => String(v || '').toLowerCase().includes(q)))
     );
   }, [narrators, filter, query]);
 
@@ -105,7 +106,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
     { header: 'الاسم', value: 'displayName' },
     { header: 'الهاتف', value: 'phone' },
     { header: 'البريد', value: n => n.email || '', width: 30 },
-    { header: 'اللهجات', value: n => n.dialects.join('، '), width: 30 },
+    { header: 'اللهجات', value: n => (n.dialects || []).join('، '), width: 30 },
     { header: 'الحالة', value: n => STATUS[n.status].label },
     { header: 'التوثيق (KYC)', value: n => (KYC[n.kycStatus] || KYC.none).label },
     { header: 'شارة معلق بشري', value: n => BADGE[n.humanBadge || 'none'].label },
@@ -188,7 +189,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
                       <span className="block font-mono text-[11px]" dir="ltr">{n.phone}</span>
                       <span className="block text-[11px] text-slate-400">{n.email || '-'}</span>
                     </td>
-                    <td className="p-3"><div className="flex flex-wrap gap-1 max-w-[190px]">{n.dialects.map(d => <span key={d} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">{d}</span>)}</div></td>
+                    <td className="p-3"><div className="flex flex-wrap gap-1 max-w-[190px]">{(n.dialects || []).map(d => <span key={d} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">{d}</span>)}</div></td>
                     {price && !validRate(price) ? (
                       <td colSpan={2} className="p-3"><Badge tone="red">سعر غير صالح: {fmtNum(price)}</Badge></td>
                     ) : (
@@ -319,7 +320,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
             <div className="rounded-2xl border border-slate-200 p-4">
               <Field label="الهاتف"><span dir="ltr" className="font-mono flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-400" />{n.phone}</span></Field>
               <Field label="البريد الإلكتروني"><span className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-slate-400" />{n.email || '-'}</span></Field>
-              <Field label="اللهجات المعتمدة">{n.dialects.join('، ')}</Field>
+              <Field label="اللهجات المعتمدة">{(n.dialects || []).join('، ')}</Field>
               <Field label="التوثيق (KYC)"><Badge tone={(KYC[n.kycStatus] || KYC.none).tone}>{(KYC[n.kycStatus] || KYC.none).label}</Badge></Field>
               <Field label="شارة «معلق بشري»">
                 <span className="flex items-center gap-2 flex-wrap">
