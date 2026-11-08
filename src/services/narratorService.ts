@@ -911,7 +911,7 @@ class NarratorService {
   }
 
   /** Admin «تعديل»: the narrator's name (also the account's own name) on the server, then the fresh copy */
-  public async adminUpdateNarrator(narratorId: string, data: { displayName?: string; perMinuteUsd?: number }): Promise<Narrator> {
+  public async adminUpdateNarrator(narratorId: string, data: { displayName?: string; email?: string; perMinuteUsd?: number }): Promise<Narrator> {
     await this.ready;
     await this.saveNow();   // pending changes first, so they never overwrite this edit afterwards
     const res = await fetch(`/api/v1/admin/narrators/${encodeURIComponent(narratorId)}`, {
