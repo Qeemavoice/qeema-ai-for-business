@@ -137,6 +137,7 @@ Route::prefix('admin')->middleware('qv.admin')->group(function () {
     Route::post('customers/{id}/status', 'AdminController@customerStatus');
     Route::post('customers/{id}/notes', 'AdminController@customerNote');
     Route::get('narrator-earnings', 'AdminController@narratorEarnings');
+    Route::post('narrators/{id}', 'AdminController@narratorUpdate');
     Route::get('generations', 'AdminController@generations');
     Route::get('settings', 'AdminController@settingsGet');
     Route::post('settings', 'AdminController@settingsPost');

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, RefreshCw, Send, Copy, Check, ExternalLink, Mail, Phone, Eye, Ban, RotateCcw, Plus, ShieldCheck } from 'lucide-react';
+import { Search, Pencil, RefreshCw, Send, Copy, Check, ExternalLink, Mail, Phone, Eye, Ban, RotateCcw, Plus, ShieldCheck } from 'lucide-react';
 import { narratorService } from '../../services/narratorService';
 import { Narrator, NarratorNotification, NarratorStatus, VoiceOverBooking, VoiceSample, AIVoice } from '../../types';
 import { buildSampleSlug } from '../VoiceLibraryView';
@@ -209,6 +209,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
                     <td className="p-3">
                       <div className="flex items-center gap-1.5">
                         <button onClick={() => setSelectedId(n.id)} className="px-2.5 py-1.5 rounded-lg bg-brand-ink hover:bg-brand-ink/90 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"><Eye className="w-3.5 h-3.5" />الملف</button>
+                        <button onClick={() => setSelectedId(n.id)} title="تعديل الاسم والسعر" className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-brand text-slate-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer"><Pencil className="w-3.5 h-3.5" />تعديل</button>
                         {n.status !== 'active' && n.status !== 'suspended' && (
                           <button onClick={() => sendInvite(n.id)} className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold cursor-pointer">{n.status === 'unclaimed' ? 'إرسال دعوة' : 'إعادة إرسال'}</button>
                         )}
@@ -257,6 +258,8 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   const [aiVoice, setAiVoice] = useState<AIVoice | null>(null);
   const [notifs, setNotifs] = useState<NarratorNotification[]>([]);
   const [priceInput, setPriceInput] = useState(String(n.rates?.perMinuteUsd ?? ''));
+  const [nameInput, setNameInput] = useState(n.displayName || '');
+  const [nameError, setNameError] = useState('');
   const [noteText, setNoteText] = useState('');
   const [msgTitle, setMsgTitle] = useState('');
   const [msgBody, setMsgBody] = useState('');
@@ -270,12 +273,20 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
     narratorService.getAIVoice(n.id).then(setAiVoice);
     refreshNotifs();
     setPriceInput(String(n.rates?.perMinuteUsd ?? ''));
+    setNameInput(n.displayName || ''); setNameError('');
   }, [n.id]);
 
   const priceNum = parseFloat(priceInput);
   const validPrice = !isNaN(priceNum) && validRate(priceNum);
   const paidTotal = bookings.filter(b => b.status === 'paid').reduce((a, b) => a + b.amount, 0);
 
+  const saveName = async () => {
+    setNameError('');
+    try {
+      const u = await narratorService.adminUpdateNarrator(n.id, { displayName: nameInput });
+      onChanged(u); flash('تم تحديث اسم المعلق وتسجيل التغيير في سجل التدقيق');
+    } catch (e) { setNameError(e instanceof Error ? e.message : 'تعذر حفظ الاسم'); }
+  };
   const savePrice = async () => {
     if (!validPrice) return;
     const u = await narratorService.setNarratorPrice(n.id, priceNum);
@@ -362,6 +373,18 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
               </Field>
             </div>
             {n.bio && <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-2xl p-4">{n.bio}</p>}
+
+            {/* Name (admin only; clients see clip names, never the narrator's) */}
+            <div className="rounded-2xl border border-slate-200 p-4 space-y-3">
+              <h4 className="text-sm font-black text-slate-900">اسم المعلق</h4>
+              <p className="text-[11px] text-slate-500 leading-relaxed">يظهر في لوحة الإدارة ولوحة المعلق فقط، ولا يظهر للعملاء.</p>
+              <div className="flex items-end gap-3 flex-wrap">
+                <input value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={80} placeholder="اسم المعلق"
+                  className="flex-1 min-w-48 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-hidden focus:border-brand" />
+                <button onClick={saveName} disabled={nameInput.trim().length < 2 || nameInput.trim() === (n.displayName || '').trim()} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">حفظ الاسم</button>
+              </div>
+              {nameError && <p className="text-[11px] font-bold text-rose-600">{nameError}</p>}
+            </div>
 
             {/* Pricing */}
             <div className="rounded-2xl border border-orange-200 bg-orange-50/40 p-4 space-y-3">

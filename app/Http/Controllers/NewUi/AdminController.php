@@ -241,6 +241,39 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'customer' => $this->customerSummary($u)]);
     }
 
+    /** «تعديل» a narrator from the admin dashboard: name and per-minute price. The name is the account's own name too
+     *  (admin voices list, the narrator's dashboard); clients never see it (clip names only). */
+    public function narratorUpdate(Request $r, string $id)
+    {
+        $st = NarratorController::state();
+        $i = collect($st['narrators'])->search(fn ($n) => ($n['id'] ?? '') === $id);
+        if ($i === false) return response()->json(['error' => 'المعلق غير موجود'], 404);
+        $n = $st['narrators'][$i];
+        $changes = [];
+        if ($r->has('displayName')) {
+            $name = trim(preg_replace('/\s+/u', ' ', (string) $r->input('displayName')));
+            if (mb_strlen($name) < 2 || mb_strlen($name) > 80) return response()->json(['error' => 'اكتب اسم المعلق (من 2 إلى 80 حرفاً)'], 400);
+            $changes['name'] = [$n['displayName'] ?? '', $name];
+            $n['displayName'] = $name;
+        }
+        if ($r->has('perMinuteUsd')) {
+            $price = round((float) $r->input('perMinuteUsd'), 2);
+            if (!($price > 0 && $price <= 1000)) return response()->json(['error' => 'سعر الدقيقة يجب أن يكون بين 1 و 1000 دولار'], 400);
+            $changes['perMinuteUsd'] = [$n['rates']['perMinuteUsd'] ?? null, $price];
+            $n['rates'] = array_merge(['standardCommercialUsd' => 0, 'perWordRateUsd' => 0, 'hourlyLiveDirectingUsd' => 0], (array) ($n['rates'] ?? []), ['perMinuteUsd' => $price]);
+        }
+        if (!$changes) return response()->json(['error' => 'لا يوجد ما يُحفظ'], 400);
+        $st['narrators'][$i] = $n;
+        NarratorController::save($st);
+        if (isset($changes['name']) && preg_match('/^narrator_u(\d+)$/', $id, $m) && ($u = User::find((int) $m[1]))) {
+            $u->setTranslations('full_name', ['ar' => $changes['name'][1], 'en' => $changes['name'][1]]);
+            $u->save();
+            Library::forget();
+        }
+        Store::audit($id, 'admin', 'NARRATOR_UPDATED: ' . implode(', ', array_keys($changes)), $changes);
+        return response()->json(['success' => true, 'narrator' => $n]);
+    }
+
     public function customerNote(Request $r, string $id)
     {
         $u = $this->companyUser($id);

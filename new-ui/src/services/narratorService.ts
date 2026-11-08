@@ -897,6 +897,21 @@ class NarratorService {
     this.saveState();
   }
 
+  /** Admin «تعديل»: the narrator's name (also the account's own name) on the server, then the fresh copy */
+  public async adminUpdateNarrator(narratorId: string, data: { displayName?: string; perMinuteUsd?: number }): Promise<Narrator> {
+    await this.ready;
+    await this.saveNow();   // pending changes first, so they never overwrite this edit afterwards
+    const res = await fetch(`/api/v1/admin/narrators/${encodeURIComponent(narratorId)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...this.authHeaders() }, body: JSON.stringify(data)
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'تعذر حفظ بيانات المعلق');
+    await this.reload();
+    const n = this.narrators.find(item => item.id === narratorId);
+    if (!n) throw new Error('المعلق غير موجود');
+    return { ...n };
+  }
+
   /** Admin changes the narrator's own per-minute price (kept for support cases; every change is audited). */
   public async setNarratorPrice(narratorId: string, perMinuteUsd: number): Promise<Narrator> {
     await this.ready;
