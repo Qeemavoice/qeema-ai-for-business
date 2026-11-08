@@ -274,7 +274,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
               <h3 className="text-base font-bold text-white">تراخيص تجارية كاملة</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                حماية قانونية كاملة وفواتير ضريبية نظامية معتمدة لهيئة الزكاة والضريبة والجمارك بدون أي نزاعات ملكية.
+                حماية قانونية كاملة وفواتير ضريبية نظامية معتمدة، بدون أي نزاعات على الملكية.
               </p>
             </div>
 
