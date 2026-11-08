@@ -29,6 +29,12 @@ class NarratorOnceTest extends TestCase
         $at = $this->postJson('/api/v1/narrators/me/consent', ['accepted' => true], $h)->assertOk()->json('narrator.consent.acceptedAt');
         $this->assertNotEmpty($at);
 
+        // sample audio is stored as a real file (MP3 only)
+        $this->postJson('/api/v1/narrators/me/sample-file', ['data' => 'data:audio/wav;base64,' . base64_encode(str_repeat('x', 2000))], $h)->assertStatus(400);
+        $url = $this->postJson('/api/v1/narrators/me/sample-file', ['data' => 'data:audio/mpeg;base64,' . base64_encode('ID3' . str_repeat("\0", 2000))], $h)->assertOk()->json('url');
+        $this->assertStringContainsString('/uploads/samples/qv_', $url);
+        @unlink(public_path('uploads/samples/' . basename($url)));
+
         // a full state save from the browser cannot change them back
         $state = $this->getJson('/api/v1/narrators/state', $h)->assertOk()->json();
         foreach ($state['narrators'] as &$n) if ($n['id'] === $nid) { $n['rates']['perMinuteUsd'] = 1; $n['ratesSetAt'] = null; $n['consent'] = null; }

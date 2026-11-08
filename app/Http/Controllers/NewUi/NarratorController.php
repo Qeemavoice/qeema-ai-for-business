@@ -195,6 +195,29 @@ class NarratorController extends Controller
         return null;
     }
 
+    /**
+     * A new sample's MP3 (sent as a data: URL, since the server takes files up to 2 MB but JSON up to 8 MB):
+     * saved in public/uploads/samples and returned as its address, which the sample record keeps.
+     */
+    public function sampleFile(Request $r)
+    {
+        $st = self::state();
+        if (self::ownNarrator($r, $st) === null) return response()->json(['error' => 'يلزم تسجيل الدخول بحساب المعلق'], 403);
+        if (!preg_match('#^data:(audio/(?:mpeg|mp3|mpeg3|x-mpeg-3));base64,(.+)$#s', (string) $r->input('data', ''), $m)) {
+            return response()->json(['error' => 'الملف يجب أن يكون بصيغة MP3'], 400);
+        }
+        $bin = base64_decode($m[2], true);
+        if ($bin === false || strlen($bin) < 1024) return response()->json(['error' => 'تعذر قراءة الملف الصوتي'], 400);
+        if (strlen($bin) > 5 * 1024 * 1024) return response()->json(['error' => 'حجم العينة أكبر من 5 ميجابايت'], 400);
+        // MP3 starts with an ID3 tag or an MPEG frame sync
+        if (substr($bin, 0, 3) !== 'ID3' && !(ord($bin[0]) === 0xFF && (ord($bin[1]) & 0xE0) === 0xE0)) return response()->json(['error' => 'الملف ليس MP3 صالحاً'], 400);
+        $name = 'qv_' . Str::random(16) . '.mp3';
+        $dir = public_path(DIR_UPLOAD . '/' . \App\Models\UserSample::DIR_SAMPLES_UPLOADS);
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        file_put_contents($dir . '/' . $name, $bin);
+        return response()->json(['url' => asset_upload(\App\Models\UserSample::DIR_SAMPLES_UPLOADS . '/' . $name)]);
+    }
+
     /** «سعر الدقيقة / سعر الساعة»: the narrator sets them once; later changes go through the Qeema team */
     public function ratesOnce(Request $r)
     {

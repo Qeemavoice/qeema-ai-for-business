@@ -720,11 +720,7 @@ class NarratorService {
       throw new Error('متاح إضافة 3 عينات فقط بشرط التوافق مع شروط العينات في المنصة');
     }
 
-    const fallbackAudios = [
-      'https://cdn.freesound.org/previews/320/320655_5260872-lq.mp3',
-      'https://cdn.freesound.org/previews/387/387641_7255533-lq.mp3'
-    ];
-    const chosenAudio = data.audioUrl || fallbackAudios[Math.floor(Math.random() * fallbackAudios.length)];
+    const chosenAudio = data.audioUrl || '';
     const narrator = this.narrators.find(n => n.id === data.narratorId);
     const chosenPrice = data.pricePerMinute && data.pricePerMinute > 0 ? data.pricePerMinute : (narrator?.rates?.perMinuteUsd ?? 40);
 
