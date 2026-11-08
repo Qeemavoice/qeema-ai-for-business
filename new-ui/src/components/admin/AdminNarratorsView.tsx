@@ -315,6 +315,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   const [nameError, setNameError] = useState('');
   const [emailInput, setEmailInput] = useState(n.email || '');
   const [emailError, setEmailError] = useState('');
+  const [busy, setBusy] = useState<'' | 'name' | 'email'>('');
   const [noteText, setNoteText] = useState('');
   const [msgTitle, setMsgTitle] = useState('');
   const [msgBody, setMsgBody] = useState('');
@@ -337,18 +338,18 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   const paidTotal = bookings.filter(b => b.status === 'paid').reduce((a, b) => a + b.amount, 0);
 
   const saveName = async () => {
-    setNameError('');
+    setNameError(''); setBusy('name');
     try {
       const u = await narratorService.adminUpdateNarrator(n.id, { displayName: nameInput });
       onChanged(u); flash('تم تحديث اسم المعلق وتسجيل التغيير في سجل التدقيق');
-    } catch (e) { setNameError(e instanceof Error ? e.message : 'تعذر حفظ الاسم'); }
+    } catch (e) { setNameError(e instanceof Error ? e.message : 'تعذر حفظ الاسم'); } finally { setBusy(''); }
   };
   const saveEmail = async () => {
-    setEmailError('');
+    setEmailError(''); setBusy('email');
     try {
       const u = await narratorService.adminUpdateNarrator(n.id, { email: emailInput });
       onChanged(u); flash('تم تحديث بريد المعلق: يسجّل الدخول به من الآن');
-    } catch (e) { setEmailError(e instanceof Error ? e.message : 'تعذر حفظ البريد'); }
+    } catch (e) { setEmailError(e instanceof Error ? e.message : 'تعذر حفظ البريد'); } finally { setBusy(''); }
   };
   const savePrice = async () => {
     if (!validPrice) return;
@@ -444,7 +445,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
               <div className="flex items-end gap-3 flex-wrap">
                 <input value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={80} placeholder="اسم المعلق"
                   className="flex-1 min-w-48 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-hidden focus:border-brand" />
-                <button onClick={saveName} disabled={nameInput.trim().length < 2 || nameInput.trim() === (n.displayName || '').trim()} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">حفظ الاسم</button>
+                <button onClick={saveName} disabled={!!busy || nameInput.trim().length < 2 || nameInput.trim() === (n.displayName || '').trim()} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">{busy === 'name' ? 'جارٍ الحفظ...' : 'حفظ الاسم'}</button>
               </div>
               {nameError && <p className="text-[11px] font-bold text-rose-600">{nameError}</p>}
               <h4 className="text-sm font-black text-slate-900 pt-2">البريد الإلكتروني</h4>
@@ -452,7 +453,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
               <div className="flex items-end gap-3 flex-wrap">
                 <input type="email" dir="ltr" value={emailInput} onChange={e => setEmailInput(e.target.value)} placeholder="name@example.com"
                   className="flex-1 min-w-48 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono outline-hidden focus:border-brand" />
-                <button onClick={saveEmail} disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim()) || emailInput.trim().toLowerCase() === (n.email || '').toLowerCase()} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">حفظ البريد</button>
+                <button onClick={saveEmail} disabled={!!busy || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim()) || emailInput.trim().toLowerCase() === (n.email || '').toLowerCase()} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">{busy === 'email' ? 'جارٍ الحفظ...' : 'حفظ البريد'}</button>
               </div>
               {emailError && <p className="text-[11px] font-bold text-rose-600">{emailError}</p>}
             </div>

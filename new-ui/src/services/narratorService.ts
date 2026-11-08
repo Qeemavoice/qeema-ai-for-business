@@ -35,6 +35,7 @@ class NarratorService {
   private ready: Promise<void> = Promise.resolve();
   private claimToken = '';
   private saveTimer: ReturnType<typeof setTimeout> | undefined;
+  private savePending = false;
 
   constructor() {
     this.ready = this.reload();
@@ -71,7 +72,9 @@ class NarratorService {
   /** Saved on the server (debounced); the server keeps admin-only fields and other narrators' data untouched */
   private saveState() {
     clearTimeout(this.saveTimer);
+    this.savePending = true;
     this.saveTimer = setTimeout(() => {
+      this.savePending = false;
       fetch('/api/v1/narrators/state', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
@@ -86,6 +89,7 @@ class NarratorService {
   /** Writes now (no debounce) and reloads the server's copy, so protected fields show their real value */
   private async saveNow() {
     clearTimeout(this.saveTimer);
+    this.savePending = false;
     await fetch('/api/v1/narrators/state', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
@@ -900,7 +904,7 @@ class NarratorService {
   /** Admin «إضافة معلق»: a real narrator account on the server (optionally invited by e-mail), then the fresh list */
   public async adminCreateNarrator(data: { displayName: string; email: string; phone?: string; perMinuteUsd?: number; sendInvite: boolean }): Promise<{ narrator: Narrator; invite: { link: string; emailed: boolean } | null }> {
     await this.ready;
-    await this.saveNow();
+    if (this.savePending) await this.saveNow();
     const res = await fetch('/api/v1/admin/narrators', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...this.authHeaders() }, body: JSON.stringify(data)
     });
@@ -913,16 +917,17 @@ class NarratorService {
   /** Admin «تعديل»: the narrator's name (also the account's own name) on the server, then the fresh copy */
   public async adminUpdateNarrator(narratorId: string, data: { displayName?: string; email?: string; perMinuteUsd?: number }): Promise<Narrator> {
     await this.ready;
-    await this.saveNow();   // pending changes first, so they never overwrite this edit afterwards
+    if (this.savePending) await this.saveNow();   // a waiting change first, so it never overwrites this edit afterwards
     const res = await fetch(`/api/v1/admin/narrators/${encodeURIComponent(narratorId)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...this.authHeaders() }, body: JSON.stringify(data)
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || 'تعذر حفظ بيانات المعلق');
-    await this.reload();
-    const n = this.narrators.find(item => item.id === narratorId);
-    if (!n) throw new Error('المعلق غير موجود');
-    return { ...n };
+    // the server's copy of this narrator replaces ours (no full reload of every narrator)
+    const i = this.narrators.findIndex(item => item.id === narratorId);
+    if (i === -1) throw new Error('المعلق غير موجود');
+    this.narrators[i] = { ...this.narrators[i], ...body.narrator };
+    return { ...this.narrators[i] };
   }
 
   /** Admin changes the narrator's own per-minute price (kept for support cases; every change is audited). */
