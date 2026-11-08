@@ -2267,6 +2267,8 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {narratorService.libraryVoicesOf(narrator.id).map(v => {
                         const own = v.narratorPriceUsd > 0 ? v.narratorPriceUsd : (narrator.rates?.perMinuteUsd || 0);
+                        // the commission as the server priced it (final - narrator, at the live rate from the settings)
+                        const fee = v.narratorPriceUsd > 0 && v.finalPriceUsd > v.narratorPriceUsd ? v.finalPriceUsd - v.narratorPriceUsd : own * commissionPercent() / 100;
                         const isPlaying = playingAudioId === `lib-${v.id}`;
                         return (
                           <div key={v.id} className="rounded-2xl border border-slate-200 p-4 space-y-3">
@@ -2285,11 +2287,12 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                                 </button>
                               )}
                             </div>
-                            <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="grid grid-cols-2 gap-2 text-center">
                               <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">سعرك / دقيقة</p><p className="font-mono font-black text-slate-900 text-sm">{own ? `$${fmtUsd(own)}` : '—'}</p></div>
-                              <div className="rounded-xl bg-orange-50 p-2"><p className="text-[9px] text-slate-500">يراه العميل</p><p className="font-mono font-black text-brand-text text-sm">{own ? `$${fmtUsd(own * (1 + commissionPercent() / 100))}` : '—'}</p>{own ? <p className="text-[9px] text-slate-400 mt-0.5">(يشمل عمولة المنصة +${fmtUsd(own * commissionPercent() / 100)})</p> : null}</div>
-                              <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">حجوزات</p><p className="font-mono font-black text-slate-900 text-sm">{v.bookingsCount}</p></div>
+                              <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">حجوزات بصوتي</p><p className="font-mono font-black text-slate-900 text-sm">{v.bookingsCount}</p></div>
                             </div>
+                            {/* the platform commission as an amount only (never the percentage) */}
+                            {own ? <p className="text-[11px] text-slate-400 text-center">(+ عمولة المنصة ${fmtUsd(fee)})</p> : null}
                           </div>
                         );
                       })}
@@ -2830,7 +2833,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between">
                 <div>
                   <span className="text-slate-700 font-bold block">سعر الدقيقة المعتمد:</span>
-                  <span className="text-[10px] text-slate-500">سعرك الخاص. يرى العميل السعر شاملاً عمولة المنصة ({commissionPercent()}%)</span>
+                  <span className="text-[10px] text-slate-500">سعرك الخاص، وتُضاف عمولة المنصة على العميل فوقه</span>
                 </div>
                 {canSetRates ? (
                   <div className="flex items-center gap-1.5">
