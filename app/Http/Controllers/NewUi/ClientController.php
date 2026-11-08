@@ -165,7 +165,8 @@ class ClientController extends Controller
                     "شحن رصيد قيمة فويس: " . number_format($q['chars']) . " حرف ({$plan['nameAr']})", $meta, '/ar/account');
             } catch (\Throwable $e) {
                 report($e);
-                return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 502);
+                self::logBookingError('PAYMENT_PAGE_FAILED', $e);
+                return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 424);
             }
             return response()->json(['checkoutUrl' => $url]);
         }
@@ -234,7 +235,8 @@ class ClientController extends Controller
                     "اشتراك قيمة فويس: باقة {$plan['nameAr']} (شهر)", $meta, '/ar/account');
             } catch (\Throwable $e) {
                 report($e);
-                return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 502);
+                self::logBookingError('PAYMENT_PAGE_FAILED', $e);
+                return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 424);
             }
             return response()->json(['checkoutUrl' => $url]);
         }
@@ -310,7 +312,8 @@ class ClientController extends Controller
         }
     }
 
-    private static function logBookingError(string $what, \Throwable $e): void
+    /** a failure the admin should see: one line in the admin overview's log (no secrets: class, message, place) */
+    public static function logBookingError(string $what, \Throwable $e): void
     {
         try {
             \App\Services\NewUi\Store::audit('system', 'system', $what . ': ' . class_basename($e) . ': ' . mb_substr($e->getMessage(), 0, 150),
@@ -333,7 +336,7 @@ class ClientController extends Controller
             } catch (\Throwable $e) {
                 report($e);
                 self::logBookingError('BOOKING_PAYMENT_FAILED ' . Bookings::id($o), $e);
-                return response()->json(['error' => 'حُفظ طلبك لكن تعذر فتح صفحة الدفع الآن. ادفع لاحقاً من «حجوزاتي» أو تواصل معنا.'], 502);
+                return response()->json(['error' => 'حُفظ طلبك لكن تعذر فتح صفحة الدفع الآن. ادفع لاحقاً من «حجوزاتي» أو تواصل معنا.'], 424);
             }
             return response()->json(['success' => true, 'booking' => Bookings::clientView($o->fresh()), 'checkoutUrl' => $url]);
         }
@@ -356,7 +359,8 @@ class ClientController extends Controller
             return response()->json(['checkoutUrl' => Bookings::startPayment($o, $ctx['companyUser'], '/ar/account')]);
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 502);
+            self::logBookingError('PAYMENT_PAGE_FAILED', $e);
+            return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 424);
         }
     }
 

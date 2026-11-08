@@ -435,7 +435,7 @@ class AdminController extends Controller
         if (!$i) return response()->json(['error' => 'الدعوة غير موجودة'], 404);
         if (!$i->email) return response()->json(['error' => 'لا يوجد بريد لهذه الدعوة، أرسل رابط واتساب'], 400);
         if (!$i->isValid()) return response()->json(['error' => 'الدعوة مستخدمة أو منتهية'], 400);
-        if (!\App\Console\Commands\RowadSendInvites::sendOne($i)) return response()->json(['error' => 'تعذّر إرسال البريد، تحقق من إعدادات البريد'], 502);
+        if (!\App\Console\Commands\RowadSendInvites::sendOne($i)) return response()->json(['error' => 'تعذّر إرسال البريد، تحقق من إعدادات البريد'], 424);
         Store::audit('system', 'admin', 'ROWAD_RESEND: ' . $i->id);
         return response()->json(['success' => true, 'invite' => $this->inviteRow($i->fresh('redeemedBy'))]);
     }

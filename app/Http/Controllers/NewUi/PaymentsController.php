@@ -21,7 +21,7 @@ class PaymentsController extends Controller
             $res = $u ? Payments::fulfil($sid, $u) : Payments::fulfil($sid, null, ['booking']);
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['error' => 'تعذر التحقق من الدفع الآن. إذا خُصم المبلغ فسيُضاف تلقائياً خلال دقائق.'], 502);
+            return response()->json(['error' => 'تعذر التحقق من الدفع الآن. إذا خُصم المبلغ فسيُضاف تلقائياً خلال دقائق.'], 424);
         }
         if (!$res['ok']) return response()->json(['error' => $res['error']], 409);
         $p = $res['payment'];
@@ -64,7 +64,8 @@ class PaymentsController extends Controller
                 '/ar/guides/' . rawurlencode($item['slug']), $name, $email);
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 502);
+            ClientController::logBookingError('PAYMENT_PAGE_FAILED', $e);
+            return response()->json(['error' => 'تعذر فتح صفحة الدفع الآن، حاول بعد قليل'], 424);
         }
         return response()->json(['checkoutUrl' => $url]);
     }

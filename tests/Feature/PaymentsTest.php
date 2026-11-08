@@ -111,6 +111,16 @@ class PaymentsTest extends TestCase
         $this->assertSame($before, Accounts::balance($u->id));
     }
 
+    public function test_a_refused_payment_page_answers_a_readable_message_and_logs_the_reason()
+    {
+        // Stripe refusing (bad or restricted key): not a 502, which Cloudflare replaces with its own page and loses the message
+        Payments::$gateway = new class { public function createSession(array $p): array { throw new \RuntimeException('Invalid API Key provided'); } };
+        [$u, $h] = $this->client();
+        $res = $this->postJson('/api/v1/credits/topup', ['packId' => 'plan-starter'], $h)->assertStatus(424);
+        $this->assertNotEmpty($res->json('error'));
+        $this->assertTrue(DB::table('qv_audit_logs')->where('action', 'like', 'PAYMENT_PAGE_FAILED%Invalid API Key provided%')->exists());
+    }
+
     public function test_webhook_rejects_a_bad_signature()
     {
         $this->postJson('/api/v1/payments/stripe-webhook', ['type' => 'checkout.session.completed'], ['Stripe-Signature' => 't=1,v1=forged'])->assertStatus(400);
@@ -130,6 +140,11 @@ class PaymentsTest extends TestCase
             'customerEmail' => 'buyer@example.test', 'customerWhatsapp' => '+966500000000'], $h)->assertOk();
         $this->assertSame('awaiting_payment', $res->json('booking.status'));
         $this->assertSame(1, $res->json('booking.durationMinutes'));
+        // pressing «ادفع الآن» again with the same booking reuses it (and opens a new payment page) instead of adding it twice
+        $again = $this->postJson('/api/v1/client/bookings', ['sampleId' => '501', 'scriptText' => 'نص الإعلان', 'customerName' => 'مشتري',
+            'customerEmail' => 'buyer@example.test', 'customerWhatsapp' => '+966500000000'], $h)->assertOk();
+        $this->assertSame($res->json('booking.id'), $again->json('booking.id'));
+        $this->assertSame(1, DB::table('qv_booking_meta')->where('sample_id', '501')->count());
         // minutes follow the words: 150 words = 2 minutes (every 100 words a minute), however long the words are
         $long = $this->postJson('/api/v1/client/bookings', ['sampleId' => '501', 'scriptText' => trim(str_repeat('كلمةطويلةجدا ', 150)), 'customerName' => 'مشتري',
             'customerEmail' => 'buyer@example.test', 'customerWhatsapp' => '+966500000000'], $h)->assertOk();

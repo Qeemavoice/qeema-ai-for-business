@@ -245,6 +245,14 @@ class Bookings
         // The customer row: the signed-in client, or the account of that email (created when missing, as the old booking form did)
         $customer = $user ?: (Accounts::findByEmail($contact['email']) ?: Accounts::createAccount($contact['name'], $contact['email'], null, 'client', ['mobile' => $contact['whatsapp']]));
 
+        // pressing «ادفع الآن» again (after a failed or abandoned payment page) reuses the booking that still waits for
+        // its payment instead of adding the same booking twice
+        $same = self::query()->where('customer_id', $customer->id)->where('created_at', '>=', now()->subHours(2))
+            ->whereIn('id', DB::table('qv_booking_meta')->where('qv_status', 'awaiting_payment')->where('sample_id', $sampleId)
+                ->where('delivery', $delivery)->where('usage_license', $license)->pluck('order_id'))
+            ->orderByDesc('id')->get()->first(fn ($o) => trim((string) ($o->items->first()->item ?? '')) === $script);
+        if ($same) return ['booking' => self::clientView($same), 'reused' => true];
+
         try { $currencyId = CurrencyHelper::getId(); } catch (\Throwable $e) { $currencyId = 1; }
 
         $order = DB::transaction(function () use ($customer, $voice, $contact, $script, $notes, $chars, $words, $minutes, $narratorPrice, $perMinute, $pct, $base, $price, $payout, $delivery, $license, $sampleId, $currencyId, $opt) {

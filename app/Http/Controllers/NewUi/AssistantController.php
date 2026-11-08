@@ -32,7 +32,7 @@ class AssistantController extends Controller
         if (!$agent || !$key) return response()->json(['error' => 'لم يتم تكوين ELEVENLABS_AGENT_ID أو ELEVENLABS_API_KEY على الخادم'], 400);
         try {
             $r = Http::withHeaders(['xi-api-key' => $key])->timeout(20)->get('https://api.elevenlabs.io/v1/convai/conversation/get_signed_url', ['agent_id' => $agent]);
-            if (!$r->successful()) return response()->json(['error' => 'تعذر توليد رابط محادثة معتمد من ElevenLabs'], 502);
+            if (!$r->successful()) return response()->json(['error' => 'تعذر توليد رابط محادثة معتمد من ElevenLabs'], 424);
             return response()->json(['signedUrl' => $r->json('signed_url')]);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'خطأ في الاتصال بمزود الخدمة الصوتية'], 500);
@@ -55,7 +55,7 @@ class AssistantController extends Controller
             $text = $r2->json('candidates.0.content.parts.0.text') ?: 'تعذر الرد الآن.';
             return response()->json(['reply' => $text, 'provider' => 'gemini']);
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'تعذر الاتصال بالمساعد'], 502);
+            return response()->json(['error' => 'تعذر الاتصال بالمساعد'], 424);
         }
     }
 }
