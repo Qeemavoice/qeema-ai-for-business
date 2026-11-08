@@ -165,6 +165,7 @@ export const B2BHome: React.FC<B2BHomeProps> = ({
   useEffect(() => {
     const audio = new Audio();
     audio.crossOrigin = 'anonymous';
+    audio.preload = 'none';   // the sample loads when the visitor presses play, not with the page (LCP)
     audioElementRef.current = audio;
 
     const onTimeUpdate = () => {

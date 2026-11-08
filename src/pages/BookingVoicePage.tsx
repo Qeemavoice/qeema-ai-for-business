@@ -105,8 +105,9 @@ export const BookingVoicePage: React.FC<BookingVoicePageProps> = ({ voices }) =>
     ? (sample.metaDescription?.trim() || (sample.description ? sample.description.slice(0, 160) : `استمع إلى عينة «${sample.title}» بلهجة ${sample.dialect}، تخصص ${sample.category}. احجز الصوت مباشرة بجودة 48kHz.`))
     : 'استمع إلى عينات التعليق الصوتي المعتمدة واحجز صوتك اليوم عبر قيمة فويس.';
 
+  const ownPath = `/ar/voices/${sample ? buildSampleSlug({ id: sample.id, sampleName: sample.title, name: sample.title }) : slug || ''}`;
   useSeo({
-    path: `/ar/voices/${sample ? buildSampleSlug({ id: sample.id, sampleName: sample.title, name: sample.title }) : slug || ''}`,
+    path: ownPath,
     title: pageTitle,
     h1: pageH1,
     description: pageDesc,
@@ -114,7 +115,7 @@ export const BookingVoicePage: React.FC<BookingVoicePageProps> = ({ voices }) =>
     breadcrumbs: [
       { name: 'الرئيسية', item: '/ar' },
       { name: 'مكتبة الأصوات', item: '/ar/voices' },
-      { name: sample?.title || 'عينة صوتية', item: `/ar/voices/${slug}` }
+      { name: sample?.title || 'عينة صوتية', item: ownPath }
     ]
   });
 
@@ -161,7 +162,7 @@ export const BookingVoicePage: React.FC<BookingVoicePageProps> = ({ voices }) =>
         <Breadcrumbs items={[
           { name: 'الرئيسية', item: '/ar' },
           { name: 'مكتبة الأصوات', item: '/ar/voices' },
-          { name: sample.title, item: `/ar/voices/${slug}` }
+          { name: sample.title, item: ownPath }
         ]} />
       </div>
 
