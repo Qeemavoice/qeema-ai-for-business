@@ -69,7 +69,13 @@ class SpaController extends Controller
                     : "استمع إلى عينة «{$v['name']}» بلهجة {$dialect}، تخصص " . ($v['category'] ?: 'تعليق احترافي') . '. احجز الصوت مباشرة بجودة 48kHz.');
                 $audio = (string) $v['previewUrl'];
                 if ($audio !== '' && !preg_match('#^https?://#', $audio)) $audio = rtrim(self::seoMap()['site'] ?? 'https://qeemavoice.com', '/') . '/' . ltrim($audio, '/');
-                return ['title' => $title, 'description' => $desc, 'canonicalPath' => self::voicePath($m[1]),
+                $site = rtrim(self::seoMap()['site'] ?? 'https://qeemavoice.com', '/');
+                $own = self::voicePath($m[1]);
+                $crumbs = [['الرئيسية', '/ar'], ['مكتبة الأصوات', '/ar/voices'], [$v['name'], $own]];
+                return ['title' => $title, 'description' => $desc, 'canonicalPath' => $own,
+                    // same BreadcrumbList the page's useSeo() writes (same script id, so it replaces this one)
+                    'schemaJsonLd' => ['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => array_map(fn ($c, $i) =>
+                        ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $c[0], 'item' => $site . self::encodePath($c[1])], $crumbs, array_keys($crumbs))],
                     // AudioObject for Google (clip name only, like the page); no transcript: the library keeps no script text
                     'jsonLd' => array_filter(['@context' => 'https://schema.org', '@type' => 'AudioObject', 'name' => $v['name'], 'description' => $desc,
                         'contentUrl' => $audio ?: null, 'encodingFormat' => 'audio/mpeg', 'inLanguage' => 'ar',
@@ -130,6 +136,8 @@ class SpaController extends Controller
             . ($image ? "<meta property=\"og:image\" content=\"{$image}\" />\n" : '')
             . (!empty($cfg['noindex']) ? "<meta name=\"robots\" content=\"noindex, nofollow\" />\n" : '')
             . (!empty($cfg['keywords']) ? "<meta name=\"keywords\" content=\"{$e($cfg['keywords'])}\" />\n" : '')
+            . (!empty($cfg['schemaJsonLd']) ? '<script type="application/ld+json" id="qeema-schema-jsonld">'
+                . json_encode($cfg['schemaJsonLd'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n" : '')
             . (!empty($cfg['jsonLd']) ? '<script type="application/ld+json" id="qeema-audio-jsonld">'
                 . json_encode($cfg['jsonLd'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n" : '');
         return str_replace('</head>', $extra . '</head>', $html);

@@ -68,5 +68,10 @@ class NarratorNameHiddenTest extends TestCase
         $ld = json_decode($m[1] ?? '', true);
         $this->assertSame(['AudioObject', 'إعلان حماسي', 'audio/mpeg', 'ar', 'قيمة فويس'], [$ld['@type'], $ld['name'], $ld['encodingFormat'], $ld['inLanguage'], $ld['publisher']['name']]);
         $this->assertStringNotContainsString($secret, $m[1]);
+        preg_match('#<script type="application/ld\+json" id="qeema-schema-jsonld">(.*?)</script>#s', $page, $b);
+        $crumbs = json_decode($b[1] ?? '', true);
+        $this->assertSame('BreadcrumbList', $crumbs['@type']);
+        $this->assertSame(['الرئيسية', 'مكتبة الأصوات', 'إعلان حماسي'], array_column($crumbs['itemListElement'], 'name'));
+        $this->assertSame($url, $crumbs['itemListElement'][2]['item']);
     }
 }
