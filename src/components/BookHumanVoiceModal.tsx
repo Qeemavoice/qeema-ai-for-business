@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getToken } from '../lib/api';
+import { SIGNED_IN_EVENT } from '../lib/talentJoin';
 import { X, CheckCircle2, Lock, ShieldCheck, Volume2, Square, CreditCard } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -84,11 +85,17 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
   // signed in: name and e-mail (and the saved mobile) come from the account and cannot be edited here
   const [locked, setLocked] = useState({ name: false, email: false, whatsapp: false });
   useEffect(() => {
-    if (!getToken()) return;
-    api.getProfile().then(p => {
-      setFormData(f => ({ ...f, customerName: p.name || f.customerName, customerEmail: p.email || f.customerEmail, customerWhatsapp: p.mobile || f.customerWhatsapp }));
-      setLocked({ name: Boolean(p.name), email: Boolean(p.email), whatsapp: Boolean(p.mobile) });
-    }).catch(() => {});
+    // also when the visitor signs in while the form is open (the page asked them to)
+    const fill = () => {
+      if (!getToken()) return;
+      api.getProfile().then(p => {
+        setFormData(f => ({ ...f, customerName: p.name || f.customerName, customerEmail: p.email || f.customerEmail, customerWhatsapp: p.mobile || f.customerWhatsapp }));
+        setLocked({ name: Boolean(p.name), email: Boolean(p.email), whatsapp: Boolean(p.mobile) });
+      }).catch(() => {});
+    };
+    fill();
+    window.addEventListener(SIGNED_IN_EVENT, fill);
+    return () => window.removeEventListener(SIGNED_IN_EVENT, fill);
   }, []);
   const lockCls = 'bg-slate-100 text-slate-600 cursor-not-allowed';
 
