@@ -80,6 +80,15 @@ class AdminLibraryVoicesTest extends TestCase
         $this->assertNotNull(collect($this->getJson('/api/v1/human-voices')->json('items'))->firstWhere('id', $item['id']));
         $mine = $this->getJson('/api/v1/narrators/state', ['Authorization' => 'Bearer ' . Accounts::issueToken($narrator), 'Accept' => 'application/json'])->assertOk()->json('libraryVoices');
         $this->assertSame([$item['id']], collect($mine)->pluck('id')->all());
+        // replacing the audio from «تعديل الصوت»: same voice, same address and texts, new file; a fake MP3 is refused
+        $api->putJson('/api/v1/admin/collections/humanVoices/' . $item['id'], ['previewUrl' => 'data:audio/mpeg;base64,' . base64_encode("PK\x03\x04 zip renamed")])->assertStatus(400);
+        $this->assertSame($row->audio_file, DB::table('voices')->where('id', (int) $item['id'])->value('audio_file'));
+        $api->putJson('/api/v1/admin/collections/humanVoices/' . $item['id'], ['previewUrl' => 'data:audio/mpeg;base64,' . base64_encode("\xFF\xFB\x90\x00" . str_repeat("\0", 500))])->assertOk();
+        $after = DB::table('voices')->where('id', (int) $item['id'])->first();
+        $this->assertNotSame($row->audio_file, $after->audio_file);
+        $this->assertSame([$row->title, $row->meta_title, (int) $row->voiceover_id], [$after->title, $after->meta_title, (int) $after->voiceover_id]);
+        $this->assertSame(1, DB::table('voices')->count());
         @unlink(public_path(DIR_UPLOAD . '/' . \App\Models\Voice::DIR_VOICES_UPLOADS . '/' . $row->audio_file));
+        @unlink(public_path(DIR_UPLOAD . '/' . \App\Models\Voice::DIR_VOICES_UPLOADS . '/' . $after->audio_file));
     }
 }

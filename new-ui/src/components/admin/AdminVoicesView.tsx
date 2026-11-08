@@ -272,7 +272,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
         <Card title="الملف الصوتي">
           <UploadField label="الملف الصوتي" required kind="audio" accept=".mp3,audio/mpeg" maxMb={5}
             value={form.previewUrl || ''} fileName={form.fileName}
-            hint="يتم قبول ملفات الصوت mp3 فقط"
+            hint={isNew ? 'يتم قبول ملفات الصوت mp3 فقط' : 'لتغيير المقطع اضغط «استبدال» واختر ملف MP3 جديداً ثم احفظ: تبقى صفحة الصوت ورابطها وعنوانها ووصفها وعدد الحجوزات كما هي'}
             onChange={(v, name) => {
               if (name && !/\.mp3$/i.test(name)) return setError('يتم قبول ملفات الصوت mp3 فقط');
               setError(''); set('previewUrl', v); set('fileName', name);

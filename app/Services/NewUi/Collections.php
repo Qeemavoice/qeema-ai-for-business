@@ -109,6 +109,16 @@ class Collections
             'source' => ($v['_voiceRowId'] ?? 0) ? 'library' : 'narrator'];
     }
 
+    /** A library voice's audio must be a real MP3 (browsers play it everywhere): checked by its bytes, not its name */
+    private static function mp3Error(string $audio): ?string
+    {
+        if (!preg_match('#^data:audio/(mpeg|mp3);base64,(.*)$#s', $audio, $m)) return 'ارفع الملف الصوتي بصيغة MP3';
+        if (strlen($audio) > 7 * 1024 * 1024) return 'حجم الملف الصوتي أكبر من 5 ميجابايت';
+        $head = base64_decode(substr($m[2], 0, 16), true);
+        $mp3 = $head !== false && (str_starts_with($head, 'ID3') || (strlen($head) > 1 && ord($head[0]) === 0xFF && (ord($head[1]) & 0xE0) === 0xE0));
+        return $mp3 ? null : 'الملف ليس MP3 فعلياً (ربما ملف بصيغة أخرى غُيّر اسمه): صدّره بصيغة MP3 وارفعه من جديد';
+    }
+
     private static function updateVoice(string $id, array $d): ?array
     {
         if (!ctype_digit($id)) return ['error' => self::NARRATOR_SAMPLE_MSG];
@@ -129,6 +139,8 @@ class Collections
             if ($dl) $v->dialect_id = $dl->id;
         }
         if (!empty($d['previewUrl']) && str_starts_with((string) $d['previewUrl'], 'data:')) {
+            // a new file replaces the voice's audio; the page (id, address, texts, counts) stays. The old file stays on disk.
+            if ($err = self::mp3Error((string) $d['previewUrl'])) return ['error' => $err];
             $v->audio_file = self::upload((string) $d['previewUrl'], \App\Models\Voice::DIR_VOICES_UPLOADS, $v->audio_file);
         }
         if (array_key_exists('categories', $d) && is_array($d['categories'])) {
@@ -153,9 +165,7 @@ class Collections
         }
         $title = trim((string) ($d['sampleName'] ?? ''));
         if ($title === '') return ['error' => 'اكتب عنوان الصوت'];
-        $audio = (string) ($d['previewUrl'] ?? '');
-        if (!preg_match('#^data:audio/(mpeg|mp3);base64,#', $audio)) return ['error' => 'ارفع الملف الصوتي بصيغة MP3'];
-        if (strlen($audio) > 7 * 1024 * 1024) return ['error' => 'حجم الملف الصوتي أكبر من 5 ميجابايت'];
+        if ($err = self::mp3Error((string) ($d['previewUrl'] ?? ''))) return ['error' => $err];
         $price = (float) ($d['narratorPriceUsd'] ?? 0);
         if (!($price > 0 && $price <= 1000)) return ['error' => 'سعر الدقيقة يجب أن يكون بين 1 و 1000 دولار'];
         $cats = Category::all()->keyBy(fn ($c) => PublicController::tr($c, 'name'));
