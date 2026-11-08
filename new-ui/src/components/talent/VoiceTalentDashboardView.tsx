@@ -2262,7 +2262,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                   <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
                     <div>
                       <h3 className="font-black text-slate-900 text-sm">أصواتي في مكتبة الأصوات ({narratorService.libraryVoicesOf(narrator.id).length})</h3>
-                      <p className="text-[11px] text-slate-500 mt-1">أصواتك المنشورة التي يراها العملاء ويحجزونها. سعر الدقيقة هنا هو سعرك أنت، والعميل يرى سعرك مضافاً إليه عمولة المنصة {commissionPercent()}%. لتعديل صوت أو سعره تواصل مع الإدارة.</p>
+                      <p className="text-[11px] text-slate-500 mt-1">أصواتك المنشورة التي يراها العملاء ويحجزونها. سعر الدقيقة هنا هو سعرك أنت ويصلك كاملاً، وعمولة المنصة {commissionPercent()}% تُضاف على العميل فوق سعرك ولا تُخصم منك. لتعديل صوت أو سعره تواصل مع الإدارة.</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {narratorService.libraryVoicesOf(narrator.id).map(v => {
@@ -2287,7 +2287,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-center">
                               <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">سعرك / دقيقة</p><p className="font-mono font-black text-slate-900 text-sm">{own ? `$${fmtUsd(own)}` : '—'}</p></div>
-                              <div className="rounded-xl bg-orange-50 p-2"><p className="text-[9px] text-slate-500">يراه العميل</p><p className="font-mono font-black text-brand-text text-sm">{own ? `$${fmtUsd(own * (1 + commissionPercent() / 100))}` : '—'}</p></div>
+                              <div className="rounded-xl bg-orange-50 p-2"><p className="text-[9px] text-slate-500">عمولة المنصة {commissionPercent()}%</p><p className="font-mono font-black text-brand-text text-sm">{own ? `+$${fmtUsd(own * commissionPercent() / 100)}` : '—'}</p></div>
                               <div className="rounded-xl bg-slate-50 p-2"><p className="text-[9px] text-slate-500">حجوزات</p><p className="font-mono font-black text-slate-900 text-sm">{v.bookingsCount}</p></div>
                             </div>
                           </div>
