@@ -84,7 +84,7 @@ export const BlogsPage: React.FC = () => {
             {pageText.title}
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
             {pageText.intro}
           </p>
 

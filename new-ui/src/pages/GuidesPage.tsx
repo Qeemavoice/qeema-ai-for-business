@@ -9,6 +9,12 @@ import { api } from '../lib/api';
 import { GuideCover, GuidePriceBadge } from './GuideCover';
 import { usePageText } from '../lib/pageTexts';
 
+/** A free guide links straight to its file (/uploads/... or a full URL): open it as a file in a new tab, not as a site page (that showed 404) */
+const GuideLink: React.FC<{ to: string; className?: string; 'aria-label'?: string; children: React.ReactNode }> = ({ to, children, ...rest }) =>
+  /^(https?:)?\/\/|^\/uploads\/|\.pdf($|\?)/i.test(to)
+    ? <a href={to} target="_blank" rel="noopener" {...rest}>{children}</a>
+    : <Link to={to} {...rest}>{children}</Link>;
+
 export const GuidesPage: React.FC = () => {
   const pageText = usePageText('guides');
   useSeo(STATIC_SEO_ROUTES['/ar/guides']);
@@ -43,10 +49,6 @@ export const GuidesPage: React.FC = () => {
 
       <section className="py-12 border-b border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand/10 text-brand-text text-xs font-bold">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>المكتبة الإرشادية والتدريبية</span>
-          </div>
 
           {/* Strict Single H1 */}
           <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight">
@@ -64,9 +66,9 @@ export const GuidesPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {guides.map((g, idx) => (
               <div key={idx} className="rounded-3xl bg-white border border-slate-200 shadow-xs overflow-hidden flex flex-col justify-between">
-                <Link to={g.link} aria-label={g.title}>
+                <GuideLink to={g.link} aria-label={g.title}>
                   <GuideCover guide={g} className="h-44" />
-                </Link>
+                </GuideLink>
                 <div className="p-8 space-y-4 flex-1 flex flex-col justify-between">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -84,13 +86,13 @@ export const GuidesPage: React.FC = () => {
                 </div>
 
                 <div className="pt-4 border-t border-slate-100">
-                  <Link
+                  <GuideLink
                     to={g.link}
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-text hover:underline"
                   >
                     <span>{g.priceUsd === null ? 'قراءة الدليل بالكامل' : 'تفاصيل الدليل'}</span>
                     <ArrowLeft className="w-3.5 h-3.5" />
-                  </Link>
+                  </GuideLink>
                 </div>
                 </div>
               </div>

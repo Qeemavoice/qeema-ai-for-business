@@ -90,7 +90,7 @@ export const VoicesPage: React.FC<VoicesPageProps> = ({
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-950 tracking-tight">
             {pageH1}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-2 max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
             {pageDesc}
           </p>
         </div>
