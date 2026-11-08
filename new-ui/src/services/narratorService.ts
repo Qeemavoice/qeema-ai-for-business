@@ -902,27 +902,27 @@ class NarratorService {
   }
 
   /** Admin «إضافة معلق»: a real narrator account on the server (optionally invited by e-mail), then the fresh list */
-  public async adminCreateNarrator(data: { displayName: string; email: string; phone?: string; perMinuteUsd?: number; sendInvite: boolean }): Promise<{ narrator: Narrator; invite: { link: string; emailed: boolean } | null }> {
+  public async adminCreateNarrator(data: { displayName: string; email: string; phone?: string; perMinuteUsd?: number; sendInvite: boolean; takeFromSuspendedClient?: boolean }): Promise<{ narrator: Narrator; invite: { link: string; emailed: boolean } | null }> {
     await this.ready;
     if (this.savePending) await this.saveNow();
     const res = await fetch('/api/v1/admin/narrators', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...this.authHeaders() }, body: JSON.stringify(data)
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || 'تعذر إضافة المعلق');
+    if (!res.ok) throw Object.assign(new Error(body.error || 'تعذر إضافة المعلق'), { code: body.code });
     await this.reload();
     return { narrator: body.narrator, invite: body.invite || null };
   }
 
   /** Admin «تعديل»: the narrator's name (also the account's own name) on the server, then the fresh copy */
-  public async adminUpdateNarrator(narratorId: string, data: { displayName?: string; email?: string; perMinuteUsd?: number }): Promise<Narrator> {
+  public async adminUpdateNarrator(narratorId: string, data: { displayName?: string; email?: string; perMinuteUsd?: number; takeFromSuspendedClient?: boolean }): Promise<Narrator> {
     await this.ready;
     if (this.savePending) await this.saveNow();   // a waiting change first, so it never overwrites this edit afterwards
     const res = await fetch(`/api/v1/admin/narrators/${encodeURIComponent(narratorId)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...this.authHeaders() }, body: JSON.stringify(data)
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || 'تعذر حفظ بيانات المعلق');
+    if (!res.ok) throw Object.assign(new Error(body.error || 'تعذر حفظ بيانات المعلق'), { code: body.code });
     // the server's copy of this narrator replaces ours (no full reload of every narrator)
     const i = this.narrators.findIndex(item => item.id === narratorId);
     if (i === -1) throw new Error('المعلق غير موجود');

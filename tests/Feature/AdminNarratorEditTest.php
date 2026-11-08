@@ -67,4 +67,35 @@ class AdminNarratorEditTest extends TestCase
         $this->assertSame(1, collect($api->getJson('/api/v1/narrators/state')->json('narrators'))->where('id', $id)->count());   // listed once
         $api->postJson('/api/v1/admin/narrators', $new)->assertStatus(409);   // same e-mail twice
     }
+
+    public function test_the_email_of_a_suspended_client_moves_to_a_narrator_on_confirmation()
+    {
+        foreach ([1 => 'admin', 2 => 'client', 3 => 'voice-actor', 4 => 'both'] as $id => $slug) DB::table('user_types')->insert(['id' => $id, 'name' => $slug, 'slug' => $slug]);
+        foreach (range(1, 4) as $id) DB::table('user_statuses')->insert(['id' => $id, 'name' => 'status ' . $id]);
+        $admin = Accounts::createAccount('مشرف', 'admin@example.test', 'password-123', 'client');
+        $admin->forceFill(['user_type_id' => 1])->save();
+        $api = $this->withHeader('Authorization', 'Bearer ' . Accounts::issueToken($admin))->withHeader('Accept', 'application/json');
+        $old = Accounts::createAccount('عميل قديم', 'shared@example.test', 'password-123', 'client');
+        $active = Accounts::createAccount('عميل نشط', 'active@example.test', 'password-123', 'client');
+        $api->postJson('/api/v1/admin/customers/c' . $old->id . '/status', ['status' => 'suspended'])->assertOk();
+        $new = ['displayName' => 'معلق', 'email' => 'shared@example.test'];
+
+        // adding: asks first, then moves the e-mail; an active client's e-mail is never taken
+        $api->postJson('/api/v1/admin/narrators', $new)->assertStatus(409)->assertJsonPath('code', 'EMAIL_OF_SUSPENDED_CLIENT');
+        $this->assertSame('shared@example.test', $old->fresh()->email);
+        $api->postJson('/api/v1/admin/narrators', ['email' => 'active@example.test', 'takeFromSuspendedClient' => true] + $new)->assertStatus(409)->assertJsonMissing(['code' => 'EMAIL_OF_SUSPENDED_CLIENT']);
+        $res = $api->postJson('/api/v1/admin/narrators', $new + ['takeFromSuspendedClient' => true])->assertOk();
+        $this->assertSame('shared@example.test', $res->json('narrator.email'));
+        $this->assertStringEndsWith('@released.qeemavoice.invalid', $old->fresh()->email);
+        $this->assertSame('suspended', DB::table('qv_client_accounts')->where('user_id', $old->id)->value('status'));
+        $this->assertSame('active@example.test', $active->fresh()->email);
+
+        // editing a narrator's e-mail works the same way
+        $other = Accounts::createAccount('عميل آخر', 'second@example.test', 'password-123', 'client');
+        $api->postJson('/api/v1/admin/customers/c' . $other->id . '/status', ['status' => 'suspended'])->assertOk();
+        $url = '/api/v1/admin/narrators/' . $res->json('narrator.id');
+        $api->postJson($url, ['email' => 'second@example.test'])->assertStatus(409)->assertJsonPath('code', 'EMAIL_OF_SUSPENDED_CLIENT');
+        $api->postJson($url, ['email' => 'second@example.test', 'takeFromSuspendedClient' => true])->assertOk()->assertJsonPath('narrator.email', 'second@example.test');
+        $this->assertStringEndsWith('@released.qeemavoice.invalid', $other->fresh()->email);
+    }
 }

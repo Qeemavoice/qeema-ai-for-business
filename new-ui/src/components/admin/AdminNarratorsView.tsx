@@ -257,6 +257,15 @@ interface DrawerProps {
   flash: (m: string) => void;
 }
 
+/** The e-mail is a suspended client's: ask the admin, then retry with their go-ahead (the server moves it) */
+const withSuspendedClientEmail = async <T,>(run: (take: boolean) => Promise<T>): Promise<T | null> => {
+  try { return await run(false); } catch (e: any) {
+    if (e?.code !== 'EMAIL_OF_SUSPENDED_CLIENT') throw e;
+    if (!window.confirm(`${e.message}\n\nنقل البريد إلى المعلق؟`)) return null;
+    return run(true);
+  }
+};
+
 /** «إضافة معلق»: creates the narrator's account; the narrator picks their own password from the activation link */
 const AddNarratorDrawer: React.FC<{ onClose: () => void; onAdded: (n: Narrator, msg: string) => void }> = ({ onClose, onAdded }) => {
   const [f, setF] = useState({ displayName: '', email: '', phone: '', price: '', sendInvite: true });
@@ -268,9 +277,11 @@ const AddNarratorDrawer: React.FC<{ onClose: () => void; onAdded: (n: Narrator, 
     e.preventDefault(); setError(''); setSaving(true);
     try {
       const price = parseFloat(f.price);
-      const { narrator, invite } = await narratorService.adminCreateNarrator({
-        displayName: f.displayName, email: f.email, phone: f.phone || undefined, perMinuteUsd: isNaN(price) ? undefined : price, sendInvite: f.sendInvite
-      });
+      const done = await withSuspendedClientEmail(take => narratorService.adminCreateNarrator({
+        displayName: f.displayName, email: f.email, phone: f.phone || undefined, perMinuteUsd: isNaN(price) ? undefined : price, sendInvite: f.sendInvite, takeFromSuspendedClient: take
+      }));
+      if (!done) return;
+      const { narrator, invite } = done;
       onAdded(narrator, invite ? (invite.emailed ? 'تمت إضافة المعلق وإرسال رابط التفعيل إلى بريده' : 'تمت إضافة المعلق، وتعذر إرسال البريد: انسخ رابط التفعيل من ملفه') : 'تمت إضافة المعلق');
     } catch (err) { setError(err instanceof Error ? err.message : 'تعذر إضافة المعلق'); } finally { setSaving(false); }
   };
@@ -347,7 +358,8 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   const saveEmail = async () => {
     setEmailError(''); setBusy('email');
     try {
-      const u = await narratorService.adminUpdateNarrator(n.id, { email: emailInput });
+      const u = await withSuspendedClientEmail(take => narratorService.adminUpdateNarrator(n.id, { email: emailInput, takeFromSuspendedClient: take }));
+      if (!u) return;
       onChanged(u); flash('تم تحديث بريد المعلق: يسجّل الدخول به من الآن');
     } catch (e) { setEmailError(e instanceof Error ? e.message : 'تعذر حفظ البريد'); } finally { setBusy(''); }
   };

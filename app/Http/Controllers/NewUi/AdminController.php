@@ -253,7 +253,8 @@ class AdminController extends Controller
         if ($phone !== '' && !preg_match('/^\+?\d{7,15}$/', $phone)) return response()->json(['error' => 'رقم الهاتف غير صحيح'], 400);
         $price = $r->filled('perMinuteUsd') ? round((float) $r->input('perMinuteUsd'), 2) : null;
         if ($price !== null && !($price > 0 && $price <= 1000)) return response()->json(['error' => 'سعر الدقيقة يجب أن يكون بين 1 و 1000 دولار'], 400);
-        if (Accounts::findByEmail($email)) return response()->json(['error' => 'هذا البريد مسجّل لحساب آخر في الموقع'], 409);
+        if ($refused = $this->emailTaken($email, 0, $r)) return $refused;
+        $this->releaseEmail($email, $r);
 
         $u = Accounts::createAccount($name, $email, null, 'talent', $phone !== '' ? ['mobile' => $phone] : []);
         $id = 'narrator_u' . $u->id;
@@ -268,6 +269,34 @@ class AdminController extends Controller
         NarratorController::save($st);
         Store::audit($id, 'admin', 'NARRATOR_ADDED' . ($invite ? ' (invited)' : ''), ['email' => $email]);
         return response()->json(['success' => true, 'narrator' => $out, 'invite' => $invite]);
+    }
+
+    /** The e-mail belongs to another account: refused, except a suspended client's when the admin confirms moving it */
+    private function emailTaken(string $email, int $exceptUid, Request $r)
+    {
+        $owner = Accounts::findByEmail($email);
+        if (!$owner || $owner->id === $exceptUid) return null;
+        if ($this->suspendedClient($owner)) {
+            return $r->boolean('takeFromSuspendedClient') ? null : response()->json(['code' => 'EMAIL_OF_SUSPENDED_CLIENT',
+                'error' => 'هذا البريد لحساب عميل موقوف (' . Accounts::name($owner) . '). عند التأكيد يُنقل البريد إلى المعلق، ويبقى حساب العميل موقوفاً بطلباته وسجلاته ببريد بديل محجوز.'], 409);
+        }
+        return response()->json(['error' => 'هذا البريد مسجّل لحساب آخر في الموقع'], 409);
+    }
+
+    private function suspendedClient(User $u): bool
+    {
+        if (Accounts::isAdmin($u) || Accounts::narratorId($u) || (int) $u->user_type_id !== \App\Models\UserType::CLIENT) return false;
+        return DB::table('qv_client_accounts')->where('user_id', $u->id)->value('status') === 'suspended';
+    }
+
+    /** Frees the e-mail of a suspended client (confirmed by the admin): the client keeps its data under a reserved address */
+    private function releaseEmail(string $email, Request $r): void
+    {
+        $owner = Accounts::findByEmail($email);
+        if (!$owner || !$r->boolean('takeFromSuspendedClient') || !$this->suspendedClient($owner)) return;
+        $owner->email = 'released-' . $owner->id . '-' . time() . '@released.qeemavoice.invalid';
+        $owner->save();
+        Store::audit('c' . $owner->id, 'admin', 'CLIENT_EMAIL_RELEASED: moved to a narrator account', ['email' => $email]);
     }
 
     /** «تعديل» a narrator from the admin dashboard: name and per-minute price. The name is the account's own name too
@@ -290,9 +319,9 @@ class AdminController extends Controller
             // the e-mail is also the narrator's sign-in: unique across the site's accounts
             $email = mb_strtolower(trim((string) $r->input('email')));
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return response()->json(['error' => 'البريد الإلكتروني غير صحيح'], 400);
-            $owner = Accounts::findByEmail($email);
-            if ($owner && $owner->id !== $uid) return response()->json(['error' => 'هذا البريد مسجّل لحساب آخر في الموقع'], 409);
+            if ($refused = $this->emailTaken($email, $uid, $r)) return $refused;
             if ($email !== mb_strtolower((string) ($n['email'] ?? ''))) {
+                $releaseEmail = $email;
                 $changes['email'] = [$n['email'] ?? '', $email];
                 $n['email'] = $email;
             }
@@ -304,6 +333,7 @@ class AdminController extends Controller
             $n['rates'] = array_merge(['standardCommercialUsd' => 0, 'perWordRateUsd' => 0, 'hourlyLiveDirectingUsd' => 0], (array) ($n['rates'] ?? []), ['perMinuteUsd' => $price]);
         }
         if (!$changes) return response()->json(['error' => 'لا يوجد ما يُحفظ'], 400);
+        if (!empty($releaseEmail)) $this->releaseEmail($releaseEmail, $r);
         $st['narrators'][$i] = $n;
         NarratorController::save($st);
         if ((isset($changes['name']) || isset($changes['email'])) && $uid && ($u = User::find($uid))) {
