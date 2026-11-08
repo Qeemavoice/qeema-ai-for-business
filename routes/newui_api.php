@@ -48,7 +48,7 @@ Route::get('human-voices', 'PublicController@humanVoices');
 Route::get('human-voices/{id}/reviews', 'PublicController@voiceReviews');
 Route::post('contact', 'PublicController@contact');
 Route::post('join', 'PublicController@join');
-Route::post('newsletter', 'PublicController@newsletter');
+Route::post('newsletter', 'PublicController@newsletter')->middleware('throttle:6,1');
 
 // ---- TTS voices, previews, trial, stored audio ----
 Route::get('voices', 'VoicesController@index');

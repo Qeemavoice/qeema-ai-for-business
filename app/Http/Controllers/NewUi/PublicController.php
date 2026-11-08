@@ -233,7 +233,15 @@ class PublicController extends Controller
     {
         $email = mb_strtolower(mb_substr(trim((string) $r->input('email', '')), 0, 120));
         if (!preg_match('/^[^\s@]+@[^\s@]+\.[^\s@]+$/', $email)) return response()->json(['error' => 'أدخل بريداً إلكترونياً صحيحاً'], 400);
-        if (!MailingList::where('email', $email)->exists()) MailingList::create(['email' => $email]);
+        // a welcome e-mail goes out once, on the first subscription of the address
+        if (!MailingList::where('email', $email)->exists()) {
+            MailingList::create(['email' => $email]);
+            \App\Services\NewUi\Mailer::trySend($email, 'أهلاً بك في نشرة قيمة فويس',
+                "شكراً لاشتراكك في النشرة البريدية لمنصة قيمة فويس.\n\n"
+                . "ستصلك أحدث عينات التعليق الصوتي والعروض والمقالات الجديدة.\n\n"
+                . "تصفح مكتبة الأصوات: " . url('/ar/voices') . "\n\n"
+                . "إذا لم تطلب هذا الاشتراك، يمكنك تجاهل هذه الرسالة أو مراسلتنا على info@qeemavoice.com لإلغائه.\n\nفريق Qeemavoice");
+        }
         return response()->json(['success' => true]);
     }
 }
