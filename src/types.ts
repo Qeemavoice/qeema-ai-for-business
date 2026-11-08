@@ -312,6 +312,8 @@ export interface Narrator {
   /** What the narrator submitted for the badge request (the admin reviews it) */
   humanVerification?: { selfieUrl: string; voiceUrl: string; text: string; submittedAt: string };
   status: NarratorStatus;
+  /** the status to bring back on «إعادة تفعيل الحساب» */
+  statusBeforeSuspend?: NarratorStatus;
   claimToken?: string;
   claimTokenExpiresAt?: string;  // 7 days
   kycStatus: 'none' | 'pending' | 'approved' | 'rejected';

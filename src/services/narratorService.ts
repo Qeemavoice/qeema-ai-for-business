@@ -984,7 +984,15 @@ class NarratorService {
     await this.ready;
     const n = this.narrators.find(item => item.id === narratorId);
     if (!n) throw new Error('المعلق غير موجود');
-    n.status = suspended ? 'suspended' : (n.claimToken && n.kycStatus !== 'none' ? 'active' : 'invited');
+    // reactivation brings back the status the account had before it was suspended (it sends no invitation)
+    if (suspended) {
+      if (n.status !== 'suspended') n.statusBeforeSuspend = n.status;
+      n.status = 'suspended';
+    } else {
+      n.status = n.statusBeforeSuspend && n.statusBeforeSuspend !== 'suspended' ? n.statusBeforeSuspend
+        : n.claimToken ? 'invited' : n.id.startsWith('narrator_u') ? 'active' : 'unclaimed';
+      delete n.statusBeforeSuspend;
+    }
     this.pushNotification({
       narratorId,
       type: 'account',
