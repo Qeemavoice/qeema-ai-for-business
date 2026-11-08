@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getToken } from '../lib/api';
 import { X, CheckCircle2, Lock, ShieldCheck, Volume2, Square, CreditCard } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -80,6 +81,17 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
     customerWhatsapp: ''
   });
 
+  // signed in: name and e-mail (and the saved mobile) come from the account and cannot be edited here
+  const [locked, setLocked] = useState({ name: false, email: false, whatsapp: false });
+  useEffect(() => {
+    if (!getToken()) return;
+    api.getProfile().then(p => {
+      setFormData(f => ({ ...f, customerName: p.name || f.customerName, customerEmail: p.email || f.customerEmail, customerWhatsapp: p.mobile || f.customerWhatsapp }));
+      setLocked({ name: Boolean(p.name), email: Boolean(p.email), whatsapp: Boolean(p.mobile) });
+    }).catch(() => {});
+  }, []);
+  const lockCls = 'bg-slate-100 text-slate-600 cursor-not-allowed';
+
   const charCount = countScriptChars(formData.scriptText);
   const durationMinutes = charCount === 0 ? 0 : Math.ceil(charCount / CHARS_PER_MINUTE);
   const pricePerMinute = getPricePerMinute(voice);
@@ -150,26 +162,27 @@ export const BookingForm: React.FC<BookingFormProps> = ({ voice, onCancel, onDon
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <label className="block">
             <span className="block text-xs font-bold text-slate-700 mb-1.5">اسم العميل *</span>
-            <input required autoComplete="name" value={formData.customerName}
+            <input required autoComplete="name" value={formData.customerName} readOnly={locked.name}
               onChange={e => setFormData({ ...formData, customerName: e.target.value })}
               placeholder="الاسم أو اسم الشركة"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-brand transition-colors" />
+              className={`w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-brand transition-colors ${locked.name ? lockCls : ''}`} />
           </label>
           <label className="block">
             <span className="block text-xs font-bold text-slate-700 mb-1.5">البريد الإلكتروني *</span>
-            <input required type="email" dir="ltr" autoComplete="email" value={formData.customerEmail}
+            <input required type="email" dir="ltr" autoComplete="email" value={formData.customerEmail} readOnly={locked.email}
               onChange={e => setFormData({ ...formData, customerEmail: e.target.value })}
               placeholder="name@example.com"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 text-left placeholder:text-slate-400 focus:outline-none focus:border-brand transition-colors" />
+              className={`w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 text-left placeholder:text-slate-400 focus:outline-none focus:border-brand transition-colors ${locked.email ? lockCls : ''}`} />
           </label>
           <label className="block">
             <span className="block text-xs font-bold text-slate-700 mb-1.5">رقم الواتساب *</span>
-            <input required type="tel" dir="ltr" autoComplete="tel" inputMode="tel" value={formData.customerWhatsapp}
+            <input required type="tel" dir="ltr" autoComplete="tel" inputMode="tel" value={formData.customerWhatsapp} readOnly={locked.whatsapp}
               onChange={e => setFormData({ ...formData, customerWhatsapp: e.target.value })}
               placeholder="+966 5X XXX XXXX"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 text-left font-mono placeholder:text-slate-400 focus:outline-none focus:border-brand transition-colors" />
+              className={`w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 text-left font-mono placeholder:text-slate-400 focus:outline-none focus:border-brand transition-colors ${locked.whatsapp ? lockCls : ''}`} />
           </label>
         </div>
+        {(locked.name || locked.email) && <p className="text-[11px] text-slate-400">بياناتك من حسابك. لتعديلها افتح «البيانات الشخصية» في لوحتك.</p>}
       </div>
 
       {/* Script Textarea */}
