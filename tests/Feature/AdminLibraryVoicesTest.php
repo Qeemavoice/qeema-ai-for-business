@@ -88,6 +88,16 @@ class AdminLibraryVoicesTest extends TestCase
         $this->assertNotSame($row->audio_file, $after->audio_file);
         $this->assertSame([$row->title, $row->meta_title, (int) $row->voiceover_id], [$after->title, $after->meta_title, (int) $after->voiceover_id]);
         $this->assertSame(1, DB::table('voices')->count());
+
+        // edit: the narrator shows and can change (the voice moves to that account), «طفل» is a voice type
+        $other = Accounts::createAccount('معلق آخر', 'other@example.test', 'password-123', 'talent');
+        $listed = collect($api->getJson('/api/v1/admin/collections/humanVoices')->json('items'))->firstWhere('id', $item['id']);
+        $this->assertSame(['narrator_u' . $narrator->id, 'معلق'], [$listed['narratorId'], $listed['talentName']]);
+        $api->putJson('/api/v1/admin/collections/humanVoices/' . $item['id'], ['narratorId' => 'narrator_u999999'])->assertStatus(400);
+        $api->putJson('/api/v1/admin/collections/humanVoices/' . $item['id'], ['narratorId' => 'narrator_u' . $other->id, 'gender' => 'child'])->assertOk()
+            ->assertJsonPath('item.narratorId', 'narrator_u' . $other->id)->assertJsonPath('item.gender', 'child');
+        $this->assertSame([$other->id, 1], [(int) DB::table('voices')->where('id', (int) $item['id'])->value('voiceover_id'), (int) DB::table('voices')->where('id', (int) $item['id'])->value('voice_type_id')]);
+        $this->assertSame('child', collect($this->getJson('/api/v1/human-voices')->json('items'))->firstWhere('id', $item['id'])['gender']);
         @unlink(public_path(DIR_UPLOAD . '/' . \App\Models\Voice::DIR_VOICES_UPLOADS . '/' . $row->audio_file));
         @unlink(public_path(DIR_UPLOAD . '/' . \App\Models\Voice::DIR_VOICES_UPLOADS . '/' . $after->audio_file));
     }

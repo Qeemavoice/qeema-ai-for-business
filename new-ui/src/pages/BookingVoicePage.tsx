@@ -18,7 +18,7 @@ interface SampleView {
   title: string;
   dialect: string;
   flag: string;
-  gender: 'male' | 'female';
+  gender: 'male' | 'female' | 'child';
   category: string;
   description: string;
   quote?: string;
@@ -180,7 +180,7 @@ export const BookingVoicePage: React.FC<BookingVoicePageProps> = ({ voices }) =>
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1.5">
-                  {sample.flag} اللهجة: <strong className="text-slate-800">{sample.dialect}</strong> • الصوت: <strong className="text-slate-800">{sample.gender === 'male' ? 'رجالي' : 'نسائي'}</strong>
+                  {sample.flag} اللهجة: <strong className="text-slate-800">{sample.dialect}</strong> • الصوت: <strong className="text-slate-800">{sample.gender === 'female' ? 'نسائي' : sample.gender === 'child' ? 'طفل' : 'رجالي'}</strong>
                 </p>
               </div>
               <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-orange-50 text-brand-text border border-orange-200 whitespace-nowrap">

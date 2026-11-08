@@ -14,7 +14,7 @@ interface HumanVoiceDemoItem {
   talentName: string;
   sampleName: string;
   voiceDescription: string;
-  gender: 'male' | 'female';
+  gender: 'male' | 'female' | 'child';
   ageRange: 'شبابي' | 'متوسط' | 'ناضج وقور';
   dialect: string;
   flag: string;
@@ -215,7 +215,7 @@ export const HumanVoicesSection: React.FC<HumanVoicesSectionProps> = ({
                         <span>{voice.flag}</span>
                         <span className="font-medium text-slate-700">{dialectOf(voice.dialect, voice.flag)}</span>
                         <span>•</span>
-                        <span>{voice.gender === 'female' ? 'نسائي' : 'رجالي'}</span>
+                        <span>{voice.gender === 'female' ? 'نسائي' : voice.gender === 'child' ? 'طفل' : 'رجالي'}</span>
                       </div>
                     </div>
                   </div>

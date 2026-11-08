@@ -60,7 +60,7 @@ class Library
         $catRel = $catRels->first();
         $title = self::tr($v, 'title');
         $narratorPrice = (float) $v->price_per_minute;
-        $gender = (int) $v->voice_type_id === VoiceType::VOICE_TYPE_WOMEN ? 'female' : 'male';
+        $gender = [VoiceType::VOICE_TYPE_WOMEN => 'female', VoiceType::VOICE_TYPE_CHILD => 'child'][(int) $v->voice_type_id] ?? 'male';
         return [
             'id' => (string) $v->id,            // numeric like the old site, so old /booking/{id}/{title} URLs still match
             'name' => $actor ? Accounts::name($actor) : $title,

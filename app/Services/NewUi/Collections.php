@@ -100,9 +100,19 @@ class Collections
         return $out;
     }
 
+    /** Whether the voice's account still exists (a deleted account has no narrator to show); ids read once, new ones checked */
+    private static function userExists(int $id): bool
+    {
+        static $ids = null;
+        if (!$id) return false;
+        $ids ??= \App\Models\User::pluck('id')->flip()->all();
+        return isset($ids[$id]) || \App\Models\User::whereKey($id)->exists();
+    }
+
     private static function voiceAdminItem(array $v, string $status): array
     {
-        return ['id' => $v['id'], 'sampleName' => $v['sampleName'], 'talentName' => $v['talentName'], 'gender' => $v['gender'], 'subtitle' => $v['subtitle'],
+        return ['id' => $v['id'], 'sampleName' => $v['sampleName'], 'talentName' => $v['talentName'],
+            'narratorId' => self::userExists((int) ($v['_talentUserId'] ?? 0)) ? 'narrator_u' . $v['_talentUserId'] : '', 'gender' => $v['gender'], 'subtitle' => $v['subtitle'],
             'categories' => $v['categories'], 'languages' => array_values(array_filter([$v['language']])), 'dialect' => $v['dialect'], 'accent' => $v['accent'], 'flag' => '',
             'narratorPriceUsd' => $v['narratorPriceUsd'], 'previewUrl' => $v['previewUrl'], 'fileName' => $v['_audioFile'] ?? '',
             'metaTitle' => $v['metaTitle'], 'metaDescription' => $v['metaDescription'], 'status' => $status, 'createdAt' => $v['createdAt'],
@@ -133,7 +143,14 @@ class Collections
             $v->price_per_minute = $price;
             $v->total_price = $price;   // the model's mutator adds the platform commission
         }
-        if (array_key_exists('gender', $d)) $v->voice_type_id = $d['gender'] === 'female' ? \App\Models\VoiceType::VOICE_TYPE_WOMEN : \App\Models\VoiceType::VOICE_TYPE_MAN;
+        if (array_key_exists('gender', $d)) $v->voice_type_id = ['female' => \App\Models\VoiceType::VOICE_TYPE_WOMEN, 'child' => \App\Models\VoiceType::VOICE_TYPE_CHILD][$d['gender']] ?? \App\Models\VoiceType::VOICE_TYPE_MAN;
+        // «المعلق صوتي»: the voice moves to that narrator's account (and dashboard); the page and its address stay
+        if (!empty($d['narratorId'])) {
+            if (!preg_match('/^narrator_u(\d+)$/', (string) $d['narratorId'], $nm) || !\App\Models\User::find((int) $nm[1])) {
+                return ['error' => 'اختر المعلق من القائمة (المعلقون الذين لهم حساب في الموقع)'];
+            }
+            $v->voiceover_id = (int) $nm[1];
+        }
         if (!empty($d['dialect'])) {
             $dl = Dialect::all()->first(fn ($x) => PublicController::tr($x, 'name') === $d['dialect']);
             if ($dl) $v->dialect_id = $dl->id;

@@ -296,8 +296,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
 
   // Image 4 Advanced Filter States
   const [filterQuality, setFilterQuality] = useState<'studio' | 'any'>('any');
-  const [filterGender, setFilterGender] = useState<'male' | 'female' | 'neutral' | 'any'>('any');
-  const [filterAge, setFilterAge] = useState<'young' | 'middle' | 'old' | 'any'>('any');
+  const [filterGender, setFilterGender] = useState<'male' | 'female' | 'child' | 'any'>('any');
   const [filterNoticePeriod, setFilterNoticePeriod] = useState<'30d' | '90d' | '1y' | '2y' | 'infinity' | 'any'>('any');
   const [filterCustomRates, setFilterCustomRates] = useState<'include' | 'exclude'>('include');
   const [filterLiveModeration, setFilterLiveModeration] = useState<'include' | 'exclude'>('include');
@@ -633,18 +632,8 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
         return false;
       }
 
-      // Gender filter (Image 4)
-      if (filterGender !== 'any') {
-        if (filterGender === 'male' && voice.gender !== 'male') return false;
-        if (filterGender === 'female' && voice.gender !== 'female') return false;
-      }
-
-      // Age filter (Image 4)
-      if (filterAge !== 'any') {
-        if (filterAge === 'young' && !(voice.ageRange?.includes('20') || voice.ageRange?.includes('شبابي'))) return false;
-        if (filterAge === 'middle' && !(voice.ageRange?.includes('30') || voice.ageRange?.includes('متوسط'))) return false;
-        if (filterAge === 'old' && !(voice.ageRange?.includes('40') || voice.ageRange?.includes('وقور') || voice.ageRange?.includes('ناضج'))) return false;
-      }
+      // «المؤدي»: رجل / امرأة / طفل
+      if (filterGender !== 'any' && voice.gender !== filterGender) return false;
 
       // Category filter (Exact match or tag match from Image 2)
       if (selectedCategory !== 'all') {
@@ -713,7 +702,6 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
     activeMainTab, 
     filterQuality, 
     filterGender, 
-    filterAge, 
     filterNoticePeriod, 
     filterCustomRates, 
     filterLiveModeration, 
@@ -727,7 +715,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
   const [page, setPage] = useState(1);
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setPage(1); }, [
-    currentCatalog, subTab, selectedCategory, selectedDialect, selectedLanguage, activeMainTab, filterQuality, filterGender, filterAge,
+    currentCatalog, subTab, selectedCategory, selectedDialect, selectedLanguage, activeMainTab, filterQuality, filterGender,
     filterNoticePeriod, filterCustomRates, filterLiveModeration, searchQuery, sortBy, similarFilterVoice
   ]);
   const pageCount = Math.max(1, Math.ceil(filteredVoices.length / PAGE_SIZE));
@@ -1120,14 +1108,14 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
             <button
               onClick={() => setShowFiltersModal(!showFiltersModal)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-semibold transition-all shadow-2xs whitespace-nowrap cursor-pointer ${
-                showFiltersModal || (filterQuality !== 'any' || filterGender !== 'any' || filterAge !== 'any' || filterNoticePeriod !== 'any')
+                showFiltersModal || (filterQuality !== 'any' || filterGender !== 'any' || filterNoticePeriod !== 'any')
                   ? 'bg-brand-ink text-white border-slate-900'
                   : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
               <span>الفلاتر</span>
-              {(filterQuality !== 'any' || filterGender !== 'any' || filterAge !== 'any' || filterNoticePeriod !== 'any' || filterCustomRates !== 'include' || filterLiveModeration !== 'include') && (
+              {(filterQuality !== 'any' || filterGender !== 'any' || filterNoticePeriod !== 'any' || filterCustomRates !== 'include' || filterLiveModeration !== 'include') && (
                 <span className="w-2 h-2 rounded-full bg-brand" />
               )}
             </button>
@@ -1928,9 +1916,9 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                 </div>
               </div>
 
-              {/* 2. Gender: [ Male | Female | Neutral | Any ] */}
+              {/* 2. «المؤدي»: الكل | رجل | امرأة | طفل */}
               <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                <span className="font-semibold text-slate-900 text-xs">الجنس</span>
+                <span className="font-semibold text-slate-900 text-xs">المؤدي</span>
                 <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 justify-self-start">
                   <button
                     onClick={() => setFilterGender('any')}
@@ -1950,7 +1938,7 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                         : 'text-slate-600 hover:text-slate-900 font-medium'
                     }`}
                   >
-                    ذكر
+                    رجل
                   </button>
                   <button
                     onClick={() => setFilterGender('female')}
@@ -1960,54 +1948,17 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                         : 'text-slate-600 hover:text-slate-900 font-medium'
                     }`}
                   >
-                    أنثى
+                    امرأة
                   </button>
-                </div>
-              </div>
-
-              {/* 3. Age: [ Young | Middle Aged | Old | Any ] */}
-              <div className="grid grid-cols-[120px_1fr] items-center gap-4">
-                <span className="font-semibold text-slate-900 text-xs">العمر</span>
-                <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 justify-self-start">
                   <button
-                    onClick={() => setFilterAge('any')}
+                    onClick={() => setFilterGender('child')}
                     className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                      filterAge === 'any'
+                      filterGender === 'child'
                         ? 'bg-white text-slate-900 border border-slate-300 shadow-2xs font-bold'
                         : 'text-slate-600 hover:text-slate-900 font-medium'
                     }`}
                   >
-                    الكل
-                  </button>
-                  <button
-                    onClick={() => setFilterAge('young')}
-                    className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                      filterAge === 'young'
-                        ? 'bg-white text-slate-900 border border-slate-300 shadow-2xs font-bold'
-                        : 'text-slate-600 hover:text-slate-900 font-medium'
-                    }`}
-                  >
-                    شاب
-                  </button>
-                  <button
-                    onClick={() => setFilterAge('middle')}
-                    className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                      filterAge === 'middle'
-                        ? 'bg-white text-slate-900 border border-slate-300 shadow-2xs font-bold'
-                        : 'text-slate-600 hover:text-slate-900 font-medium'
-                    }`}
-                  >
-                    متوسط العمر
-                  </button>
-                  <button
-                    onClick={() => setFilterAge('old')}
-                    className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
-                      filterAge === 'old'
-                        ? 'bg-white text-slate-900 border border-slate-300 shadow-2xs font-bold'
-                        : 'text-slate-600 hover:text-slate-900 font-medium'
-                    }`}
-                  >
-                    كبير السن
+                    طفل
                   </button>
                 </div>
               </div>
@@ -2107,7 +2058,6 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
                 onClick={() => {
                   setFilterQuality('any');
                   setFilterGender('any');
-                  setFilterAge('any');
                   setFilterNoticePeriod('any');
                   setFilterCustomRates('include');
                   setFilterLiveModeration('include');

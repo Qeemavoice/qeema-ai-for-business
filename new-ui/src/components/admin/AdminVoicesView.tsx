@@ -16,7 +16,7 @@ const CATEGORIES = VOICE_CATEGORY_FILTERS.filter(c => c.key !== 'all').map(c => 
 const input = 'w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-hidden focus:border-brand';
 
 interface VoiceSampleRow {
-  id: string; sampleName: string; talentName: string; gender: 'male' | 'female'; subtitle?: string;
+  id: string; sampleName: string; talentName: string; narratorId?: string; gender: 'male' | 'female' | 'child'; subtitle?: string;
   categories: string[]; languages: string[]; dialect: string; accent?: string; flag?: string;
   narratorPriceUsd: number; previewUrl: string; fileName?: string;
   metaTitle?: string; metaDescription?: string; status: 'active' | 'hidden'; createdAt: string;
@@ -155,7 +155,9 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
   const [form, setForm] = useState<Partial<VoiceSampleRow>>(voice);
   // narrators with an account on the site: a library voice is linked to the narrator's account
   const [narrators, setNarrators] = useState<{ id: string; name: string }[]>([]);
-  const [narratorId, setNarratorId] = useState('');
+  const [narratorId, setNarratorId] = useState(voice.narratorId || '');
+  // the voice's current narrator stays selectable even when the list has not loaded it
+  const narratorOptions = narratorId && !narrators.some(n => n.id === narratorId) ? [{ id: narratorId, name: voice.talentName?.trim() || `حساب رقم ${narratorId.replace('narrator_u', '')}` }, ...narrators] : narrators;
   const [dialects, setDialects] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -163,7 +165,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
   const isNew = !voice.id;
 
   useEffect(() => {
-    narratorService.getAllNarrators().then(n => setNarrators(n.filter(x => /^narrator_u\d+$/.test(x.id)).map(x => ({ id: x.id, name: x.displayName })).sort((a, b) => a.name.localeCompare(b.name, 'ar')))).catch(() => {});
+    narratorService.getAllNarrators().then(n => setNarrators(n.filter(x => /^narrator_u\d+$/.test(x.id)).map(x => ({ id: x.id, name: x.displayName?.trim() || `حساب بدون اسم (رقم ${x.id.replace('narrator_u', '')})` })).sort((a, b) => a.name.localeCompare(b.name, 'ar')))).catch(() => {});
     api.listCollection('dialects').then(d => setDialects(d.map((x: any) => x.name))).catch(() => {});
   }, []);
 
@@ -173,7 +175,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isNew && !narratorId) return setError('اختر المعلق الصوتي');
+    if (!narratorId) return setError('اختر المعلق الصوتي');
     if (!form.previewUrl) return setError('يرجى رفع الملف الصوتي (MP3)');
     if (!(price > 0)) return setError('يرجى إدخال سعر الدقيقة');
     if (!form.categories?.length) return setError('اختر تصنيفاً واحداً على الأقل');
@@ -184,7 +186,7 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
         name: form.talentName, accent: form.dialect, category: form.categories[0], tags: form.categories
       };
       if (isNew) await api.createCollectionItem('humanVoices', { createdAt: new Date().toISOString(), ...data, narratorId, status: 'active' });
-      else await api.updateCollectionItem('humanVoices', voice.id!, data);
+      else await api.updateCollectionItem('humanVoices', voice.id!, narratorId !== (voice.narratorId || '') ? { ...data, narratorId } : data);
       onSaved();
     } catch (err: any) { setError(err.message || 'تعذر الحفظ'); } finally { setSaving(false); }
   };
@@ -208,17 +210,14 @@ const VoiceEditor: React.FC<{ voice: Partial<VoiceSampleRow>; commission: number
                 <select value={form.gender} onChange={e => set('gender', e.target.value)} className={`${input} cursor-pointer`}>
                   <option value="male">رجل</option>
                   <option value="female">امرأة</option>
+                  <option value="child">طفل</option>
                 </select>
               </Label>
-              <Label text="المعلق صوتي" required hint={isNew ? 'يظهر الصوت في لوحة هذا المعلق ضمن «أصواتي في مكتبة الأصوات»' : undefined}>
-                {isNew ? (
-                  <select required value={narratorId} onChange={e => { setNarratorId(e.target.value); set('talentName', narrators.find(n => n.id === e.target.value)?.name || ''); }} className={`${input} cursor-pointer`}>
-                    <option value="" disabled>اختر المعلق</option>
-                    {narrators.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
-                  </select>
-                ) : (
-                  <input readOnly value={form.talentName || ''} className={`${input} bg-slate-100 text-slate-700`} />
-                )}
+              <Label text="المعلق صوتي" required hint={isNew ? 'يظهر الصوت في لوحة هذا المعلق ضمن «أصواتي في مكتبة الأصوات»' : 'تغيير المعلق ينقل الصوت إلى لوحة المعلق الجديد، والصفحة ورابطها تبقى كما هي'}>
+                <select required value={narratorId} onChange={e => { setNarratorId(e.target.value); set('talentName', narrators.find(n => n.id === e.target.value)?.name || ''); }} className={`${input} cursor-pointer`}>
+                  <option value="" disabled>{isNew ? 'اختر المعلق' : 'غير مرتبط بحساب معلق: اختر المعلق'}</option>
+                  {narratorOptions.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
+                </select>
               </Label>
             </div>
             <div>
