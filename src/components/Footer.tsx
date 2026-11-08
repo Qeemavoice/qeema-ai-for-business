@@ -53,7 +53,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenChangelog }) => {
             >
               <img 
                 src="/assets/aistudio/qeemavoice_logo_5d0c91ae.png" 
-                alt="قيمة فويس - Qeema Voice" 
+                alt="قيمة فويس - Qeemavoice" 
                 width="145"
                 height="50"
                 className="h-10 w-auto object-contain transition-transform group-hover:scale-[1.02] brightness-0 invert"
@@ -231,7 +231,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenChangelog }) => {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
-            جميع الحقوق محفوظة © {new Date().getFullYear()} منصة قيمة فويس (Qeema Voice).
+            جميع الحقوق محفوظة © {new Date().getFullYear()} منصة قيمة فويس (Qeemavoice).
           </div>
 
           <SocialLinks tone="light" />

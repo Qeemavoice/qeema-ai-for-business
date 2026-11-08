@@ -99,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <img 
                 src="/assets/aistudio/qeemavoice_logo_5d0c91ae.png" 
-                alt="قيمة فويس - Qeema Voice" 
+                alt="قيمة فويس - Qeemavoice" 
                 width="145"
                 height="50"
                 className="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-[1.02]"

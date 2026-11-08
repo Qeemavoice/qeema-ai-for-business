@@ -77,7 +77,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const [isCompanyMenuOpen, setIsCompanyMenuOpen] = React.useState(false);
   const canUseNew = useRowad().canUse;
   // a client has one workspace; switching is for admins opening clients' workspaces
-  const canSwitch = availableCompanies.length > 1;
+  const canSwitch = Boolean(currentUser?.isPlatformAdmin) && availableCompanies.length > 1;
 
   const mainNavItems = [
     { key: 'home' as DashboardNavKey, label: 'الرئيسية', icon: Home, badge: undefined },

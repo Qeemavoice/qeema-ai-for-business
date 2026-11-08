@@ -50,7 +50,7 @@ export const InvoiceModal: React.FC<{ invoice: InvoiceData; onClose: () => void 
           <div className="flex items-start justify-between gap-6">
             <div>
               <img src="/assets/aistudio/qeemavoice_logo_5d0c91ae.png" alt="قيمة فويس" className="h-10 mb-2" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <p className="text-sm font-black text-slate-900">قيمة فويس | Qeema Voice</p>
+              <p className="text-sm font-black text-slate-900">قيمة فويس | Qeemavoice</p>
               <p className="text-xs text-slate-500">Qeema Digital Production</p>
               <p className="text-xs text-slate-500" dir="ltr">info@qeemavoice.com</p>
             </div>
