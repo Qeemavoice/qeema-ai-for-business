@@ -285,6 +285,18 @@ class AdminController extends Controller
             $changes['name'] = [$n['displayName'] ?? '', $name];
             $n['displayName'] = $name;
         }
+        $uid = preg_match('/^narrator_u(\d+)$/', $id, $um) ? (int) $um[1] : 0;
+        if ($r->has('email')) {
+            // the e-mail is also the narrator's sign-in: unique across the site's accounts
+            $email = mb_strtolower(trim((string) $r->input('email')));
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return response()->json(['error' => 'البريد الإلكتروني غير صحيح'], 400);
+            $owner = Accounts::findByEmail($email);
+            if ($owner && $owner->id !== $uid) return response()->json(['error' => 'هذا البريد مسجّل لحساب آخر في الموقع'], 409);
+            if ($email !== mb_strtolower((string) ($n['email'] ?? ''))) {
+                $changes['email'] = [$n['email'] ?? '', $email];
+                $n['email'] = $email;
+            }
+        }
         if ($r->has('perMinuteUsd')) {
             $price = round((float) $r->input('perMinuteUsd'), 2);
             if (!($price > 0 && $price <= 1000)) return response()->json(['error' => 'سعر الدقيقة يجب أن يكون بين 1 و 1000 دولار'], 400);
@@ -294,8 +306,9 @@ class AdminController extends Controller
         if (!$changes) return response()->json(['error' => 'لا يوجد ما يُحفظ'], 400);
         $st['narrators'][$i] = $n;
         NarratorController::save($st);
-        if (isset($changes['name']) && preg_match('/^narrator_u(\d+)$/', $id, $m) && ($u = User::find((int) $m[1]))) {
-            $u->setTranslations('full_name', ['ar' => $changes['name'][1], 'en' => $changes['name'][1]]);
+        if ((isset($changes['name']) || isset($changes['email'])) && $uid && ($u = User::find($uid))) {
+            if (isset($changes['name'])) $u->setTranslations('full_name', ['ar' => $changes['name'][1], 'en' => $changes['name'][1]]);
+            if (isset($changes['email'])) $u->email = $changes['email'][1];
             $u->save();
             Library::forget();
         }

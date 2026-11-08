@@ -213,7 +213,7 @@ export const AdminNarratorsView: React.FC<Props> = ({ onNavigateToClaim, onOpenS
                     <td className="p-3">
                       <div className="flex items-center gap-1.5">
                         <button onClick={() => setSelectedId(n.id)} className="px-2.5 py-1.5 rounded-lg bg-brand-ink hover:bg-brand-ink/90 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"><Eye className="w-3.5 h-3.5" />الملف</button>
-                        <button onClick={() => setSelectedId(n.id)} title="تعديل الاسم والسعر" className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-brand text-slate-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer"><Pencil className="w-3.5 h-3.5" />تعديل</button>
+                        <button onClick={() => setSelectedId(n.id)} title="تعديل الاسم والبريد والسعر" className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-brand text-slate-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer"><Pencil className="w-3.5 h-3.5" />تعديل</button>
                         {n.status !== 'active' && n.status !== 'suspended' && (
                           <button onClick={() => sendInvite(n.id)} className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold cursor-pointer">{n.status === 'unclaimed' ? 'إرسال دعوة' : 'إعادة إرسال'}</button>
                         )}
@@ -313,6 +313,8 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
   const [priceInput, setPriceInput] = useState(String(n.rates?.perMinuteUsd ?? ''));
   const [nameInput, setNameInput] = useState(n.displayName || '');
   const [nameError, setNameError] = useState('');
+  const [emailInput, setEmailInput] = useState(n.email || '');
+  const [emailError, setEmailError] = useState('');
   const [noteText, setNoteText] = useState('');
   const [msgTitle, setMsgTitle] = useState('');
   const [msgBody, setMsgBody] = useState('');
@@ -327,6 +329,7 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
     refreshNotifs();
     setPriceInput(String(n.rates?.perMinuteUsd ?? ''));
     setNameInput(n.displayName || ''); setNameError('');
+    setEmailInput(n.email || ''); setEmailError('');
   }, [n.id]);
 
   const priceNum = parseFloat(priceInput);
@@ -339,6 +342,13 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
       const u = await narratorService.adminUpdateNarrator(n.id, { displayName: nameInput });
       onChanged(u); flash('تم تحديث اسم المعلق وتسجيل التغيير في سجل التدقيق');
     } catch (e) { setNameError(e instanceof Error ? e.message : 'تعذر حفظ الاسم'); }
+  };
+  const saveEmail = async () => {
+    setEmailError('');
+    try {
+      const u = await narratorService.adminUpdateNarrator(n.id, { email: emailInput });
+      onChanged(u); flash('تم تحديث بريد المعلق: يسجّل الدخول به من الآن');
+    } catch (e) { setEmailError(e instanceof Error ? e.message : 'تعذر حفظ البريد'); }
   };
   const savePrice = async () => {
     if (!validPrice) return;
@@ -437,6 +447,14 @@ const NarratorDrawer: React.FC<DrawerProps> = ({ narrator: n, samples, onClose, 
                 <button onClick={saveName} disabled={nameInput.trim().length < 2 || nameInput.trim() === (n.displayName || '').trim()} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">حفظ الاسم</button>
               </div>
               {nameError && <p className="text-[11px] font-bold text-rose-600">{nameError}</p>}
+              <h4 className="text-sm font-black text-slate-900 pt-2">البريد الإلكتروني</h4>
+              <p className="text-[11px] text-slate-500 leading-relaxed">هو بريد تسجيل دخول المعلق: بعد الحفظ يسجّل الدخول بالبريد الجديد بنفس كلمة مروره.</p>
+              <div className="flex items-end gap-3 flex-wrap">
+                <input type="email" dir="ltr" value={emailInput} onChange={e => setEmailInput(e.target.value)} placeholder="name@example.com"
+                  className="flex-1 min-w-48 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-mono outline-hidden focus:border-brand" />
+                <button onClick={saveEmail} disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim()) || emailInput.trim().toLowerCase() === (n.email || '').toLowerCase()} className="px-4 py-2.5 rounded-xl bg-brand-ink hover:bg-brand-ink/90 text-white text-xs font-bold cursor-pointer disabled:opacity-30">حفظ البريد</button>
+              </div>
+              {emailError && <p className="text-[11px] font-bold text-rose-600">{emailError}</p>}
             </div>
 
             {/* Pricing */}

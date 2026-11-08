@@ -34,6 +34,14 @@ class AdminNarratorEditTest extends TestCase
         $n = collect($api->getJson('/api/v1/narrators/state')->json('narrators'))->firstWhere('id', $id);
         $this->assertSame(['اسم جديد', 25], [$n['displayName'], $n['rates']['perMinuteUsd']]);
         $this->assertSame('اسم جديد', Accounts::name($narrator->fresh()));   // the account's own name follows
+
+        // e-mail: the sign-in changes with it; one already used by another account is refused
+        Accounts::createAccount('عميل', 'taken@example.test', 'password-123', 'client');
+        $api->postJson($url, ['email' => 'not-an-email'])->assertStatus(400);
+        $api->postJson($url, ['email' => 'Taken@example.test'])->assertStatus(409);
+        $api->postJson($url, ['email' => ' New.Mail@Example.test '])->assertOk()->assertJsonPath('narrator.email', 'new.mail@example.test');
+        $this->assertSame('new.mail@example.test', $narrator->fresh()->email);
+        $this->postJson('/api/v1/auth/login', ['email' => 'new.mail@example.test', 'password' => 'password-123'])->assertOk();
     }
 
     public function test_admin_adds_a_narrator_account()
