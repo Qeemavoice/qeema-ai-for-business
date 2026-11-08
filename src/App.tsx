@@ -344,9 +344,10 @@ export default function App() {
           <Route path="/ar/voice-templates" element={<Navigate to="/ar/voice-models" replace />} />
 
           <Route 
-            path="/ar/booking/:slug" 
+            path="/ar/voices/:slug" 
             element={<BookingVoicePage voices={voices} />} 
           />
+          <Route path="/ar/booking/:slug" element={<BookingVoicePage voices={voices} />} />
 
           <Route path="/ar/blogs" element={<BlogsPage />} />
           <Route path="/ar/blogs/details/:slug" element={<BlogDetailsPage />} />

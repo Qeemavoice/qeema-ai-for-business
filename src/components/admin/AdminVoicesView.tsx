@@ -52,7 +52,7 @@ export const AdminVoicesView: React.FC = () => {
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const shareLink = (r: VoiceSampleRow) => `${window.location.origin}/ar/booking/${r.id}`;
+  const shareLink = (r: VoiceSampleRow) => `${window.location.origin}/ar/voices/${r.id}`;
   const copy = async (r: VoiceSampleRow) => {
     try { await navigator.clipboard.writeText(shareLink(r)); } catch { window.prompt('انسخ الرابط', shareLink(r)); }
     setCopied(r.id); setTimeout(() => setCopied(null), 2000);

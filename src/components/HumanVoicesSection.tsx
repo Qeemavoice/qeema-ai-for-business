@@ -249,7 +249,7 @@ export const HumanVoicesSection: React.FC<HumanVoicesSectionProps> = ({
               {/* Card Bottom: book button only */}
               <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
                 <button
-                  onClick={() => navigate(`/ar/booking/${buildSampleSlug(voice.sample)}`)}
+                  onClick={() => navigate(`/ar/voices/${buildSampleSlug(voice.sample)}`)}
                   className="w-full py-2.5 px-3.5 rounded-xl bg-brand hover:bg-brand-orange text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
                 >
                   احجز الصوت
