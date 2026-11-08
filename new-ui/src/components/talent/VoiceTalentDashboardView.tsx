@@ -76,6 +76,8 @@ import { VOICE_CATEGORY_FILTERS } from '../../data/humanVoices';
 interface VoiceTalentDashboardViewProps {
   onNavigate: (view: ActiveView, tab?: any) => void;
   initialSubPage?: 'main' | 'profile' | 'samples' | 'earnings' | 'settings';
+  /** Signs out and leaves the dashboard */
+  onLogout?: () => void;
 }
 
 interface StudioVoice { id: string; name: string; gender: 'male' | 'female'; dialectLabel: string; styleLabel: string; previewUrl: string; avatar?: string; sharePercent: number }
@@ -181,7 +183,8 @@ const ARAB_COUNTRY_NAMES = COUNTRY_CODES.filter(c => c.arab).map(c => c.name);
 
 export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> = ({
   onNavigate,
-  initialSubPage
+  initialSubPage,
+  onLogout
 }) => {
   // Pre-seeded narrators for instant switching between preview states
   const [narratorList, setNarratorList] = useState<Narrator[]>([]);
@@ -1151,7 +1154,7 @@ export const VoiceTalentDashboardView: React.FC<VoiceTalentDashboardViewProps> =
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
-                        onNavigate('home');
+                        if (onLogout) onLogout(); else onNavigate('home');
                       }}
                       className="w-full text-right px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-bold flex items-center gap-2 cursor-pointer transition-colors"
                     >

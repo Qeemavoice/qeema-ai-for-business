@@ -28,7 +28,8 @@ export const GuidesPage: React.FC = () => {
         slug: g.slug || g.id,
         title: g.title,
         desc: g.description || '',
-        link: g.link || (g.file ? g.file : `/ar/guides/${g.slug || g.id}`),
+        // each guide opens its own page (/ar/guides/{id}-{title}, like the old site); the file is read or downloaded there
+        link: g.link || `/ar/guides/${g.slug || g.id}`,
         cover: g.cover || '',
         priceUsd: g.type === 'free' ? null : Number(g.price) || 0,
         gradient: g.gradient || 'linear-gradient(135deg,#FFA513 0%,#B83A00 100%)'

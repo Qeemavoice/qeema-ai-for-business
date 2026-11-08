@@ -42,6 +42,8 @@ interface ClientDashboardViewProps {
   onOpenTopUp: () => void;
   onOpenDemo: () => void;
   onOpenLogin: () => void;
+  /** Signs out and leaves the dashboard */
+  onLogout: () => void;
   onOpenSignup: () => void;
   onOpenAssistant?: () => void;
   onGenerated?: (newBalanceCredits: number) => void;
@@ -59,6 +61,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
   onOpenTopUp,
   onOpenDemo,
   onOpenLogin,
+  onLogout,
   onOpenSignup,
   onOpenAssistant,
   onGenerated
@@ -258,7 +261,7 @@ export const ClientDashboardView: React.FC<ClientDashboardViewProps> = ({
           availableCompanies={availableCompanies}
           onSwitchCompany={onSwitchCompany}
           onNavigate={onNavigate}
-          onLogout={onOpenLogin}
+          onLogout={onLogout}
         />
 
         {/* Dynamic Main View Area */}
