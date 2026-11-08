@@ -16,7 +16,7 @@ import {
   Info, 
   Check, 
   ChevronDown, 
-  ChevronRight, 
+  ChevronRight, ChevronLeft, 
   Wallet, 
   Download, 
   Star, 
@@ -1664,23 +1664,25 @@ export const VoiceLibraryView: React.FC<VoiceLibraryViewProps> = ({
           })}
         </div>
 
-        {pageCount > 1 && (
-          <nav aria-label="صفحات الأصوات" className="pt-4 flex flex-wrap items-center justify-end gap-1.5" dir="rtl">
-            {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => goToPage(n)}
-                aria-current={n === page ? 'page' : undefined}
-                className={`min-w-9 h-9 px-2.5 rounded-xl text-xs font-bold font-mono border transition cursor-pointer ${
-                  n === page ? 'bg-brand-ink text-white border-brand-ink' : 'bg-white text-slate-700 border-slate-200 hover:border-brand'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </nav>
-        )}
+        {pageCount > 1 && (() => {
+          // five page numbers at a time (1-5, then 6-10 ...) between previous / next arrows, and the total
+          const start = Math.floor((page - 1) / 5) * 5 + 1;
+          const nums = Array.from({ length: Math.min(5, pageCount - start + 1) }, (_, i) => start + i);
+          const arrow = 'w-9 h-9 rounded-xl flex items-center justify-center border border-slate-200 bg-white text-slate-600 hover:border-brand transition cursor-pointer disabled:opacity-30 disabled:cursor-default disabled:hover:border-slate-200';
+          return (
+            <nav aria-label="صفحات الأصوات" className="pt-4 flex flex-wrap items-center justify-end gap-1.5" dir="rtl">
+              <button type="button" aria-label="الصفحة السابقة" disabled={page === 1} onClick={() => goToPage(page - 1)} className={arrow}><ChevronRight className="w-4 h-4" /></button>
+              {nums.map(n => (
+                <button key={n} type="button" onClick={() => goToPage(n)} aria-current={n === page ? 'page' : undefined}
+                  className={`min-w-9 h-9 px-2.5 rounded-xl text-xs font-bold font-mono border transition cursor-pointer ${
+                    n === page ? 'bg-brand text-white border-brand' : 'bg-white text-slate-700 border-slate-200 hover:border-brand'
+                  }`}>{n}</button>
+              ))}
+              <button type="button" aria-label="الصفحة التالية" disabled={page === pageCount} onClick={() => goToPage(page + 1)} className={arrow}><ChevronLeft className="w-4 h-4" /></button>
+              <span className="text-xs text-slate-400 font-mono px-1">/ {pageCount}</span>
+            </nav>
+          );
+        })()}
 
         {/* Empty State */}
         {filteredVoices.length === 0 && (
