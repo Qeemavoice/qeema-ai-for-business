@@ -536,19 +536,6 @@ export const TextToSpeechVisitorLanding: React.FC<TextToSpeechVisitorLandingProp
 
         </div>
 
-        {/* 3 Highlights Cards (Image 2 - Bottom 3 cards) */}
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition-all shadow-2xs space-y-2.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <h4 className="font-bold text-base text-slate-900">دعم الحوار متعدد الشخصيات</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              أنشئ محادثات كاملة بين متحدثين متعددين يتشاركون السياق والانفعال دون انقطاع، مثالي للحوارات الإذاعية والمشاهد الدرامية.
-            </p>
-          </div>
-
-        </div>
       </section>
 
       {full && (<>
