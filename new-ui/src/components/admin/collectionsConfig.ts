@@ -2,7 +2,7 @@ import { ARTICLE_CATEGORIES, ARTICLE_AUDIENCES } from '../../../shared/articleOp
 import { STORY_VOICE_CATEGORIES, STORY_INDUSTRIES } from '../../data/stories';
 import { VOICE_CATEGORY_FILTERS } from '../../data/humanVoices';
 
-export type FieldType = 'text' | 'textarea' | 'select' | 'number' | 'audio' | 'image' | 'richtext' | 'clips';
+export type FieldType = 'text' | 'textarea' | 'select' | 'number' | 'audio' | 'image' | 'richtext' | 'clips' | 'librarySample';
 
 export interface CollectionField {
   key: string;
@@ -141,7 +141,8 @@ export const COLLECTIONS: Record<string, CollectionConfig> = {
     fields: [
       { key: 'title', label: 'العنوان (يظهر تحت المشغّل، مثل: إعلانات)', required: true },
       { key: 'desc', label: 'الوصف المختصر', type: 'textarea' },
-      { key: 'audioUrl', label: 'المقطع الصوتي', type: 'audio', required: true, hint: 'MP3 أو M4A أو WAV. يفضّل مقطع قصير بين 20 و60 ثانية.' },
+      { key: 'sampleId', label: 'اختر من مكتبة الأصوات', type: 'librarySample' },
+      { key: 'audioUrl', label: 'المقطع الصوتي (يُملأ عند الاختيار من المكتبة، أو ارفع ملفاً)', type: 'audio', required: true, hint: 'MP3 أو M4A أو WAV. يفضّل مقطع قصير بين 20 و60 ثانية.' },
       { key: 'order', label: 'الترتيب (الأصغر يظهر أولاً)', type: 'number' },
       { key: 'status', label: 'الحالة', type: 'select', options: PUBLISH }
     ]

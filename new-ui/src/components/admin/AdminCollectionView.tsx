@@ -5,6 +5,7 @@ import { COLLECTIONS, STATUS_LABELS } from './collectionsConfig';
 import { AdminArticleEditor } from './AdminArticleEditor';
 import { ExcelButton } from './adminUi';
 import { UploadField } from './UploadField';
+import { LibrarySamplePicker } from './LibrarySamplePicker';
 import { exportToExcel } from '../../lib/exportExcel';
 import { RichTextEditor } from './RichTextEditor';
 import { isHtml } from '../../data/stories';
@@ -196,7 +197,7 @@ export const AdminCollectionView: React.FC<Props> = ({ name }) => {
             </div>
             {cfg.fields.map(f => (
               <div key={f.key}>
-                {f.type !== 'audio' && f.type !== 'image' && <label className="block text-xs font-bold text-slate-800 mb-1">{f.label}</label>}
+                {f.type !== 'audio' && f.type !== 'image' && f.type !== 'librarySample' && <label className="block text-xs font-bold text-slate-800 mb-1">{f.label}</label>}
                 {f.type === 'clips' ? (
                   <div className="space-y-2">
                     {(form[f.key] || []).map((c: { title: string; url: string }, i: number) => {
@@ -225,6 +226,9 @@ export const AdminCollectionView: React.FC<Props> = ({ name }) => {
                   <UploadField label={f.label} kind="image" accept="image/png,image/svg+xml,image/webp,image/jpeg" maxMb={2} value={form[f.key] || ''}
                     hint={f.hint || 'يظهر في شبكة شعارات صفحة قصص النجاح. يفضّل PNG أو SVG بخلفية شفافة، بحد أقصى 2MB'}
                     onChange={v => setForm({ ...form, [f.key]: v })} />
+                ) : f.type === 'librarySample' ? (
+                  <LibrarySamplePicker category={form.title || ''} selectedId={form.sampleId}
+                    onPick={v => setForm({ ...form, sampleId: v.id, audioUrl: v.previewUrl, audioUrlName: `من المكتبة: ${v.name}` })} />
                 ) : f.type === 'audio' ? (
                   <UploadField label={f.label} kind="audio" accept=".mp3,audio/mpeg" maxMb={8} value={form[f.key] || ''} fileName={form[`${f.key}Name`]}
                     hint="يظهر للزوار كمشغل صوتي في صفحة القصة. صيغة MP3 بحد أقصى 8MB"
